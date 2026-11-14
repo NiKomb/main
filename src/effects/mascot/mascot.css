@@ -1,0 +1,115 @@
+.mascot {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mascot__facing { position: relative; display: block; }
+.mascot[data-direction="left"] .mascot__facing { transform: scaleX(-1); }
+
+.mascot__sprite {
+  display: block;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  background: url('./rider.png') no-repeat 0 0 / 576px 288px;
+}
+
+.mascot__fx {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 48px;
+  opacity: 0;
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+}
+
+.mascot__takeoff { bottom: auto; z-index: 1; width: 100px; background-size: 800px 48px; }
+.mascot__impact { width: 128px; background-size: 1024px 48px; }
+
+.mascot[data-visible="true"][data-pose="idle"] .mascot__sprite {
+  animation: mascot-idle 10s steps(1, end) infinite;
+}
+
+.mascot[data-pose="jump"] .mascot__sprite {
+  animation: mascot-jump-cels calc(var(--jump-duration) - 95ms) steps(8, end) 95ms, mascot-push 95ms ease-in;
+  transform-origin: center 68px;
+}
+
+.mascot[data-pose="land"] .mascot__sprite {
+  animation: mascot-land 160ms ease-out;
+  transform-origin: center 68px;
+}
+
+.mascot[data-pose="land"] .mascot__impact { animation: mascot-impact 340ms steps(8, end); }
+
+@keyframes mascot-idle {
+  /* Four slow breaths, then a brief look down. */
+  0%, 20%, 40%, 60%, 80%, 93%, 100% { background-position: 0 0; }
+  5%, 25%, 45%, 65% { background-position: -72px 0; }
+  11%, 31%, 51%, 71% { background-position: -144px 0; }
+  15%, 35%, 55%, 75% { background-position: -216px 0; }
+  82%, 91% { background-position: -288px 0; }
+  84% { background-position: -360px 0; }
+}
+
+@keyframes mascot-jump-cels {
+  from { background-position: 0 -144px; }
+  to { background-position: -576px -144px; }
+}
+
+@keyframes mascot-push {
+  to { transform: scale(1.05, .88); }
+}
+
+@keyframes mascot-land {
+  0% { transform: scale(1.08, .84); }
+  65% { transform: scale(.98, 1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes mascot-impact {
+  from { background-position-x: 0; opacity: .7; }
+  to { background-position-x: -1024px; opacity: 0; }
+}
+
+.mascot__movement {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.mascot-viewport {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 192px;
+  height: 144px;
+  pointer-events: none;
+}
+
+.mascot-viewport__actor {
+  inset: auto 16px -4px auto;
+  opacity: 0;
+}
+
+.mascot[data-pose="run"] .mascot__sprite {
+  animation: mascot-run-cels 480ms steps(8, end) infinite;
+}
+
+.mascot[data-pose="dash"] .mascot__sprite {
+  animation: mascot-run-cels 280ms steps(8, end) infinite;
+}
+
+.mascot[data-pose="coast"] .mascot__sprite { background-position: -144px -72px; }
+
+@keyframes mascot-run-cels {
+  from { background-position: 0 -72px; }
+  to { background-position: -576px -72px; }
+}

@@ -1,0 +1,76 @@
+.viewport-edges {
+  pointer-events: none;
+}
+
+.viewport-edges__top,
+.viewport-edges__bottom {
+  position: fixed;
+  inset-inline: 0;
+  z-index: 1;
+}
+
+.viewport-edges__top {
+  top: 0;
+  height: 40px;
+}
+
+.viewport-edges__top > span {
+  position: absolute;
+  inset: -12px 0 0;
+  -webkit-backdrop-filter: blur(var(--edge-blur));
+  backdrop-filter: blur(var(--edge-blur));
+  mask-image: linear-gradient(to top, var(--edge-mask));
+}
+
+.viewport-edges__top > span:nth-child(1) {
+  --edge-blur: 3px;
+  --edge-mask: transparent 0%, black 20% 40%, transparent 60%;
+}
+
+.viewport-edges__top > span:nth-child(2) {
+  --edge-blur: 4.5px;
+  --edge-mask: transparent 20%, black 40% 60%, transparent 80%;
+}
+
+.viewport-edges__top > span:nth-child(3) {
+  --edge-blur: 6px;
+  --edge-mask: transparent 40%, black 60% 80%, transparent 100%;
+}
+
+.viewport-edges__top > span:nth-child(4) {
+  --edge-blur: 7.5px;
+  --edge-mask: transparent 60%, black 80%;
+}
+
+.viewport-edges__top > span:nth-child(5) {
+  --edge-blur: 9px;
+  --edge-mask: transparent 80%, black 100%;
+}
+
+.viewport-edges__definitions {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.viewport-edges__bottom {
+  bottom: 0;
+}
+
+.viewport-edges__refraction,
+.viewport-edges__bottom-blur {
+  position: absolute;
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .viewport-edges__refraction[data-ready] {
+    backdrop-filter: url(#viewport-refraction);
+  }
+}
+
+.viewport-edges__bottom-blur {
+  -webkit-backdrop-filter: blur(1.25px);
+  backdrop-filter: blur(1.25px);
+  mask-image: linear-gradient(to bottom, transparent, black);
+}
