@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsContents } from '../data/dnsCase';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { createFlight } from '../effects/shared-cover/flight';
+import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
 
 const cases: readonly Project[] = [
   ...projects,
   { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
+const resizeScreensOnZoom = '[data-portrait-preview], :has(> .case-cover-strip)';
 
 function readCase() {
   const id = window.location.hash.slice(6);
@@ -90,7 +92,7 @@ function showMedia(content: HTMLElement, source: HTMLElement) {
 
 type Gallery = { slides: HTMLButtonElement[]; index: number; origin: HTMLButtonElement };
 
-export function ProjectsSection() {
+export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> }) {
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
   const [returnedFromCase, setReturnedFromCase] = useState(false);
@@ -132,7 +134,8 @@ export function ProjectsSection() {
       caseBack.current?.focus({ preventScroll: true });
     } else {
       window.scrollTo({ top: scrollPoint.current, behavior: 'instant' });
-      target?.closest('a')?.focus({ preventScroll: true });
+      const link = target?.closest('a');
+      (link?.getClientRects().length ? link : element).focus({ preventScroll: true });
     }
 
     if (flight && target) {
@@ -214,7 +217,7 @@ export function ProjectsSection() {
     const index = slides.indexOf(trigger);
     if (index < 0) return;
     mediaFlight.current?.();
-    const flight = createFlight(source, source.hasAttribute('data-portrait-preview'));
+    const flight = createFlight(source, source.matches(resizeScreensOnZoom));
     const media = showMedia(content, source);
     setGallery({ slides, index, origin: trigger });
     viewer.showModal();
@@ -250,7 +253,7 @@ export function ProjectsSection() {
       return;
     }
     const source = gallery.slides[gallery.index] === gallery.origin ? content.firstElementChild : showMedia(content, target);
-    const flight = source instanceof HTMLElement && createFlight(source, source.hasAttribute('data-portrait-preview'));
+    const flight = source instanceof HTMLElement && createFlight(source, source.matches(resizeScreensOnZoom));
     dismissMedia();
     gallery.origin.focus({ preventScroll: true });
     mediaFlight.current = flight ? flight.to(target) : undefined;
@@ -336,7 +339,7 @@ export function ProjectsSection() {
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
                   aria-label={collage ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`}
                   onClick={(event) => openMedia(event.currentTarget)}>
-                  <span className={`case-cover case-screenshot-media${isDns && primary ? ' dns-cover' : ''}`}
+                  <span className="case-cover case-screenshot-media"
                     data-cover={primary ? item.id : undefined}
                     style={collage ? undefined : screenshotSize(image)}>
                     {collage ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
@@ -411,6 +414,7 @@ export function ProjectsSection() {
             </div>
           </div>
           <ViewportMascot />
+          {isDns && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
         </article>
       ) : (
         <>
@@ -423,14 +427,14 @@ export function ProjectsSection() {
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
                   transition(entry.id);
                 }}>
-                  <span className={entry.id === 'dns' ? 'case-cover dns-cover' : 'case-cover'} data-cover={entry.id} aria-hidden="true">
+                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
                     <CaseCoverArtwork project={entry} decorative />
                   </span>
                   <span className="tile-side">
                     <span className="tile-copy">
-                      <span className="tile-arrow" aria-hidden="true">↗</span>
                       <strong>{entry.title}</strong>
-                      <span className="tile-summary">{entry.summary}</span>
+                      <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
+                      <span className="pixel-chevron tile-chevron" aria-hidden="true" />
                     </span>
                     <span className="tile-preview" aria-hidden="true">
                       {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
@@ -441,6 +445,7 @@ export function ProjectsSection() {
             ))}
             <Mascot resumeRoute={returnedFromCase} />
           </div>
+          <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
         </>
       )}
       <dialog ref={dialog} className="case-dialog" aria-label="Просмотр изображения"

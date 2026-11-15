@@ -3,6 +3,7 @@ import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { playGroundMovement } from './ground-movement';
+import { selectNarrowCover } from './narrow-cover';
 import './mascot.css';
 
 const spriteWidth = 72;
@@ -29,6 +30,7 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
 
     const sections = Array.from(grid.querySelectorAll('.case-tile'), (section) => ({
       element: section,
+      cover: section.querySelector('.case-cover'),
       tiles: Array.from(section.querySelectorAll('.case-cover, .tile-copy, .tile-preview')),
     }));
 
@@ -46,6 +48,10 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
 
     const lift = takeoffRef.current;
     const image = new Image();
+    const narrow = matchMedia('(width < 1040px)');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let narrowLayout = narrow.matches;
+    let narrowTarget: Point | undefined;
     let frame = 0;
     let entrance: ReturnType<typeof playGroundMovement>;
     let motion: Animation | undefined;
@@ -238,11 +244,61 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       return Math.max(surface.left, Math.min(surface.right, x));
     }
 
+    function updateNarrow(bounds: DOMRect, visible: boolean) {
+      if (!layer) return;
+      const covers = sections.flatMap(({ cover }) => {
+        const box = cover?.getBoundingClientRect();
+        return box?.width ? [box] : [];
+      });
+      const scrollLimit = document.documentElement.scrollHeight - innerHeight;
+      const atBottom = scrollLimit > 0 && scrollY >= scrollLimit - 1;
+      const next = visible && selectNarrowCover(covers, innerHeight, atBottom);
+      if (!next || !image.naturalWidth) {
+        cancelMotion();
+        layer.hidden = true;
+        narrowTarget = undefined;
+        return;
+      }
+
+      const point = {
+        x: Math.round(next.left - bounds.left + (next.width - spriteWidth) / 2),
+        y: Math.round(next.top - bounds.top - footOffset),
+      };
+      if (narrowTarget?.x === point.x && narrowTarget.y === point.y &&
+        (!reducedMotion.matches || phase === 'idle')) return;
+
+      const start = layer.hidden || reducedMotion.matches ? undefined : layer.getBoundingClientRect();
+      cancelMotion();
+      narrowTarget = point;
+      if (start) {
+        leap({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => settle(point));
+      } else {
+        settle(point);
+      }
+    }
+
     function update() {
       if (!layer || !grid) return;
       const bounds = grid.getBoundingClientRect();
       const visible = bounds.bottom > 0 && bounds.top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
+
+      if (narrowLayout !== narrow.matches) {
+        cancelMotion();
+        narrowLayout = narrow.matches;
+        narrowTarget = undefined;
+        currentStop = undefined;
+        plannedTarget = undefined;
+        pending = [];
+        introduction = !resumeRoute;
+        introScroll = undefined;
+        returnScroll = undefined;
+        layer.hidden = true;
+      }
+      if (narrowLayout) {
+        updateNarrow(bounds, visible);
+        return;
+      }
 
       const stops: Stop[] = [];
       const routes: { element: Element; top: number; landings: Stop[]; finish: Stop; ascentWaypoint?: Stop }[] = [];
@@ -451,6 +507,7 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
     }
     window.addEventListener('scroll', queueUpdate, { passive: true });
     window.addEventListener('resize', queueUpdate);
+    reducedMotion.addEventListener('change', queueUpdate);
     document.addEventListener('visibilitychange', queueUpdate);
     image.addEventListener('load', queueUpdate);
     image.addEventListener('error', queueUpdate);
@@ -464,6 +521,7 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       layoutChanges.disconnect();
       window.removeEventListener('scroll', queueUpdate);
       window.removeEventListener('resize', queueUpdate);
+      reducedMotion.removeEventListener('change', queueUpdate);
       document.removeEventListener('visibilitychange', queueUpdate);
       image.removeEventListener('load', queueUpdate);
       image.removeEventListener('error', queueUpdate);

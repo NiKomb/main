@@ -1,4 +1,4 @@
-export function createFlight(source: HTMLElement, resizeImage = false) {
+export function createFlight(source: HTMLElement, resizeImages = false) {
   if (typeof source.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const start = source.getBoundingClientRect();
@@ -7,9 +7,11 @@ export function createFlight(source: HTMLElement, resizeImage = false) {
   const image = source.cloneNode(true) as HTMLElement;
   image.setAttribute('aria-hidden', 'true');
   image.inert = true;
+  image.style.removeProperty('visibility');
   const { borderRadius, filter } = getComputedStyle(source);
-  const sourceImage = resizeImage ? source.querySelector('img') : null;
-  const startImageWidth = sourceImage && getComputedStyle(sourceImage).width;
+  const startImageWidths = resizeImages
+    ? Array.from(source.querySelectorAll('img'), (screen) => getComputedStyle(screen).width)
+    : [];
   Object.assign(image.style, {
     position: 'fixed',
     margin: '0',
@@ -52,17 +54,20 @@ export function createFlight(source: HTMLElement, resizeImage = false) {
         },
       ], timing);
 
-      const targetImage = startImageWidth && target.querySelector('img');
-      const imageResize = targetImage ? image.querySelector('img')?.animate([
-        { width: startImageWidth },
-        { width: getComputedStyle(targetImage).width },
-      ], timing) : undefined;
+      const clonedImages = startImageWidths.length ? image.querySelectorAll('img') : [];
+      const imageResizes = startImageWidths.length
+        ? Array.from(target.querySelectorAll('img')).slice(0, startImageWidths.length)
+          .map((screen, index) => clonedImages[index]?.animate([
+            { width: startImageWidths[index] },
+            { width: getComputedStyle(screen).width },
+          ], timing))
+        : [];
 
       function cleanup() {
         image.remove();
         target.style.visibility = visibility;
         animation.cancel();
-        imageResize?.cancel();
+        imageResizes.forEach((resize) => resize?.cancel());
       }
 
       function finish() {

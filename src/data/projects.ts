@@ -27,6 +27,7 @@ export type Project = {
   id: string;
   title: string;
   summary: string;
+  tileSummary?: string;
   role?: string;
   cover?: { src: string; alt: string };
   coverImages?: readonly ProjectImage[];
@@ -60,19 +61,20 @@ export const projects = [
     id: 'dns',
     title: 'DNS',
     summary: 'Конфигуратор ПК: выбор комплектующих и материалы исследования',
+    tileSummary: 'Сборка ПК',
     tileIllustration: dnsMotherboard,
     screens: [
-      {
-        id: 'dns-selection',
-        title: 'Выбор процессора',
-        description: 'В каталоге можно отфильтровать совместимые процессоры, посмотреть цены и открыть обзоры',
-        image: { src: dnsSelection, alt: 'Модальное окно каталога процессоров с фильтрами, обзорами и карточками моделей', width: 4140, height: 2430 },
-      },
       {
         id: 'dns-build',
         title: 'Сборка с двумя деталями',
         description: 'Выбраны процессор и материнская плата. Справа видны стоимость сборки и рекомендованные статьи',
         image: { src: dnsMain, alt: 'Конфигуратор ПК с выбранными процессором AMD Ryzen 7 7800X3D и материнской платой MSI B850 GAMING PLUS WIFI. Справа видны стоимость сборки и рекомендованные статьи', width: 4140, height: 3918 },
+      },
+      {
+        id: 'dns-selection',
+        title: 'Выбор процессора',
+        description: 'В каталоге можно отфильтровать совместимые процессоры, посмотреть цены и открыть обзоры',
+        image: { src: dnsSelection, alt: 'Модальное окно каталога процессоров с фильтрами, обзорами и карточками моделей', width: 4140, height: 2430 },
       },
       {
         id: 'dns-gallery-comparison',
@@ -92,12 +94,9 @@ export const projects = [
     id: 'vseinstrumenti',
     title: 'ВсеИнструменты',
     summary: 'Мобильный прототип выбора доставки тяжелых товаров',
+    tileSummary: 'Доставка тяжёлых товаров',
     tileIllustration: viHeavyDelivery,
-    coverImages: [
-      viPickupScreen,
-      viCourierScreen,
-      { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778, roundedCorners: true },
-    ],
+    coverImages: [viPickupScreen, viCourierScreen],
     screens: [
       {
         id: 'vi-courier',
@@ -110,6 +109,12 @@ export const projects = [
         title: 'Ограничение самовывоза',
         description: 'Если товар превышает допустимый вес для самовывоза, интерфейс объясняет причину и предлагает курьера или транспортную компанию',
         image: viPickupScreen,
+      },
+      {
+        id: 'vi-carrier',
+        title: 'Доставка транспортной компанией',
+        description: 'При выборе транспортной компании покупатель видит, как согласуют стоимость и срок доставки',
+        image: { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778, roundedCorners: true },
       },
     ],
     links: [

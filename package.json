@@ -4,7 +4,7 @@
   "description": "Portfolio with independently published project materials",
   "scripts": {
     "dev": "vite",
-    "check": "tsc --noEmit && node --test scripts/base-path.test.mjs scripts/media-navigation.test.mjs",
+    "check": "tsc --noEmit && node --test scripts/*.test.mjs",
     "build": "vite build",
     "check:output": "node scripts/check-output.mjs",
     "verify": "npm run check && npm run build && npm run check:output",

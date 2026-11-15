@@ -31,26 +31,16 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 56px;
 }
-.portfolio-skeleton {
+.portfolio-avatar {
   align-self: start;
   position: sticky;
   top: 48px;
-  display: grid;
-  gap: 24px;
-}
-.portfolio-skeleton-avatar {
-  width: 88px;
-  aspect-ratio: 1;
   border-radius: var(--radius-card);
-  background: var(--color-skeleton);
+  display: block;
 }
-.portfolio-skeleton-lines { display: grid; gap: 8px; width: min(100%, 216px); }
-.portfolio-skeleton-lines span { height: 12px; border-radius: 4px; background: var(--color-skeleton); }
-.portfolio-skeleton-lines span:first-child { width: 55%; height: 16px; }
-.portfolio-skeleton-lines span:last-child { width: 78%; }
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
-.page:has(.projects[data-case-open]) > .portfolio-skeleton { display: none; }
+.page:has(.projects[data-case-open]) > .portfolio-avatar { display: none; }
 .page:has(.projects[data-case-open]) .intro { display: none; }
 .site-footer {
   width: min(var(--content-width), 100% - 64px);
@@ -77,6 +67,7 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 .tile-side { display: grid; grid-template-rows: 1fr 1fr; gap: 24px; }
 .tile-copy, .tile-preview { border-radius: var(--radius-card); }
 .tile-copy {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: end;
@@ -86,7 +77,13 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   background: var(--color-skeleton);
 }
 .tile-summary { color: var(--color-muted); font: var(--type-small) var(--font-body); }
-.tile-arrow { align-self: end; margin-bottom: auto; color: var(--color-muted); }
+.tile-copy > .tile-chevron {
+  position: absolute;
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
+  color: var(--color-muted);
+  transform: scaleX(-1);
+}
 .tile-preview { position: relative; overflow: hidden; background: #292929; }
 .tile-preview img {
   position: absolute;
@@ -145,21 +142,24 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   width: min(60%, var(--case-portrait-fit-width) * 1.65);
 }
 .case-cover-strip {
+  inset: 0 3% 0;
+  margin-block-start: 3%;
   display: flex;
+  align-items: flex-start;
   justify-content: center;
   gap: 3%;
 }
 .case-cover-strip img {
-  width: auto;
-  min-width: 0;
+  width: 36%;
+  height: auto;
+  flex: none;
 }
+.gallery-media-full .case-cover-strip { inset-block-end: 3%; }
+.gallery-media-full .case-cover-strip img { width: auto; height: 100%; }
 .case-cover-frame img[data-rounded-screen] {
   border-radius: 12% / 5.4%;
 }
 [data-cover="dns"] { --cover: #272727; }
-.case-cover.dns-cover {
-  background: linear-gradient(90deg, rgb(252 133 7 / 50%), rgb(255 162 24 / 50%)) #fff;
-}
 [data-cover="vseinstrumenti"] { --cover: #333333; }
 [data-cover="preview"] { --cover: #292929; }
 .case-covers {
@@ -657,29 +657,33 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 
 @media (width < 1040px) {
   .page {
-    width: min(720px, 100% - 40px);
+    width: min(620px, 100% - 40px);
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
-  .portfolio-skeleton { position: static; }
+  .portfolio-avatar { position: static; width: 56px; height: 56px; }
   .site-footer { width: calc(100% - 40px); }
   .page:has(.projects[data-case-open]) { width: calc(100% - 40px); }
   .case-covers {
     --case-page-gutter: 20px;
     --case-cover-height: calc((min(100vw - 40px, 720px) - 24px) * .3);
   }
-}
-
-@media (width < 700px) {
-  .case-covers { --case-cover-height: calc((100vw - 40px) * .45); gap: 12px; }
   .case-tile a, .case-tile:nth-child(even) a {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
   .case-tile:nth-child(even) .tile-side { order: 0; }
   .tile-side { display: block; }
-  .tile-copy { position: relative; display: grid; padding: 0 24px 0 0; background: transparent; }
+  .tile-copy { display: grid; justify-content: stretch; padding: 0 24px 0 0; background: transparent; }
   .case-tile a:hover .tile-copy { background: transparent; }
-  .tile-arrow { position: absolute; inset: 0 0 auto auto; }
-  .tile-preview { display: none; }
+  .tile-copy > .tile-chevron {
+    inset-block-start: 50%;
+    inset-inline-end: 2px;
+    transform: translateY(-50%) scaleX(-1);
+  }
+  .tile-preview, .case-tile[data-section-id="project-preview"] { display: none; }
+}
+
+@media (width < 700px) {
+  .case-covers { --case-cover-height: calc((100vw - 40px) * .45); gap: 12px; }
 }
