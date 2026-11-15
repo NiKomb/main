@@ -1,21 +1,15 @@
-export function createFlight(source: HTMLElement) {
-  if (typeof source.animate !== 'function') return;
+export function createFlight(source: HTMLElement, resizeImage = false) {
+  if (typeof source.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const start = source.getBoundingClientRect();
   if (start.width === 0 || start.height === 0) return;
 
   const image = source.cloneNode(true) as HTMLElement;
   image.setAttribute('aria-hidden', 'true');
-  const screenshot = image.querySelector<HTMLImageElement>(':scope > img');
-  if (screenshot) {
-    Object.assign(screenshot.style, {
-      width: '100%',
-      height: '100%',
-      maxWidth: 'none',
-      maxHeight: 'none',
-      objectFit: 'contain',
-    });
-  }
+  image.inert = true;
+  const { borderRadius, filter } = getComputedStyle(source);
+  const sourceImage = resizeImage ? source.querySelector('img') : null;
+  const startImageWidth = sourceImage && getComputedStyle(sourceImage).width;
   Object.assign(image.style, {
     position: 'fixed',
     margin: '0',
@@ -40,25 +34,35 @@ export function createFlight(source: HTMLElement) {
       container.append(image);
       const visibility = target.style.visibility;
       target.style.visibility = 'hidden';
+      const timing = { duration: 390, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' } as const;
       const animation = image.animate([
         {
           width: `${start.width}px`,
           height: `${start.height}px`,
           transform: 'none',
-          borderRadius: getComputedStyle(image).borderRadius,
+          borderRadius,
+          filter,
         },
         {
           width: `${end.width}px`,
           height: `${end.height}px`,
           transform: `translate(${end.left - start.left}px, ${end.top - start.top}px)`,
           borderRadius: getComputedStyle(target).borderRadius,
+          filter: getComputedStyle(target).filter,
         },
-      ], { duration: 390, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' });
+      ], timing);
+
+      const targetImage = startImageWidth && target.querySelector('img');
+      const imageResize = targetImage ? image.querySelector('img')?.animate([
+        { width: startImageWidth },
+        { width: getComputedStyle(targetImage).width },
+      ], timing) : undefined;
 
       function cleanup() {
         image.remove();
         target.style.visibility = visibility;
         animation.cancel();
+        imageResize?.cancel();
       }
 
       function finish() {

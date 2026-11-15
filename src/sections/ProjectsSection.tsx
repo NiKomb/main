@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
@@ -18,15 +18,23 @@ function screenshotSize(image: ProjectImage): CSSProperties {
   return { '--screenshot-ratio': image.width / image.height } as CSSProperties;
 }
 
-function CaseScreenshotFrame({ image, decorative = false, loading }: {
+type CaseScreenshotProps = {
   image: ProjectImage;
   decorative?: boolean;
   loading?: 'lazy';
-}) {
+};
+
+function CaseScreenshotImage({ image, decorative, loading }: CaseScreenshotProps) {
+  const { roundedCorners, ...attributes } = image;
+  return <img {...attributes} alt={decorative ? '' : image.alt} loading={loading} draggable={false}
+    data-rounded-screen={roundedCorners ? '' : undefined} />;
+}
+
+function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps) {
   return (
     <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}
       data-portrait={image.height > image.width ? '' : undefined}>
-      <img {...image} alt={decorative ? '' : image.alt} loading={loading} draggable={false} />
+      <CaseScreenshotImage image={image} decorative={decorative} loading={loading} />
     </span>
   );
 }
@@ -36,11 +44,7 @@ function CaseCoverArtwork({ project, decorative = false }: { project: Project; d
     return (
       <span className="case-cover-frame case-cover-strip">
         {project.coverImages.map((image) => (
-          <span className="case-cover-strip-item" key={image.src} style={screenshotSize(image)}>
-            <span className="case-cover-strip-image">
-              <img {...image} alt={decorative ? '' : image.alt} draggable={false} />
-            </span>
-          </span>
+          <CaseScreenshotImage key={image.src} image={image} decorative={decorative} />
         ))}
       </span>
     );
@@ -56,16 +60,20 @@ export function ProjectsSection() {
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  const dialogMedia = useRef<HTMLDivElement>(null);
+  const dialogContent = useRef<HTMLDivElement>(null);
   const galleryOrigin = useRef<HTMLButtonElement>(null);
   const coverFlight = useRef<(() => void) | undefined>(undefined);
   const mediaFlight = useRef<(() => void) | undefined>(undefined);
+  const coverDrag = useRef<{ pointer: number; x: number; scroll: number } | null>(null);
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
   function transition(next: string | null) {
     const element = section.current;
     if (!element || selected === next) return;
+    coverDrag.current = null;
     coverFlight.current?.();
+    mediaFlight.current?.();
+    if (dialog.current?.open) dialog.current.close();
     const id = next ?? selected;
     const origin = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
     const flight = origin && createFlight(origin);
@@ -93,13 +101,7 @@ export function ProjectsSection() {
   }
 
   useEffect(() => {
-    const sync = () => {
-      if (dialog.current?.open) {
-        mediaFlight.current?.();
-        dialog.current.close();
-      }
-      transition(readCase());
-    };
+    const sync = () => transition(readCase());
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => {
@@ -115,29 +117,36 @@ export function ProjectsSection() {
 
   function openMedia(trigger: HTMLButtonElement) {
     const viewer = dialog.current;
-    const target = dialogMedia.current;
+    const content = dialogContent.current;
     const source = trigger.firstElementChild;
-    if (!viewer || !target || !(source instanceof HTMLElement)) return;
+    if (!viewer || !content || !(source instanceof HTMLElement)) return;
     mediaFlight.current?.();
     galleryOrigin.current = trigger;
-    const flight = createFlight(source);
-    target.dataset.media = source.dataset.media ?? '';
-    const screenshot = source.querySelector('img');
-    target.replaceChildren(...(screenshot ? [screenshot.cloneNode()] : []));
+    const flight = createFlight(source, source.hasAttribute('data-portrait-preview'));
+    const media = source.cloneNode(true) as HTMLElement;
+    media.removeAttribute('data-cover');
+    media.querySelector('img')?.removeAttribute('loading');
+    content.replaceChildren(media);
     viewer.showModal();
-    mediaFlight.current = flight?.to(target, undefined, viewer);
+    mediaFlight.current = flight?.to(media, undefined, viewer);
   }
 
   function closeMedia() {
     const viewer = dialog.current;
-    const source = dialogMedia.current;
+    const source = dialogContent.current?.firstElementChild;
     const target = galleryOrigin.current?.firstElementChild;
-    if (!viewer?.open || !source || !(target instanceof HTMLElement)) return;
+    if (!viewer?.open || !(source instanceof HTMLElement) || !(target instanceof HTMLElement)) return;
     mediaFlight.current?.();
-    const flight = createFlight(source);
+    const flight = createFlight(source, source.hasAttribute('data-portrait-preview'));
     viewer.close();
     galleryOrigin.current?.focus({ preventScroll: true });
     mediaFlight.current = flight?.to(target);
+  }
+
+  function stopCoverDrag(event: PointerEvent<HTMLDivElement>) {
+    if (coverDrag.current?.pointer !== event.pointerId) return;
+    coverDrag.current = null;
+    delete event.currentTarget.dataset.dragging;
   }
 
   return (
@@ -149,21 +158,46 @@ export function ProjectsSection() {
           <div className="case-covers" key={item.id} role="region" aria-label="Обложки кейса" tabIndex={0}
             onPointerDown={(event) => {
               if (event.pointerType !== 'mouse' || event.button !== 0) return;
-              event.currentTarget.setPointerCapture(event.pointerId);
-              event.currentTarget.dataset.dragging = '';
+              const strip = event.currentTarget;
+              if (strip.scrollWidth <= strip.clientWidth) return;
+              coverDrag.current = { pointer: event.pointerId, x: event.clientX, scroll: strip.scrollLeft };
             }}
             onPointerMove={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.scrollLeft -= event.movementX;
+              const drag = coverDrag.current;
+              const strip = event.currentTarget;
+              if (!drag || drag.pointer !== event.pointerId) return;
+              if (!(event.buttons & 1)) {
+                stopCoverDrag(event);
+                return;
               }
+              const offset = drag.x - event.clientX;
+              if (!strip.hasPointerCapture(event.pointerId)) {
+                if (Math.abs(offset) < 5) return;
+                strip.setPointerCapture(event.pointerId);
+                strip.dataset.dragging = '';
+              }
+              strip.scrollLeft = drag.scroll + offset;
             }}
-            onLostPointerCapture={(event) => { delete event.currentTarget.dataset.dragging; }}>
-            {item.screens ? item.screens.map(({ id, image }, index) => (
-              <div key={id} className={index === 0 ? 'case-cover' : 'case-cover case-cover-secondary'}
-                data-cover={index === 0 ? item.id : undefined}>
-                {index === 0 ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
-              </div>
-            )) : (
+            onPointerUp={stopCoverDrag}
+            onPointerLeave={(event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopCoverDrag(event);
+            }}
+            onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
+            {item.screens ? item.screens.map(({ id, image }, index) => {
+              const primary = index === 0;
+              const collage = primary && Boolean(item.coverImages?.length);
+              return (
+                <button key={id} type="button"
+                  className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
+                  aria-label={collage ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`}
+                  onClick={(event) => openMedia(event.currentTarget)}>
+                  <span className="case-cover case-screenshot-media" data-cover={primary ? item.id : undefined}
+                    style={collage ? undefined : screenshotSize(image)}>
+                    {collage ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
+                  </span>
+                </button>
+              );
+            }) : (
               <>
                 <div className="case-cover" data-cover={item.id} aria-hidden="true" />
                 <div className="case-cover case-cover-secondary" aria-hidden="true" />
@@ -212,11 +246,10 @@ export function ProjectsSection() {
                       <h2 id={id} tabIndex={-1}>{title}</h2>
                       <p>{description}</p>
                     </div>
-                    <button type="button" className="case-screenshot case-text" aria-label={`Увеличить: ${image.alt}`}
-                      data-portrait={portrait ? '' : undefined}
+                    <button type="button" className="case-zoom-trigger case-screenshot" aria-label={`Увеличить: ${image.alt}`}
                       onClick={(event) => openMedia(event.currentTarget)}>
-                      <span className="case-cover"
-                        style={portrait ? { aspectRatio: `${image.width} / ${image.height}` } : undefined}>
+                      <span className="case-cover case-screenshot-media" style={screenshotSize(image)}
+                        data-portrait-preview={portrait ? '' : undefined}>
                         <CaseScreenshotFrame image={image} loading="lazy" />
                       </span>
                     </button>
@@ -283,7 +316,7 @@ export function ProjectsSection() {
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
         <button type="button" className="gallery-close" onClick={closeMedia}>Закрыть ×</button>
-        <div ref={dialogMedia} className="gallery-media gallery-media-full" />
+        <div ref={dialogContent} className="gallery-media-full" />
       </dialog>
     </section>
   );

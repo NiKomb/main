@@ -1,7 +1,5 @@
 import dnsMain from './screens/portfolio-dns-main.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
-import viCourier from './screens/portfolio-vi-courier.webp';
-import viPickup from './screens/portfolio-vi-pickup.webp';
 import viCoverPickup from './screens/vi-cover-pickup.png';
 import viCoverCourier from './screens/vi-cover-courier.png';
 import viCoverCarrier from './screens/vi-cover-carrier.png';
@@ -20,6 +18,7 @@ export type ProjectImage = {
   alt: string;
   width: number;
   height: number;
+  roundedCorners?: boolean;
 };
 
 export type Project = {
@@ -37,6 +36,21 @@ export type Project = {
     image: ProjectImage;
   }[];
   links: readonly ProjectLink[];
+};
+
+const viPickupScreen: ProjectImage = {
+  src: viCoverPickup,
+  alt: 'Экран оформления заказа с ограничением самовывоза по весу',
+  width: 800,
+  height: 1778,
+  roundedCorners: true,
+};
+const viCourierScreen: ProjectImage = {
+  src: viCoverCourier,
+  alt: 'Экран оформления заказа с выбранной доставкой курьером',
+  width: 800,
+  height: 1778,
+  roundedCorners: true,
 };
 
 export const projects = [
@@ -72,22 +86,22 @@ export const projects = [
     summary: 'Мобильный прототип выбора доставки тяжелых товаров.',
     tileIllustration: viHeavyDelivery,
     coverImages: [
-      { src: viCoverPickup, alt: 'Самовывоз недоступен из-за веса заказа', width: 800, height: 1778 },
-      { src: viCoverCourier, alt: 'Оформление доставки курьером', width: 800, height: 1778 },
-      { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778 },
+      viPickupScreen,
+      viCourierScreen,
+      { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778, roundedCorners: true },
     ],
     screens: [
       {
         id: 'vi-courier',
         title: 'Доставка курьером',
         description: 'При оформлении заказа можно указать адрес и дату доставки, а также выбрать, нужно ли поднять товар на этаж.',
-        image: { src: viCourier, alt: 'Панель получения заказа с выбранной доставкой курьером', width: 390, height: 525 },
+        image: viCourierScreen,
       },
       {
         id: 'vi-pickup',
         title: 'Ограничение самовывоза',
         description: 'Если товар превышает допустимый вес для самовывоза, интерфейс объясняет причину и предлагает курьера или транспортную компанию.',
-        image: { src: viPickup, alt: 'Панель самовывоза с объяснением ограничения по весу товара', width: 390, height: 442 },
+        image: viPickupScreen,
       },
     ],
     links: [
