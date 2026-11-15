@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
-import { projects, type Project } from '../data/projects';
+import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { createFlight } from '../effects/shared-cover/flight';
 
@@ -14,18 +14,39 @@ function readCase() {
   return window.location.hash.startsWith('#case-') && cases.some((item) => item.id === id) ? id : null;
 }
 
-type ScreenImage = NonNullable<Project['screens']>[number]['image'];
+function screenshotSize(image: ProjectImage): CSSProperties {
+  return { '--screenshot-ratio': image.width / image.height } as CSSProperties;
+}
 
 function CaseScreenshotFrame({ image, decorative = false, loading }: {
-  image: ScreenImage;
+  image: ProjectImage;
   decorative?: boolean;
   loading?: 'lazy';
 }) {
   return (
-    <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}>
+    <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}
+      data-portrait={image.height > image.width ? '' : undefined}>
       <img {...image} alt={decorative ? '' : image.alt} loading={loading} draggable={false} />
     </span>
   );
+}
+
+function CaseCoverArtwork({ project, decorative = false }: { project: Project; decorative?: boolean }) {
+  if (project.coverImages?.length) {
+    return (
+      <span className="case-cover-frame case-cover-strip">
+        {project.coverImages.map((image) => (
+          <span className="case-cover-strip-item" key={image.src} style={screenshotSize(image)}>
+            <span className="case-cover-strip-image">
+              <img {...image} alt={decorative ? '' : image.alt} draggable={false} />
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  }
+  const image = project.screens?.[0]?.image;
+  return image ? <CaseScreenshotFrame image={image} decorative={decorative} /> : null;
 }
 
 export function ProjectsSection() {
@@ -140,7 +161,7 @@ export function ProjectsSection() {
             {item.screens ? item.screens.map(({ id, image }, index) => (
               <div key={id} className={index === 0 ? 'case-cover' : 'case-cover case-cover-secondary'}
                 data-cover={index === 0 ? item.id : undefined}>
-                <CaseScreenshotFrame image={image} />
+                {index === 0 ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
               </div>
             )) : (
               <>
@@ -239,7 +260,7 @@ export function ProjectsSection() {
                   transition(entry.id);
                 }}>
                   <span className="case-cover" data-cover={entry.id} aria-hidden="true">
-                    {entry.screens?.[0] && <CaseScreenshotFrame image={entry.screens[0].image} decorative />}
+                    <CaseCoverArtwork project={entry} decorative />
                   </span>
                   <span className="tile-side">
                     <span className="tile-copy">

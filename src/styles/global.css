@@ -98,16 +98,49 @@ h2 { font-size: 20px; line-height: 26px; font-weight: 600; }
 }
 .case-cover:has(> .case-cover-frame) { background: var(--color-cover-matte); }
 .case-cover-frame {
+  --case-frame-inset: 5%;
   position: absolute;
-  inset: 5%;
+  inset: var(--case-frame-inset);
   overflow: hidden;
 }
 .case-cover-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .case-cover-frame[data-cropped] {
+  inset-block-end: -1px;
+  inline-size: calc(100% - 2 * var(--case-frame-inset));
   border-radius: calc(var(--radius-card) / 2) calc(var(--radius-card) / 2) 0 0;
   background: #fff;
 }
 .case-cover-frame[data-cropped] img { height: auto; }
+.case-cover-frame[data-portrait] {
+  inset: 8%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.case-cover-frame[data-portrait] img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: calc(var(--radius-card) / 2);
+}
+.case-cover-strip {
+  display: flex;
+  justify-content: center;
+  gap: 3%;
+}
+.case-cover-strip-item {
+  height: 100%;
+  min-width: 0;
+  aspect-ratio: var(--screenshot-ratio);
+}
+.case-cover-strip-image {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  aspect-ratio: var(--screenshot-ratio);
+  border-radius: 12% / 5.4%;
+}
 [data-cover="dns"] { --cover: #272727; }
 [data-cover="vseinstrumenti"] { --cover: #333333; }
 [data-cover="preview"] { --cover: #292929; }
@@ -148,7 +181,7 @@ h2 { font-size: 20px; line-height: 26px; font-weight: 600; }
 .case-nav :is(a, button):hover { color: var(--color-text); }
 .case-body { display: grid; min-width: 0; gap: 32px; }
 .case-body[data-arrived="false"] { visibility: hidden; }
-.case-text { width: min(100%, var(--case-text-width)); margin-inline: auto; }
+.case-text, .case-content-section { width: min(100%, var(--case-text-width)); margin-inline: auto; }
 .case-text p { margin-top: 8px; color: var(--color-muted); }
 .case-content-section { display: grid; gap: 12px; }
 .case-body :is(h1, h2) { scroll-margin-top: 48px; }
@@ -164,7 +197,7 @@ h2 { font-size: 20px; line-height: 26px; font-weight: 600; }
   }
   .case-nav ul { display: grid; }
   .case-body { grid-column: 2 / -1; }
-  .case-text { margin-inline: 0; }
+  .case-text, .case-content-section { margin-inline: 0; }
 }
 .case-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .case-gallery button { border: 0; padding: 0; border-radius: var(--radius-card); background: transparent; cursor: zoom-in; }

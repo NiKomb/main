@@ -2,6 +2,9 @@ import dnsMain from './screens/portfolio-dns-main.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
 import viCourier from './screens/portfolio-vi-courier.webp';
 import viPickup from './screens/portfolio-vi-pickup.webp';
+import viCoverPickup from './screens/vi-cover-pickup.png';
+import viCoverCourier from './screens/vi-cover-courier.png';
+import viCoverCarrier from './screens/vi-cover-carrier.png';
 import dnsMotherboard from './screens/dns-motherboard.webp';
 import viHeavyDelivery from './screens/vi-heavy-delivery.webp';
 
@@ -12,18 +15,26 @@ export type ProjectLink = {
   href: `https://${string}`;
 };
 
+export type ProjectImage = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 export type Project = {
   id: string;
   title: string;
   summary: string;
   role?: string;
   cover?: { src: string; alt: string };
+  coverImages?: readonly ProjectImage[];
   tileIllustration?: string;
   screens?: readonly {
     id: string;
     title: string;
     description: string;
-    image: { src: string; alt: string; width: number; height: number };
+    image: ProjectImage;
   }[];
   links: readonly ProjectLink[];
 };
@@ -60,6 +71,11 @@ export const projects = [
     title: 'ВсеИнструменты',
     summary: 'Мобильный прототип выбора доставки тяжелых товаров.',
     tileIllustration: viHeavyDelivery,
+    coverImages: [
+      { src: viCoverPickup, alt: 'Самовывоз недоступен из-за веса заказа', width: 800, height: 1778 },
+      { src: viCoverCourier, alt: 'Оформление доставки курьером', width: 800, height: 1778 },
+      { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778 },
+    ],
     screens: [
       {
         id: 'vi-courier',
