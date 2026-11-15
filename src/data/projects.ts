@@ -1,5 +1,6 @@
 import dnsMain from './screens/portfolio-dns-main.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
+import dnsComparison from './screens/portfolio-dns-comparison.webp';
 import viCoverPickup from './screens/vi-cover-pickup.png';
 import viCoverCourier from './screens/vi-cover-courier.png';
 import viCoverCarrier from './screens/vi-cover-carrier.png';
@@ -19,6 +20,7 @@ export type ProjectImage = {
   width: number;
   height: number;
   roundedCorners?: boolean;
+  showFull?: boolean;
 };
 
 export type Project = {
@@ -61,16 +63,22 @@ export const projects = [
     tileIllustration: dnsMotherboard,
     screens: [
       {
-        id: 'dns-build',
-        title: 'Сборка ПК',
-        description: 'Сборка начинается с выбора категории. Счётчик показывает, сколько обязательных комплектующих уже добавлено',
-        image: { src: dnsMain, alt: 'Стартовый экран конфигуратора со списком категорий комплектующих', width: 4140, height: 2472 },
-      },
-      {
         id: 'dns-selection',
         title: 'Выбор процессора',
-        description: 'В каталоге видны цены и характеристики. Подходящий процессор можно добавить в сборку прямо из списка',
-        image: { src: dnsSelection, alt: 'Список процессоров в конфигураторе DNS', width: 4020, height: 2280 },
+        description: 'В каталоге можно отфильтровать совместимые процессоры, посмотреть цены и открыть обзоры',
+        image: { src: dnsSelection, alt: 'Модальное окно каталога процессоров с фильтрами, обзорами и карточками моделей', width: 4140, height: 2430 },
+      },
+      {
+        id: 'dns-build',
+        title: 'Сборка с двумя деталями',
+        description: 'Выбраны процессор и материнская плата. Справа видны стоимость сборки и рекомендованные статьи',
+        image: { src: dnsMain, alt: 'Конфигуратор ПК с выбранными процессором AMD Ryzen 7 7800X3D и материнской платой MSI B850 GAMING PLUS WIFI. Справа видны стоимость сборки и рекомендованные статьи', width: 4140, height: 3918 },
+      },
+      {
+        id: 'dns-gallery-comparison',
+        title: 'Сравнение процессоров',
+        description: 'В режиме «Только различия» видны цены и отличающиеся характеристики двух процессоров',
+        image: { src: dnsComparison, alt: 'Таблица сравнения AMD Ryzen 7 7800X3D и AMD Ryzen 7 9800X3D', width: 2688, height: 1590 },
       },
     ],
     links: [

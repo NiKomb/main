@@ -63,16 +63,15 @@ function CaseCoverArtwork({ project, decorative = false }: { project: Project; d
   return image ? <CaseScreenshotFrame image={image} decorative={decorative} /> : null;
 }
 
-function CaseScreenshot({ image, onOpen, fit }: {
+function CaseScreenshot({ image, onOpen }: {
   image: ProjectImage;
   onOpen: (trigger: HTMLButtonElement) => void;
-  fit?: boolean;
 }) {
   return (
     <button type="button" className="case-zoom-trigger case-screenshot" aria-label={`Увеличить: ${image.alt}`}
       onClick={(event) => onOpen(event.currentTarget)}>
       <span className="case-cover case-screenshot-media" style={screenshotSize(image)}
-        data-portrait-preview={image.height > image.width ? '' : undefined} data-fit={fit ? '' : undefined}>
+        data-portrait-preview={image.height > image.width ? '' : undefined} data-fit={image.showFull ? '' : undefined}>
         <CaseScreenshotFrame image={image} loading="lazy" />
       </span>
     </button>
@@ -282,26 +281,21 @@ export function ProjectsSection() {
               if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopCoverDrag(event);
             }}
             onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
-            {item.screens ? item.screens.map(({ id, description, image }, index) => {
+            {item.screens ? item.screens.map(({ id, image }, index) => {
               const primary = index === 0;
               const collage = primary && Boolean(item.coverImages?.length);
-              const preview = (
+              return (
                 <button key={id} type="button"
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
                   aria-label={collage ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`}
                   onClick={(event) => openMedia(event.currentTarget)}>
-                  <span className="case-cover case-screenshot-media" data-cover={primary ? item.id : undefined}
+                  <span className={`case-cover case-screenshot-media${isDns && primary ? ' dns-cover' : ''}`}
+                    data-cover={primary ? item.id : undefined}
                     style={collage ? undefined : screenshotSize(image)}>
                     {collage ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
                   </span>
                 </button>
               );
-              return isDns ? (
-                <figure key={id} className="dns-case-cover">
-                  {preview}
-                  <figcaption>{description}</figcaption>
-                </figure>
-              ) : preview;
             }) : (
               <>
                 <div className="case-cover" data-cover={item.id} aria-hidden="true" />
@@ -328,7 +322,7 @@ export function ProjectsSection() {
             <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading}
-                  renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} fit />} />
+                  renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : (
                 <>
                   <div className="case-text">
@@ -382,7 +376,7 @@ export function ProjectsSection() {
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
                   transition(entry.id);
                 }}>
-                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
+                  <span className={entry.id === 'dns' ? 'case-cover dns-cover' : 'case-cover'} data-cover={entry.id} aria-hidden="true">
                     <CaseCoverArtwork project={entry} decorative />
                   </span>
                   <span className="tile-side">

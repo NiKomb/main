@@ -101,7 +101,7 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
-  overflow: hidden;
+  overflow: clip;
   border-radius: var(--radius-card);
   background: var(--cover, #282828);
 }
@@ -114,16 +114,12 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 }
 .case-cover-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .case-cover-frame[data-cropped] {
-  inset-block-end: -1px;
-  inline-size: calc(100% - 2 * var(--case-frame-inset));
+  --case-frame-inset: 3%;
+  inset: 0 var(--case-frame-inset) -1px;
+  margin-block-start: var(--case-frame-inset);
   border-radius: calc(var(--radius-card) / 2) calc(var(--radius-card) / 2) 0 0;
-  background: #fff;
 }
 .case-cover-frame[data-cropped] img { height: auto; }
-.case-screenshot-media > .case-cover-frame[data-cropped] {
-  inset-block-end: auto;
-  max-height: calc(100% - var(--case-frame-inset));
-}
 .case-cover-frame[data-portrait] {
   inset: 8%;
   display: flex;
@@ -161,6 +157,9 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   border-radius: 12% / 5.4%;
 }
 [data-cover="dns"] { --cover: #272727; }
+.case-cover.dns-cover {
+  background: linear-gradient(90deg, rgb(252 133 7 / 50%), rgb(255 162 24 / 50%)) #fff;
+}
 [data-cover="vseinstrumenti"] { --cover: #333333; }
 [data-cover="preview"] { --cover: #292929; }
 .case-covers {
@@ -268,18 +267,16 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 .project-links { display: flex; flex-wrap: wrap; gap: 4px 24px; list-style: none; padding: 0; margin: 0; }
 .project-links a { display: inline-flex; align-items: center; min-height: 44px; }
 
-.dns-case-cover, .dns-case-figure { min-width: 0; margin: 0; }
-.dns-case-cover button, .dns-case-figure button { width: 100%; }
-.dns-case-cover figcaption, .dns-case-figure figcaption {
+.dns-case-figure { min-width: 0; margin: 0; }
+.dns-case-figure button { width: 100%; }
+.dns-case-figure figcaption {
   margin-top: 8px;
   color: var(--color-muted);
   font: var(--type-small) var(--font-body);
 }
 .case-screenshot-media[data-fit] > .case-cover-frame[data-cropped] {
-  --case-frame-inset: 3%;
-  inset: var(--case-frame-inset);
-  inline-size: auto;
-  background: transparent;
+  inset-block-end: 0;
+  margin-block-end: var(--case-frame-inset);
   border-radius: calc(var(--radius-card) / 2);
 }
 .case-screenshot-media[data-fit] .case-cover-frame img { height: 100%; }
