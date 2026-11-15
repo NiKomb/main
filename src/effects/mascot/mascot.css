@@ -138,6 +138,12 @@
   opacity: 0;
 }
 
+.mascot-viewport__actor[data-centered] {
+  position: fixed;
+  inset: auto auto -4px 50%;
+  transform: translateX(-50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mascot-viewport .mascot[data-pose] .mascot__sprite { animation: none; }
 }

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { DnsScenario } from '../components/DnsScenario';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { dnsCase, dnsDecisions, type CaseFact, type CaseFigure } from '../data/dnsCase';
@@ -10,6 +10,8 @@ import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivid
 type Props = {
   jumpToHeading: (id: string) => void;
   renderScreenshot: (image: ProjectImage) => ReactNode;
+  earlyFact: RefObject<HTMLLIElement | null>;
+  earlyFactBroken: boolean;
 };
 
 function renderCount({ count, label }: { count: number; label: string }) {
@@ -81,7 +83,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
   );
 }
 
-export function DnsCase({ jumpToHeading, renderScreenshot }: Props) {
+export function DnsCase({ jumpToHeading, renderScreenshot, earlyFact, earlyFactBroken }: Props) {
   const { research, summary, comparison, scenario, test } = dnsCase;
   const [started, assembled, saved] = test.stages;
 
@@ -177,7 +179,10 @@ export function DnsCase({ jumpToHeading, renderScreenshot }: Props) {
               <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
                 sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
               <ul className="dns-case-stages dns-case-facts" aria-label="Факт раннего теста">
-                {renderFact(comparison.iteration.fact)}
+                <li className="dns-case-fact" ref={earlyFact} data-rocket-broken={earlyFactBroken ? '' : undefined}>
+                  <h3>{comparison.iteration.fact.title}</h3>
+                  <p>{comparison.iteration.fact.detail}</p>
+                </li>
               </ul>
             </div>
           )}

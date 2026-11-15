@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
@@ -662,8 +662,10 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
   );
 }
 
-export function ViewportMascot() {
-  const actor = useRef<HTMLSpanElement>(null);
+export function ViewportMascot({ actorRef: actor, runOnHeadingId }: {
+  actorRef: RefObject<HTMLSpanElement | null>;
+  runOnHeadingId?: string;
+}) {
   const effects = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -673,19 +675,55 @@ export function ViewportMascot() {
     if (!layer || !canvas || !stage) return;
 
     const image = new Image();
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let entrance: ReturnType<typeof playGroundMovement>;
+    let run: Animation | undefined;
+    let headingAppeared = false;
     let started = false;
     let frame = 0;
+
+    const stopRunning = () => {
+      if (!run) return;
+      run.cancel();
+      run = undefined;
+      layer.dataset.pose = 'idle';
+    };
+
+    const runToCenter = () => {
+      if (!headingAppeared || document.hidden || layer.dataset.pose !== 'idle' || layer.hasAttribute('data-centered')) return;
+      const { left, width } = layer.getBoundingClientRect();
+      const distance = innerWidth / 2 - (left + width / 2);
+      layer.dataset.centered = '';
+      if (reducedMotion.matches || !distance || typeof layer.animate !== 'function') return;
+
+      layer.dataset.direction = distance < 0 ? 'left' : 'right';
+      layer.dataset.pose = 'run';
+      run = layer.animate([
+        { transform: `translateX(${-width / 2 - distance}px)` },
+        { transform: 'translateX(-50%)' },
+      ], { duration: Math.abs(distance) * 5 });
+      run.onfinish = stopRunning;
+    };
+
+    const heading = runOnHeadingId ? document.getElementById(runOnHeadingId) : null;
+    const observer = heading && new IntersectionObserver(([entry], source) => {
+      if (entry.intersectionRatio < .25) return;
+      source.disconnect();
+      headingAppeared = true;
+      runToCenter();
+    }, { threshold: .25 });
+    if (heading && observer) observer.observe(heading);
 
     const reveal = () => {
       layer.style.opacity = '1';
       layer.dataset.pose = 'idle';
+      runToCenter();
     };
 
     const appear = () => {
       if (started || document.hidden || !image.complete) return;
       started = true;
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (reducedMotion.matches) {
         reveal();
         return;
       }
@@ -700,10 +738,16 @@ export function ViewportMascot() {
       layer.dataset.visible = String(!document.hidden);
       if (!document.hidden) {
         queueAppear();
+        runToCenter();
       } else if (started) {
+        stopRunning();
         entrance?.cancel();
         reveal();
       }
+    };
+
+    const updateMotion = () => {
+      if (reducedMotion.matches) stopRunning();
     };
 
     function queueAppear() {
@@ -714,17 +758,22 @@ export function ViewportMascot() {
     image.addEventListener('load', queueAppear);
     image.addEventListener('error', queueAppear);
     document.addEventListener('visibilitychange', updateVisibility);
+    reducedMotion.addEventListener('change', updateMotion);
     image.src = rider;
     queueAppear();
 
     return () => {
+      observer && observer.disconnect();
+      stopRunning();
+      delete layer.dataset.centered;
       entrance?.cancel();
       cancelAnimationFrame(frame);
       image.removeEventListener('load', queueAppear);
       image.removeEventListener('error', queueAppear);
       document.removeEventListener('visibilitychange', updateVisibility);
+      reducedMotion.removeEventListener('change', updateMotion);
     };
-  }, []);
+  }, [actor, runOnHeadingId]);
 
   return (
     <div className="mascot-viewport" aria-hidden="true">
