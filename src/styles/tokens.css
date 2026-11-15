@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Departure Mono";
+  src: url("/fonts/departure-mono/DepartureMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   --color-background: #000000;
@@ -9,6 +17,12 @@
   --color-accent: #bdbdbd;
   --color-cover-matte: #f2f2f2;
   --font-body: Geist, system-ui, sans-serif;
+  --font-accent: "Departure Mono", ui-monospace, monospace;
+  --type-display: 32px/40px;
+  --type-section-heading: 20px/26px;
+  --type-subheading: 16px/22px;
+  --type-body: 15px/22px;
+  --type-small: 13px/20px;
   --radius-card: 12px;
   --content-width: 1280px;
   --case-text-width: 800px;
