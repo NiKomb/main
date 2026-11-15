@@ -18,7 +18,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId}>
-      <div className="case-cover dns-comparison-tile" style={style}>
+      <div className="case-cover dns-comparison-tile" data-media-gallery style={style}>
         <input className="dns-comparison-control" type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
           aria-valuetext={`Было — ${position}%, стало — ${100 - position}%`}
@@ -100,7 +100,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot }: Props) {
         </ol>
         <h3>{research.sessionsTitle}</h3>
         <p>{research.sessions}</p>
-        <div className="dns-case-frames" role="group" aria-label={research.framesTitle}>
+        <div className="dns-case-frames" data-media-gallery role="group" aria-label={research.framesTitle}>
           {research.frames.map(renderFigure)}
         </div>
         <h3>{research.conclusionTitle}</h3>
@@ -150,7 +150,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot }: Props) {
       <section className="case-content-section dns-case-section" aria-labelledby="dns-scenario">
         <h2 id="dns-scenario" tabIndex={-1}>{scenario.title}</h2>
         <p>{scenario.intro}</p>
-        <ol className="dns-case-frames" aria-labelledby="dns-scenario">
+        <ol className="dns-case-frames" data-media-gallery aria-labelledby="dns-scenario">
           {scenario.frames.map((frame) => <li key={frame.src}>{renderFigure(frame)}</li>)}
         </ol>
       </section>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { flushSync } from 'react-dom';
+import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsContents } from '../data/dnsCase';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
@@ -78,17 +79,30 @@ function CaseScreenshot({ image, onOpen }: {
   );
 }
 
+function showMedia(content: HTMLElement, source: HTMLElement) {
+  const media = source.cloneNode(true) as HTMLElement;
+  media.removeAttribute('data-cover');
+  media.style.removeProperty('visibility');
+  media.querySelector('img')?.removeAttribute('loading');
+  content.replaceChildren(media);
+  return media;
+}
+
+type Gallery = { slides: HTMLButtonElement[]; index: number; origin: HTMLButtonElement };
+
 export function ProjectsSection() {
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
   const [returnedFromCase, setReturnedFromCase] = useState(false);
   const [activeHeading, setActiveHeading] = useState(dnsContents[0].id);
   const [contentsVisible, setContentsVisible] = useState(false);
+  const [gallery, setGallery] = useState<Gallery | null>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const dialogContent = useRef<HTMLDivElement>(null);
-  const galleryOrigin = useRef<HTMLButtonElement>(null);
+  const mediaSwipe = useRef<{ pointer: number; x: number; y: number } | null>(null);
+  const suppressMediaClick = useRef(false);
   const coverFlight = useRef<(() => void) | undefined>(undefined);
   const mediaFlight = useRef<(() => void) | undefined>(undefined);
   const coverDrag = useRef<{ pointer: number; x: number; scroll: number } | null>(null);
@@ -101,7 +115,7 @@ export function ProjectsSection() {
     coverDrag.current = null;
     coverFlight.current?.();
     mediaFlight.current?.();
-    if (dialog.current?.open) dialog.current.close();
+    if (dialog.current?.open) dismissMedia();
     const id = next ?? selected;
     const origin = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
     const flight = origin && createFlight(origin);
@@ -196,27 +210,60 @@ export function ProjectsSection() {
     const content = dialogContent.current;
     const source = trigger.firstElementChild;
     if (!viewer || !content || !(source instanceof HTMLElement)) return;
+    const slides = slidesInGallery(trigger);
+    const index = slides.indexOf(trigger);
+    if (index < 0) return;
     mediaFlight.current?.();
-    galleryOrigin.current = trigger;
     const flight = createFlight(source, source.hasAttribute('data-portrait-preview'));
-    const media = source.cloneNode(true) as HTMLElement;
-    media.removeAttribute('data-cover');
-    media.querySelector('img')?.removeAttribute('loading');
-    content.replaceChildren(media);
+    const media = showMedia(content, source);
+    setGallery({ slides, index, origin: trigger });
     viewer.showModal();
     mediaFlight.current = flight?.to(media, undefined, viewer);
   }
 
-  function closeMedia() {
-    const viewer = dialog.current;
-    const source = dialogContent.current?.firstElementChild;
-    const target = galleryOrigin.current?.firstElementChild;
-    if (!viewer?.open || !(source instanceof HTMLElement) || !(target instanceof HTMLElement)) return;
+  function moveMedia(direction: -1 | 1) {
+    const content = dialogContent.current;
+    if (!gallery || gallery.slides.length < 2 || !content) return;
+    const index = adjacentSlide(gallery.index, gallery.slides.length, direction);
+    const source = gallery.slides[index].firstElementChild;
+    if (!(source instanceof HTMLElement)) return;
     mediaFlight.current?.();
-    const flight = createFlight(source, source.hasAttribute('data-portrait-preview'));
-    viewer.close();
-    galleryOrigin.current?.focus({ preventScroll: true });
-    mediaFlight.current = flight?.to(target);
+    showMedia(content, source);
+    setGallery({ ...gallery, index });
+  }
+
+  function dismissMedia() {
+    dialog.current?.close();
+    dialogContent.current?.replaceChildren();
+    mediaSwipe.current = null;
+    suppressMediaClick.current = false;
+    setGallery(null);
+  }
+
+  function closeMedia() {
+    const content = dialogContent.current;
+    if (!dialog.current?.open || !gallery || !content) return;
+    mediaFlight.current?.();
+    const target = gallery.origin.firstElementChild;
+    if (!(target instanceof HTMLElement)) {
+      dismissMedia();
+      return;
+    }
+    const source = gallery.slides[gallery.index] === gallery.origin ? content.firstElementChild : showMedia(content, target);
+    const flight = source instanceof HTMLElement && createFlight(source, source.hasAttribute('data-portrait-preview'));
+    dismissMedia();
+    gallery.origin.focus({ preventScroll: true });
+    mediaFlight.current = flight ? flight.to(target) : undefined;
+  }
+
+  function finishMediaSwipe(event: PointerEvent<HTMLDivElement>) {
+    const start = mediaSwipe.current;
+    mediaSwipe.current = null;
+    if (!start || start.pointer !== event.pointerId) return;
+    const direction = swipeDirection(event.clientX - start.x, event.clientY - start.y);
+    if (!direction) return;
+    suppressMediaClick.current = true;
+    moveMedia(direction);
   }
 
   function stopCoverDrag(event: PointerEvent<HTMLDivElement>) {
@@ -252,8 +299,8 @@ export function ProjectsSection() {
       aria-labelledby={item ? 'projects-heading' : undefined}
       aria-label={item ? undefined : 'Кейсы'} tabIndex={-1}>
       {item ? (
-        <article className={isDns ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
-          <div className="case-covers" key={item.id} role="region" aria-label="Обложки кейса" tabIndex={0}
+        <article key={item.id} className={isDns ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
+          <div className="case-covers" data-media-gallery role="region" aria-label="Обложки кейса" tabIndex={0}
             onPointerDown={(event) => {
               if (event.pointerType !== 'mouse' || event.button !== 0) return;
               const strip = event.currentTarget;
@@ -340,9 +387,9 @@ export function ProjectsSection() {
                   ))}
                   {!item.screens && <section className="case-content-section" aria-labelledby="case-gallery-heading">
                     <h2 id="case-gallery-heading" className="case-text" tabIndex={-1}>Интерфейсы</h2>
-                    <div className="case-gallery">
+                    <div className="case-gallery" data-media-gallery>
                       {[1, 2].map((number) => (
-                        <button type="button" key={number} aria-label={`Увеличить изображение ${number}`}
+                        <button type="button" key={number} className="case-zoom-trigger" aria-label={`Увеличить изображение ${number}`}
                           onClick={(event) => openMedia(event.currentTarget)}>
                           <span className="gallery-media" data-media={number} />
                         </button>
@@ -363,7 +410,7 @@ export function ProjectsSection() {
               )}
             </div>
           </div>
-          <ViewportMascot key={item.id} />
+          <ViewportMascot />
         </article>
       ) : (
         <>
@@ -398,9 +445,35 @@ export function ProjectsSection() {
       )}
       <dialog ref={dialog} className="case-dialog" aria-label="Просмотр изображения"
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          moveMedia(event.key === 'ArrowLeft' ? -1 : 1);
+        }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
         <button type="button" className="gallery-close" onClick={closeMedia}>Закрыть ×</button>
         <div ref={dialogContent} className="gallery-media-full" />
+        {gallery && gallery.slides.length > 1 && (
+          <>
+            <div className="gallery-navigation"
+              onPointerDown={(event) => {
+                suppressMediaClick.current = false;
+                mediaSwipe.current = event.isPrimary && event.pointerType === 'touch'
+                  ? { pointer: event.pointerId, x: event.clientX, y: event.clientY } : null;
+              }}
+              onPointerUp={finishMediaSwipe}
+              onPointerCancel={() => { mediaSwipe.current = null; }}
+              onClickCapture={(event) => {
+                if (!suppressMediaClick.current || event.detail === 0) return;
+                suppressMediaClick.current = false;
+                event.stopPropagation();
+              }}>
+              <button type="button" className="gallery-previous" aria-label="Предыдущий скриншот" onClick={() => moveMedia(-1)} />
+              <button type="button" className="gallery-next" aria-label="Следующий скриншот" onClick={() => moveMedia(1)} />
+            </div>
+            <span role="status" className="gallery-position">Кадр {gallery.index + 1} из {gallery.slides.length}</span>
+          </>
+        )}
       </dialog>
     </section>
   );
