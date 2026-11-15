@@ -107,7 +107,6 @@
   animation: mascot-run-cels 280ms steps(8, end) infinite;
 }
 
-.mascot[data-pose="coast"] .mascot__sprite { background-position: -144px -72px; }
 
 @keyframes mascot-run-cels {
   from { background-position: 0 -72px; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { projects, type Project } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
@@ -17,7 +17,7 @@ function readCase() {
 export function ProjectsSection() {
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
-  const [homeMascot, setHomeMascot] = useState<'initial' | 'return' | 'route'>('initial');
+  const [returnedFromCase, setReturnedFromCase] = useState(false);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -27,8 +27,6 @@ export function ProjectsSection() {
   const mediaFlight = useRef<(() => void) | undefined>(undefined);
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
-  const resumeMascotRoute = useCallback(() => setHomeMascot('route'), []);
-
   function transition(next: string | null) {
     const element = section.current;
     if (!element || selected === next) return;
@@ -40,7 +38,7 @@ export function ProjectsSection() {
     flushSync(() => {
       setSelected(next);
       setArrived(!flight);
-      if (!next) setHomeMascot('return');
+      if (!next) setReturnedFromCase(true);
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
     if (next) {
@@ -170,11 +168,7 @@ export function ProjectsSection() {
                 </a>
               </article>
             ))}
-            {homeMascot === 'return' ? (
-              <ViewportMascot onScrollAfterArrival={resumeMascotRoute} />
-            ) : (
-              <Mascot resumeRoute={homeMascot === 'route'} />
-            )}
+            <Mascot resumeRoute={returnedFromCase} />
           </div>
         </>
       )}
