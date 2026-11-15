@@ -14,6 +14,20 @@ function readCase() {
   return window.location.hash.startsWith('#case-') && cases.some((item) => item.id === id) ? id : null;
 }
 
+type ScreenImage = NonNullable<Project['screens']>[number]['image'];
+
+function CaseScreenshotFrame({ image, decorative = false, loading }: {
+  image: ScreenImage;
+  decorative?: boolean;
+  loading?: 'lazy';
+}) {
+  return (
+    <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}>
+      <img {...image} alt={decorative ? '' : image.alt} loading={loading} draggable={false} />
+    </span>
+  );
+}
+
 export function ProjectsSection() {
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
@@ -42,7 +56,7 @@ export function ProjectsSection() {
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
     if (next) {
-      element.scrollIntoView({ block: 'start', behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
       caseBack.current?.focus({ preventScroll: true });
     } else {
       window.scrollTo({ top: scrollPoint.current, behavior: 'instant' });
@@ -86,7 +100,9 @@ export function ProjectsSection() {
     mediaFlight.current?.();
     galleryOrigin.current = trigger;
     const flight = createFlight(source);
-    target.dataset.media = source.dataset.media;
+    target.dataset.media = source.dataset.media ?? '';
+    const screenshot = source.querySelector('img');
+    target.replaceChildren(...(screenshot ? [screenshot.cloneNode()] : []));
     viewer.showModal();
     mediaFlight.current = flight?.to(target, undefined, viewer);
   }
@@ -109,39 +125,105 @@ export function ProjectsSection() {
       aria-label={item ? undefined : 'Кейсы'} tabIndex={-1}>
       {item ? (
         <article data-section-id={`project-${item.id}`}>
-          <div className="case-nav">
-            <a ref={caseBack} href="#projects" onClick={(event) => {
-              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-              event.preventDefault();
-              if (history.state?.fromCaseList) history.back();
-              else {
-                history.replaceState(null, '', '#projects');
-                transition(null);
+          <div className="case-covers" key={item.id} role="region" aria-label="Обложки кейса" tabIndex={0}
+            onPointerDown={(event) => {
+              if (event.pointerType !== 'mouse' || event.button !== 0) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              event.currentTarget.dataset.dragging = '';
+            }}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.scrollLeft -= event.movementX;
               }
-            }}>← К кейсам</a>
+            }}
+            onLostPointerCapture={(event) => { delete event.currentTarget.dataset.dragging; }}>
+            {item.screens ? item.screens.map(({ id, image }, index) => (
+              <div key={id} className={index === 0 ? 'case-cover' : 'case-cover case-cover-secondary'}
+                data-cover={index === 0 ? item.id : undefined}>
+                <CaseScreenshotFrame image={image} />
+              </div>
+            )) : (
+              <>
+                <div className="case-cover" data-cover={item.id} aria-hidden="true" />
+                <div className="case-cover case-cover-secondary" aria-hidden="true" />
+              </>
+            )}
           </div>
-          <div className="case-covers" aria-hidden="true">
-            <div className="case-cover" data-cover={item.id} />
-            <div className="case-cover case-cover-secondary" />
-          </div>
-          <div className="case-body" data-arrived={arrived}>
-            <h1 id="projects-heading">{item.title}</h1>
-            <div className="case-skeleton" aria-hidden="true"><span /><span /><span /></div>
-            <div className="case-gallery" aria-label="Галерея">
-              {[1, 2].map((number) => (
-                <button type="button" key={number} aria-label={`Увеличить изображение ${number}`}
-                  onClick={(event) => openMedia(event.currentTarget)}>
-                  <span className="gallery-media" data-media={number} />
-                </button>
-              ))}
-            </div>
-            {item.links.length > 0 && (
-              <ul className="project-links" aria-label={`Материалы: ${item.title}`}>
-                {item.links.map((link) => (
-                  <li key={link.id}><a href={link.href} data-track-id={link.id}>{link.label}</a></li>
+          <div className="case-layout">
+            <nav className="case-nav" aria-label="Навигация по кейсу">
+              <a ref={caseBack} href="#projects" onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                if (history.state?.fromCaseList) history.back();
+                else {
+                  history.replaceState(null, '', '#projects');
+                  transition(null);
+                }
+              }}>← К кейсам</a>
+              <p>Содержание</p>
+              <ul>
+                {[
+                  { id: 'projects-heading', label: 'Обзор' },
+                  ...(item.screens?.map((screen) => ({ id: screen.id, label: screen.title })) ??
+                    [{ id: 'case-gallery-heading', label: 'Интерфейсы' }]),
+                  ...(item.links.length ? [{ id: 'case-materials-heading', label: 'Материалы' }] : []),
+                ].map(({ id, label }) => (
+                  <li key={id}>
+                    <button type="button" onClick={() => {
+                      const heading = document.getElementById(id);
+                      heading?.focus({ preventScroll: true });
+                      heading?.scrollIntoView({ block: 'start' });
+                    }}>{label}</button>
+                  </li>
                 ))}
               </ul>
-            )}
+            </nav>
+            <div className="case-body" data-arrived={arrived}>
+              <div className="case-text">
+                <h1 id="projects-heading" tabIndex={-1}>{item.title}</h1>
+                <p>{item.summary}</p>
+              </div>
+              {item.screens?.map(({ id, title, description, image }) => {
+                const portrait = image.height > image.width;
+                return (
+                  <section className="case-content-section" key={id} aria-labelledby={id}>
+                    <div className="case-text">
+                      <h2 id={id} tabIndex={-1}>{title}</h2>
+                      <p>{description}</p>
+                    </div>
+                    <button type="button" className="case-screenshot case-text" aria-label={`Увеличить: ${image.alt}`}
+                      data-portrait={portrait ? '' : undefined}
+                      onClick={(event) => openMedia(event.currentTarget)}>
+                      <span className="case-cover"
+                        style={portrait ? { aspectRatio: `${image.width} / ${image.height}` } : undefined}>
+                        <CaseScreenshotFrame image={image} loading="lazy" />
+                      </span>
+                    </button>
+                  </section>
+                );
+              })}
+              {!item.screens && <section className="case-content-section" aria-labelledby="case-gallery-heading">
+                <h2 id="case-gallery-heading" className="case-text" tabIndex={-1}>Интерфейсы</h2>
+                <div className="case-gallery">
+                  {[1, 2].map((number) => (
+                    <button type="button" key={number} aria-label={`Увеличить изображение ${number}`}
+                      onClick={(event) => openMedia(event.currentTarget)}>
+                      <span className="gallery-media" data-media={number} />
+                    </button>
+                  ))}
+                </div>
+              </section>}
+              {item.links.length > 0 && (
+                <section className="case-content-section case-text" aria-labelledby="case-materials-heading">
+                  <h2 id="case-materials-heading" tabIndex={-1}>Материалы</h2>
+                  <ul className="project-links">
+                    {item.links.map((link) => (
+                      <li key={link.id}><a href={link.href} data-track-id={link.id}>{link.label}</a></li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
           </div>
           <ViewportMascot key={item.id} />
         </article>
@@ -156,14 +238,18 @@ export function ProjectsSection() {
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
                   transition(entry.id);
                 }}>
-                  <span className="case-cover" data-cover={entry.id} aria-hidden="true" />
+                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
+                    {entry.screens?.[0] && <CaseScreenshotFrame image={entry.screens[0].image} decorative />}
+                  </span>
                   <span className="tile-side">
                     <span className="tile-copy">
                       <span className="tile-arrow" aria-hidden="true">↗</span>
                       <strong>{entry.title}</strong>
                       <span className="tile-summary">{entry.summary}</span>
                     </span>
-                    <span className="tile-preview" aria-hidden="true" />
+                    <span className="tile-preview" aria-hidden="true">
+                      {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
+                    </span>
                   </span>
                 </a>
               </article>
@@ -176,7 +262,7 @@ export function ProjectsSection() {
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
         <button type="button" className="gallery-close" onClick={closeMedia}>Закрыть ×</button>
-        <div ref={dialogMedia} className="gallery-media gallery-media-full" aria-hidden="true" />
+        <div ref={dialogMedia} className="gallery-media gallery-media-full" />
       </dialog>
     </section>
   );

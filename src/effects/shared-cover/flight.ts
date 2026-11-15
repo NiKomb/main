@@ -1,11 +1,21 @@
 export function createFlight(source: HTMLElement) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches || typeof source.animate !== 'function') return;
+  if (typeof source.animate !== 'function') return;
 
   const start = source.getBoundingClientRect();
   if (start.width === 0 || start.height === 0) return;
 
-  const image = source.cloneNode(false) as HTMLElement;
+  const image = source.cloneNode(true) as HTMLElement;
   image.setAttribute('aria-hidden', 'true');
+  const screenshot = image.querySelector<HTMLImageElement>(':scope > img');
+  if (screenshot) {
+    Object.assign(screenshot.style, {
+      width: '100%',
+      height: '100%',
+      maxWidth: 'none',
+      maxHeight: 'none',
+      objectFit: 'contain',
+    });
+  }
   Object.assign(image.style, {
     position: 'fixed',
     margin: '0',
@@ -22,15 +32,26 @@ export function createFlight(source: HTMLElement) {
     discard: () => image.remove(),
     to(target: HTMLElement, onFinish?: () => void, container = document.body) {
       const end = target.getBoundingClientRect();
+      if (!end.width || !end.height) {
+        image.remove();
+        onFinish?.();
+        return;
+      }
       container.append(image);
       const visibility = target.style.visibility;
       target.style.visibility = 'hidden';
-      image.style.transformOrigin = 'top left';
       const animation = image.animate([
-        { transform: 'none' },
         {
-          transform: `translate(${end.left - start.left}px, ${end.top - start.top}px) scale(${end.width / start.width}, ${end.height / start.height})`,
-          borderRadius: `${parseFloat(getComputedStyle(target).borderRadius) * start.width / end.width}px`,
+          width: `${start.width}px`,
+          height: `${start.height}px`,
+          transform: 'none',
+          borderRadius: getComputedStyle(image).borderRadius,
+        },
+        {
+          width: `${end.width}px`,
+          height: `${end.height}px`,
+          transform: `translate(${end.left - start.left}px, ${end.top - start.top}px)`,
+          borderRadius: getComputedStyle(target).borderRadius,
         },
       ], { duration: 390, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' });
 

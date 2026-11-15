@@ -23,6 +23,7 @@ export function App() {
           </section>
         </div>
       </main>
+      <footer className="site-footer" aria-hidden="true" />
       <ViewportEdges />
     </>
   );
