@@ -11,6 +11,10 @@ a { color: inherit; text-underline-offset: .2em; }
 button { font: inherit; color: inherit; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 h1, h2, p { margin: 0; }
+:where(p, figcaption, dd, td, .tile-summary) {
+  text-align: start;
+  text-wrap: pretty;
+}
 h1 { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.035em; }
 h2 { font-size: 20px; line-height: 26px; font-weight: 600; }
 .page {

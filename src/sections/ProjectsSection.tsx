@@ -6,7 +6,7 @@ import { createFlight } from '../effects/shared-cover/flight';
 
 const cases: readonly Project[] = [
   ...projects,
-  { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта.', links: [] },
+  { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
 
 function readCase() {
