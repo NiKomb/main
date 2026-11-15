@@ -31,16 +31,44 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 56px;
 }
-.portfolio-avatar {
+.portfolio-profile {
   align-self: start;
   position: sticky;
   top: 48px;
+  display: grid;
+  gap: 20px;
+}
+.portfolio-profile-header {
+  display: grid;
+  gap: 12px;
+}
+.portfolio-profile h1 { text-wrap: balance; }
+.portfolio-profile p { max-inline-size: 34ch; }
+.portfolio-profile-identity { display: grid; gap: 2px; }
+.portfolio-profile-identity p { color: var(--color-muted); }
+.portfolio-profile-section { display: grid; gap: 6px; }
+.portfolio-profile-section h2 { color: var(--color-muted); font: var(--type-small) var(--font-accent); }
+.portfolio-experience, .portfolio-socials { margin: 0; padding: 0; list-style: none; }
+.portfolio-experience { display: grid; gap: 8px; }
+.portfolio-experience p { color: var(--color-muted); font: var(--type-small) var(--font-body); }
+.portfolio-socials { display: flex; gap: 8px; }
+.portfolio-socials li > :is(a, span) {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.portfolio-socials a:hover { background: var(--color-skeleton); }
+.portfolio-socials span { color: var(--color-muted); }
+.portfolio-avatar {
   border-radius: var(--radius-card);
   display: block;
 }
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
-.page:has(.projects[data-case-open]) > .portfolio-avatar { display: none; }
+.page:has(.projects[data-case-open]) > .portfolio-profile { display: none; }
 .page:has(.projects[data-case-open]) .intro { display: none; }
 .site-footer {
   width: min(var(--content-width), 100% - 64px);
@@ -680,7 +708,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
-  .portfolio-avatar { position: static; width: 56px; height: 56px; }
+  .portfolio-profile { position: static; gap: 16px; }
+  .portfolio-profile-header { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .portfolio-avatar { width: 56px; height: 56px; }
   .site-footer { width: calc(100% - 40px); }
   .page:has(.projects[data-case-open]) { width: calc(100% - 40px); }
   .case-covers {

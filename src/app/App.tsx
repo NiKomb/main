@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import pixelAvatar from '../data/pixel-avatar.webp';
+import { PortfolioProfile } from '../components/PortfolioProfile';
 import { site } from '../data/site';
 import { ViewportEdges } from '../effects/viewport-edges/ViewportEdges';
 import { ProjectsSection } from '../sections/ProjectsSection';
@@ -11,7 +11,7 @@ export function App() {
     <>
       <a className="skip-link" href="#projects">К кейсам</a>
       <main ref={page} className="page">
-        <img className="portfolio-avatar" src={pixelAvatar} width={88} height={88} alt="" />
+        <PortfolioProfile />
         <div className="portfolio-flow">
           <ProjectsSection page={page} />
           <section className="intro" aria-labelledby="about-title">
