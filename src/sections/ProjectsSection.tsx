@@ -419,9 +419,9 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       ) : (
         <>
           <div className="case-grid">
-            {cases.map((entry) => (
+            {projects.map((entry: Project) => (
               <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <a href={`#case-${entry.id}`} onClick={(event) => {
+                <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
                   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   event.preventDefault();
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
@@ -443,6 +443,19 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                 </a>
               </article>
             ))}
+            <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
+              <div className="tile-layout" aria-hidden="true">
+                <span className="case-cover" data-cover="preview" />
+                <span className="tile-side">
+                  <span className="tile-copy">
+                    <span className="tile-skeleton-line" />
+                    <span className="tile-skeleton-line" />
+                  </span>
+                  <span className="tile-preview" />
+                </span>
+              </div>
+              <span className="tile-status">скоро будет</span>
+            </article>
             <Mascot resumeRoute={returnedFromCase} />
           </div>
           <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
