@@ -7,6 +7,7 @@ import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { createFlight } from '../effects/shared-cover/flight';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
+import '../effects/case-pixels/case-pixels.css';
 
 const cases: readonly Project[] = [
   ...projects,

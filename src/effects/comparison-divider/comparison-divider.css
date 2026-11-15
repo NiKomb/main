@@ -1,0 +1,9 @@
+.dns-comparison-divider {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0;
+  left: var(--comparison-position);
+  height: 100%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
