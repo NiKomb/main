@@ -65,6 +65,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let introduction = !resumeRoute;
     let introScroll: number | undefined;
     let returnScroll: number | undefined;
+    let resumedAtTop = false;
     let plannedTarget: Stop | undefined;
     let pending: Stop[] = [];
     let activeSurface: Surface | undefined;
@@ -264,6 +265,25 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       return Math.max(surface.left, Math.min(surface.right, x));
     }
 
+    const resumeAtTop = () => {
+      if (!resumeRoute || narrowLayout || scrollY > 0 || resumedAtTop) return;
+      if (returnScroll === undefined && phase !== 'waiting' && phase !== 'blink') return;
+      resumedAtTop = true;
+      queueUpdate();
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && event.deltaY < 0) resumeAtTop();
+    };
+
+    const handleScrollKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key !== 'ArrowUp' && event.key !== 'PageUp' && event.key !== 'Home') return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.matches('input, select, textarea'))) return;
+      resumeAtTop();
+    };
+
     function sameStop(a: Stop | undefined, b: Stop) {
       return a?.surface.tile === b.surface.tile && a.edge === b.edge;
     }
@@ -371,6 +391,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         introduction = !resumeRoute;
         introScroll = undefined;
         returnScroll = undefined;
+        resumedAtTop = false;
         layer.hidden = true;
         hideSpeech();
       }
@@ -507,7 +528,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       currentStop = current;
       place(current.point);
       if (!visible) return;
-      if (returnScroll === window.scrollY) return;
+      if (returnScroll === window.scrollY && !resumedAtTop) return;
       returnScroll = undefined;
 
       const origin = routes.findIndex(({ landings }) => landings.some(({ surface }) => surface.tile === current.surface.tile));
@@ -592,6 +613,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       });
     }
     window.addEventListener('scroll', queueUpdate, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    window.addEventListener('keydown', handleScrollKey);
     window.addEventListener('resize', queueUpdate);
     actor.addEventListener('click', activate);
     actor.addEventListener('animationend', endAttack);
@@ -609,6 +632,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       resize.disconnect();
       layoutChanges.disconnect();
       window.removeEventListener('scroll', queueUpdate);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleScrollKey);
       window.removeEventListener('resize', queueUpdate);
       actor.removeEventListener('click', activate);
       actor.removeEventListener('animationend', endAttack);

@@ -7,7 +7,8 @@ body {
   background: var(--color-background);
   font: var(--type-body) var(--font-body);
 }
-a { color: inherit; text-underline-offset: .2em; }
+a { color: inherit; text-decoration: none; }
+:where(p, figcaption, dd, td) a { font-weight: 600; }
 button { font: inherit; color: inherit; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 h1, h2, h3, p { margin: 0; }
@@ -89,7 +90,7 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   gap: 24px;
   border-radius: var(--radius-card);
 }
-.case-tile a { text-decoration: none; cursor: url('./open-case-cursor.svg') 30 10, pointer; }
+.case-tile a { cursor: url('./open-case-cursor.svg') 30 10, pointer; }
 .case-tile:nth-child(even) .tile-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
 .case-tile:nth-child(even) .tile-side { order: -1; }
 .tile-side { display: grid; grid-template-rows: 1fr 1fr; gap: 24px; }
@@ -263,13 +264,13 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 .case-nav :is(a, button):hover { color: var(--color-text); }
 .case-back { min-width: 44px; justify-content: center; }
 .pixel-chevron { position: relative; width: 9px; height: 15px; }
-.dns-case-jump {
+:is(.project-links a, .dns-case-jump, .skip-link) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 .pixel-chevron::before,
-.dns-case-jump::after {
+:is(.project-links a, .dns-case-jump, .skip-link)::after {
   width: 3px;
   height: 3px;
   background: currentColor;
@@ -277,13 +278,13 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   content: "";
 }
 .pixel-chevron::before { position: absolute; top: 6px; left: 0; }
-.dns-case-jump::after {
+:is(.project-links a, .dns-case-jump, .skip-link)::after {
   flex: none;
   margin-inline-start: 6px;
   color: var(--color-muted);
   transform: scaleX(-1);
 }
-.dns-case-jump:is(:hover, :focus-visible)::after { color: inherit; }
+:is(.project-links a, .dns-case-jump, .skip-link):is(:hover, :focus-visible)::after { color: inherit; }
 .case-body { display: grid; min-width: 0; gap: 32px; }
 .case-body[data-arrived="false"] { visibility: hidden; }
 .case-text, .case-content-section { width: min(100%, var(--case-text-width)); margin-inline: auto; }
@@ -384,7 +385,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   white-space: nowrap;
 }
 .project-links { display: flex; flex-wrap: wrap; gap: 4px 24px; list-style: none; padding: 0; margin: 0; }
-.project-links a { display: inline-flex; align-items: center; min-height: 44px; }
+.project-links a { min-height: 44px; }
 
 .dns-case-figure { min-width: 0; margin: 0; }
 .dns-case-figure button { width: 100%; }
