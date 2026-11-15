@@ -84,6 +84,46 @@
   image-rendering: pixelated;
 }
 
+.mascot-speech {
+  position: absolute;
+  z-index: 2;
+  left: var(--speech-alignment);
+  inline-size: max-content;
+  max-inline-size: min(100%, 680px);
+  padding: 7px 10px;
+  border: 1px solid var(--color-muted);
+  border-radius: 8px;
+  background: #171717;
+  color: var(--color-text);
+  font: 11px/16px var(--font-accent);
+  text-transform: uppercase;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  translate: calc(0% - var(--speech-alignment)) var(--speech-offset, 0%);
+  pointer-events: none;
+}
+.mascot-speech[data-above="true"] { --speech-offset: -100%; }
+
+.mascot-speech__caret {
+  display: inline-block;
+  inline-size: 5px;
+  block-size: 8px;
+  margin-inline-start: 2px;
+  background: currentColor;
+}
+
+.mascot-speech__transcript {
+  position: absolute;
+  inset: 0 auto auto 0;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .mascot-viewport {
   position: fixed;
   right: 0;
@@ -99,6 +139,10 @@
   opacity: 0;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .mascot-viewport .mascot[data-pose] .mascot__sprite { animation: none; }
+}
+
 .mascot[data-pose="run"] .mascot__sprite {
   animation: mascot-run-cels 480ms steps(8, end) infinite;
 }
@@ -107,6 +151,29 @@
   animation: mascot-run-cels 280ms steps(8, end) infinite;
 }
 
+.mascot__actor {
+  position: relative;
+  display: block;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.mascot__actor::after {
+  position: absolute;
+  inset: -15px;
+  content: '';
+}
+.mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: auto; }
+.mascot[data-pose="idle"][data-attacking] .mascot__sprite {
+  animation: mascot-attack 560ms steps(8, end);
+}
+
+@keyframes mascot-attack {
+  from { background-position: 0 -216px; }
+  to { background-position: -576px -216px; }
+}
 
 @keyframes mascot-run-cels {
   from { background-position: 0 -72px; }

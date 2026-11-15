@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, typ
 import { flushSync } from 'react-dom';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsContents } from '../data/dnsCase';
+import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { createFlight } from '../effects/shared-cover/flight';
@@ -370,6 +371,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               {!isDns && <p>Содержание</p>}
               {(!isDns || contentsVisible) && contentsList}
             </nav>
+            <ViewportMascot />
             <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading}
@@ -414,7 +416,6 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               )}
             </div>
           </div>
-          <ViewportMascot />
           {isDns && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
         </article>
       ) : (
@@ -442,6 +443,9 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                     </span>
                   </span>
                 </a>
+                {projectResults[`project-${entry.id}`] && (
+                  <p className="mascot-speech__transcript">{projectResults[`project-${entry.id}`]}</p>
+                )}
               </article>
             ))}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
@@ -457,7 +461,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               </div>
               <span className="tile-status">скоро будет</span>
             </article>
-            <Mascot resumeRoute={returnedFromCase} />
+            <Mascot resumeRoute={returnedFromCase} results={projectResults} />
           </div>
           <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
         </>

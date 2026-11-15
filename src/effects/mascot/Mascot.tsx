@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { playGroundMovement } from './ground-movement';
+import { MascotSpeech } from './MascotSpeech';
 import { selectNarrowCover } from './narrow-cover';
+import { speechPosition, type SpeechPosition } from './speech-position';
 import './mascot.css';
 
 const spriteWidth = 72;
@@ -14,22 +16,23 @@ const scrollThreshold = 96;
 const wideSurfaceWidth = 144;
 const minDashDistance = 72;
 const shortGapDistance = 72;
-const ascentWaypoints = new Map([
-  ['project-vseinstrumenti', { name: 'second-section-upper-edge', sectionX: 0.4 }],
-]);
-
-export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
+export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results: Readonly<Partial<Record<string, string>>> }) {
   const root = useRef<HTMLDivElement>(null);
+  const actorRef = useRef<HTMLButtonElement>(null);
   const effectsRef = useRef<HTMLCanvasElement>(null);
   const takeoffRef = useRef<HTMLSpanElement>(null);
+  const [speech, setSpeech] = useState<(SpeechPosition & { message: string }) | null>(null);
+  const [speechReplay, setSpeechReplay] = useState(0);
 
   useEffect(() => {
     const layer = root.current;
     const grid = layer?.parentElement;
-    if (!layer || !grid) return;
+    const actor = actorRef.current;
+    if (!layer || !grid || !actor) return;
 
     const sections = Array.from(grid.querySelectorAll('.case-tile'), (section) => ({
       element: section,
+      id: section.getAttribute('data-section-id'),
       cover: section.querySelector('.case-cover'),
       tiles: Array.from(section.querySelectorAll('.case-cover, .tile-copy, .tile-preview')),
     }));
@@ -44,14 +47,14 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       dashDistance: number;
     };
 
-    type Stop = { surface: Surface; edge: 'left' | 'landing' | 'right' | `ascent:${string}`; point: Point };
+    type Stop = { surface: Surface; edge: 'start' | 'landing' | 'finish' | 'left-finish'; point: Point };
 
     const lift = takeoffRef.current;
     const image = new Image();
     const narrow = matchMedia('(width < 1040px)');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let narrowLayout = narrow.matches;
-    let narrowTarget: Point | undefined;
+    let narrowTarget: (Point & { sectionId: string | null; surface: Surface }) | undefined;
     let frame = 0;
     let entrance: ReturnType<typeof playGroundMovement>;
     let motion: Animation | undefined;
@@ -62,12 +65,28 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
     let introduction = !resumeRoute;
     let introScroll: number | undefined;
     let returnScroll: number | undefined;
-    let plannedTarget: Element | undefined;
+    let plannedTarget: Stop | undefined;
     let pending: Stop[] = [];
     let activeSurface: Surface | undefined;
+    let censored = false;
 
     const place = (point: Point) => {
       layer.style.transform = `translate(${point.x}px, ${point.y}px)`;
+    };
+
+    function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null) {
+      const anchor = { x: point.x + spriteWidth / 2, top: point.y, bottom: point.y + footOffset };
+      const position = speechPosition(anchor, bounds, innerHeight, narrowLayout);
+      const message = censored ? '#@!%*?' : sectionId ? results[sectionId] : undefined;
+      const next = message && position ? { ...position, message } : null;
+      setSpeech((current) => current && next && current.message === next.message && current.y === next.y &&
+        current.alignment === next.alignment && current.above === next.above ? current : next);
+    }
+
+    const hideSpeech = () => {
+      censored = false;
+      delete layer.dataset.attacking;
+      setSpeech(null);
     };
 
     function cancelMotion() {
@@ -218,16 +237,17 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       if (!layer) return;
       const { point: start, surface: from } = current;
       const into = next.surface;
+      const fixedLanding = next.edge !== 'landing';
       let takeoffX = start.x;
       if (from.canDash) {
-        takeoffX = next.edge === 'right' ? onSurface(next.point.x, from) : forward ? from.right : from.left;
+        takeoffX = fixedLanding ? onSurface(next.point.x, from) : forward ? from.right : from.left;
       }
       const approach = onSurface(takeoffX, into);
       if (from.canDash || Math.abs(takeoffX - approach) > shortGapDistance) {
         takeoffX = onSurface(approach, from);
       }
       const takeoff = { x: takeoffX, y: from.y };
-      const landingX = next.edge === 'right' && !into.canDash &&
+      const landingX = fixedLanding && !into.canDash &&
         Math.abs(next.point.x - takeoff.x) <= shortGapDistance ? next.point.x : onSurface(takeoff.x, into);
       const landing = { x: landingX, y: into.y };
       if (next.edge === 'landing') next.point = landing;
@@ -244,36 +264,93 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       return Math.max(surface.left, Math.min(surface.right, x));
     }
 
+    function sameStop(a: Stop | undefined, b: Stop) {
+      return a?.surface.tile === b.surface.tile && a.edge === b.edge;
+    }
+
+    const activate = (event: MouseEvent) => {
+      if (layer.hidden || layer.dataset.visible !== 'true' || phase !== 'idle' || layer.hasAttribute('data-attacking')) return;
+      const point = narrowLayout ? narrowTarget : currentStop?.point;
+      const surface = narrowLayout ? narrowTarget?.surface : currentStop?.surface;
+      if (point && Math.random() < .4) {
+        censored = true;
+        if (!reducedMotion.matches) layer.dataset.attacking = '';
+        showSpeech(point, grid.getBoundingClientRect(), null);
+        setSpeechReplay((replay) => replay + 1);
+        return;
+      }
+      if (censored) {
+        hideSpeech();
+        queueUpdate();
+      }
+      if (!point || !surface || reducedMotion.matches) {
+        setSpeechReplay((replay) => replay + 1);
+        return;
+      }
+
+      const bounds = layer.getBoundingClientRect();
+      const offset = event.detail ? event.clientX - (bounds.left + bounds.width / 2) : 0;
+      const moreRoomOnRight = surface.right - point.x > point.x - surface.left;
+      const toRight = Math.abs(offset) < 2 ? moreRoomOnRight : offset < 0;
+      const endX = onSurface(point.x + (toRight ? 1 : -1) * surface.dashDistance, surface);
+      if (endX === point.x || !dashAlongCover(point, endX, () => {
+        moveHorizontally({ x: endX, y: point.y }, point.x, () => {
+          activeSurface = undefined;
+          settle(point);
+          queueUpdate();
+        });
+      })) {
+        setSpeechReplay((replay) => replay + 1);
+        return;
+      }
+
+      activeSurface = surface;
+      hideSpeech();
+    };
+
+    const endAttack = (event: AnimationEvent) => {
+      if (event.animationName === 'mascot-attack') delete layer.dataset.attacking;
+    };
+
     function updateNarrow(bounds: DOMRect, visible: boolean) {
       if (!layer) return;
-      const covers = sections.flatMap(({ cover }) => {
+      const covers = sections.flatMap(({ cover, id }) => {
         const box = cover?.getBoundingClientRect();
-        return box?.width ? [box] : [];
+        return cover && box?.width ? [{ cover, box, top: box.top, bottom: box.bottom, id }] : [];
       });
       const scrollLimit = document.documentElement.scrollHeight - innerHeight;
       const atBottom = scrollLimit > 0 && scrollY >= scrollLimit - 1;
       const next = visible && selectNarrowCover(covers, innerHeight, atBottom);
-      if (!next || !image.naturalWidth) {
+      if (!next || !image.complete) {
         cancelMotion();
         layer.hidden = true;
         narrowTarget = undefined;
+        hideSpeech();
         return;
       }
 
       const point = {
-        x: Math.round(next.left - bounds.left + (next.width - spriteWidth) / 2),
-        y: Math.round(next.top - bounds.top - footOffset),
+        x: Math.round(next.box.left - bounds.left + (next.box.width - spriteWidth) / 2),
+        y: Math.round(next.box.top - bounds.top - footOffset),
       };
-      if (narrowTarget?.x === point.x && narrowTarget.y === point.y &&
-        (!reducedMotion.matches || phase === 'idle')) return;
+      if (narrowTarget?.x === point.x && narrowTarget.y === point.y && narrowTarget.sectionId === next.id &&
+        (!reducedMotion.matches || phase === 'idle')) {
+        if (phase === 'idle') showSpeech(point, bounds, next.id);
+        return;
+      }
 
-      const start = layer.hidden || reducedMotion.matches ? undefined : layer.getBoundingClientRect();
+      const start = layer.hidden || reducedMotion.matches || !image.naturalWidth ? undefined : layer.getBoundingClientRect();
       cancelMotion();
-      narrowTarget = point;
+      narrowTarget = { ...point, sectionId: next.id, surface: readSurface(next.cover, bounds, next.box, minDashDistance) };
+      hideSpeech();
       if (start) {
-        leap({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => settle(point));
+        leap({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => {
+          settle(point);
+          queueUpdate();
+        });
       } else {
         settle(point);
+        showSpeech(point, bounds, next.id);
       }
     }
 
@@ -282,6 +359,7 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       const bounds = grid.getBoundingClientRect();
       const visible = bounds.bottom > 0 && bounds.top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
+      if (!visible) hideSpeech();
 
       if (narrowLayout !== narrow.matches) {
         cancelMotion();
@@ -294,6 +372,7 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
         introScroll = undefined;
         returnScroll = undefined;
         layer.hidden = true;
+        hideSpeech();
       }
       if (narrowLayout) {
         updateNarrow(bounds, visible);
@@ -301,8 +380,8 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       }
 
       const stops: Stop[] = [];
-      const routes: { element: Element; top: number; landings: Stop[]; finish: Stop; ascentWaypoint?: Stop }[] = [];
-      for (const { element, tiles } of sections) {
+      const routes: { id: string | null; top: number; landings: Stop[]; finish: Stop; leftFinish?: Stop }[] = [];
+      for (const { element, id, tiles } of sections) {
         const section = element.getBoundingClientRect();
         const visibleTiles = tiles.map((tile) => ({ tile, box: tile.getBoundingClientRect() }))
           .filter(({ box }) => box.width && box.height);
@@ -317,55 +396,60 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
         const inset = Math.min(sectionEdgeInset, section.width / 2);
         const startLimit = Math.round(section.left - bounds.left - spriteWidth / 2 + inset);
         const finishX = Math.round(section.right - bounds.left - spriteWidth / 2 - inset);
+        const lowerTile = id === 'project-preview' ? surfaces.find(({ tile }) => tile.classList.contains('tile-preview')) : undefined;
+        const finishSurface = lowerTile ?? rightmost;
         const finish: Stop = {
-          surface: rightmost,
-          edge: 'right',
-          point: { x: onSurface(finishX, rightmost), y: rightmost.y },
+          surface: finishSurface,
+          edge: 'finish',
+          point: {
+            x: lowerTile ? Math.round((lowerTile.left + lowerTile.right) / 2) : onSurface(finishX, finishSurface),
+            y: finishSurface.y,
+          },
         };
         const landings: Stop[] = surfaces.map((surface) => ({
           surface, edge: 'landing', point: { x: surface.left, y: surface.y },
         }));
-        const waypoint = ascentWaypoints.get(element.getAttribute('data-section-id') ?? '');
-        let ascentWaypoint: Stop | undefined;
-        if (waypoint) {
-          const x = Math.round(section.left + section.width * waypoint.sectionX - bounds.left - spriteWidth / 2);
-          const topY = Math.min(...surfaces.map(({ y }) => y));
-          const surface = surfaces.filter(({ y }) => y === topY).reduce((best, candidate) => (
-            Math.abs(x - onSurface(x, candidate)) < Math.abs(x - onSurface(x, best)) ? candidate : best
-          ));
-          ascentWaypoint = {
+        let leftFinish: Stop | undefined;
+        if (id === 'project-preview') {
+          const surface = surfaces.find(({ tile }) => tile.classList.contains('case-cover')) ?? surfaces[0];
+          leftFinish = {
             surface,
-            edge: `ascent:${waypoint.name}`,
-            point: { x: onSurface(x, surface), y: topY },
+            edge: 'left-finish',
+            point: { x: onSurface(startLimit, surface), y: surface.y },
           };
-          stops.push(ascentWaypoint);
+          stops.push(leftFinish);
         }
         if (!routes.length) {
           const surface = surfaces.find(({ tile }) => tile.classList.contains('tile-copy')) ?? surfaces[0];
           const center = Math.round((surface.left + surface.right) / 2);
           const startX = Math.max(startLimit, Math.min(finishX, center));
           stops.push({
-            surface, edge: 'left', point: { x: onSurface(startX, surface), y: surface.y },
+            surface, edge: 'start', point: { x: onSurface(startX, surface), y: surface.y },
           });
         }
         stops.push(...landings, finish);
-        routes.push({ element, top: section.top, landings, finish, ascentWaypoint });
+        routes.push({ id, top: section.top, landings, finish, leftFinish });
       }
       if (!routes.length) {
         cancelMotion();
         currentStop = undefined;
         layer.hidden = true;
+        hideSpeech();
         return;
       }
 
       const scrollLimit = document.documentElement.scrollHeight - innerHeight;
       const atBottom = scrollLimit > 0 && scrollY >= scrollLimit - 1;
-      const upcoming = atBottom ? undefined : routes.findIndex((route) => route.top > scrollThreshold);
-      const scrollTarget = upcoming !== undefined && upcoming >= 0 ? upcoming : routes.length - 1;
       const holdIntroFinish = introScroll !== undefined && window.scrollY === introScroll;
-      const target = introduction || holdIntroFinish ? Math.min(1, routes.length - 1) : scrollTarget;
       if (!holdIntroFinish) introScroll = undefined;
+      let caseIndex = 0;
+      if (!introduction && !holdIntroFinish && routes.length === 3 && scrollY > 0) {
+        if (atBottom) caseIndex = 2;
+        else if (routes[1].top <= scrollThreshold) caseIndex = 1;
+      }
+      const target = Math.min(caseIndex + 1, routes.length - 1);
       const targetRoute = routes[target];
+      const targetFinish = caseIndex === 1 ? targetRoute.leftFinish ?? targetRoute.finish : targetRoute.finish;
 
       if (!currentStop) {
         if (!visible || !image.complete) return;
@@ -398,12 +482,10 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
         return;
       }
 
-      const currentIndex = stops.findIndex(({ surface, edge }) => (
-        surface.tile === currentStop?.surface.tile && edge === currentStop.edge
-      ));
+      const currentIndex = stops.findIndex((stop) => sameStop(currentStop, stop));
       const current = stops[currentIndex] ??
         stops.find(({ surface, edge }) => surface.tile === currentStop?.surface.tile && edge === 'landing') ??
-        targetRoute.finish;
+        targetFinish;
       if (current.surface.tile === currentStop.surface.tile && current.edge === 'landing') {
         current.point.x = onSurface(currentStop.point.x - currentStop.surface.left + current.surface.left, current.surface);
       }
@@ -429,54 +511,58 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       returnScroll = undefined;
 
       const origin = routes.findIndex(({ landings }) => landings.some(({ surface }) => surface.tile === current.surface.tile));
-      if (plannedTarget !== targetRoute.element) {
+      if (!sameStop(plannedTarget, targetFinish)) {
         pending = [];
-        plannedTarget = targetRoute.element;
+        plannedTarget = targetFinish;
       }
 
       if (!pending.length) {
-        if (introduction && origin === 0 && current.edge === 'left') {
+        if (introduction && origin === 0 && current.edge === 'start') {
           const preview = routes[0].landings.find(({ surface }) => surface.tile.classList.contains('tile-preview'));
           if (preview) pending.push(preview);
         }
         if (origin < target) {
           const below = routes[origin + 1];
-          if (!introduction) {
-            const intermediate = below.landings.filter(({ surface }) => surface.tile !== below.finish.surface.tile);
+          const finish = origin + 1 === target ? targetFinish : below.finish;
+          if (!introduction && finish.edge !== 'left-finish') {
+            const intermediate = below.landings.filter(({ surface }) => surface.tile !== finish.surface.tile);
             pending.push(...intermediate.slice(0, -1));
           }
-          pending.push(below.finish);
+          pending.push(finish);
         } else if (origin > target) {
           const above = routes[origin - 1];
+          const finish = origin - 1 === target ? targetFinish : above.finish;
           const steps = above.landings.filter(({ surface }) => !surface.tile.classList.contains('case-cover'))
             .sort((a, b) => b.surface.y - a.surface.y);
-          const arrival = steps[0] ?? above.finish;
+          const arrival = steps[0] ?? finish;
           const gap = (surface: Surface) => Math.max(
             0, surface.left - arrival.surface.right, arrival.surface.left - surface.right,
           );
           const exit = routes[origin].landings.find(({ surface }) => surface.canDash && gap(surface) < gap(current.surface));
           if (exit) pending.push(exit);
-          pending.push(...steps, above.ascentWaypoint ?? above.finish);
-        } else if (current.edge !== 'right' && current.edge !== targetRoute.ascentWaypoint?.edge) {
-          pending.push(targetRoute.finish);
+          pending.push(...steps, finish);
+        } else if (!sameStop(current, targetFinish)) {
+          pending.push(targetFinish);
         } else {
           if (introduction) {
             introduction = false;
             introScroll = window.scrollY;
           }
+          showSpeech(current.point, bounds, routes[caseIndex].id);
           return;
         }
       }
 
       const next = pending.shift();
       if (!next) return;
-      const updated = stops.find(({ surface, edge }) => surface.tile === next.surface.tile && edge === next.edge);
+      const updated = stops.find((stop) => sameStop(next, stop));
       if (!updated) {
         queueUpdate();
         return;
       }
       const forward = origin <= target;
       currentStop = updated;
+      hideSpeech();
       const finish = () => {
         settle(updated.point);
         queueUpdate();
@@ -507,6 +593,9 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
     }
     window.addEventListener('scroll', queueUpdate, { passive: true });
     window.addEventListener('resize', queueUpdate);
+    actor.addEventListener('click', activate);
+    actor.addEventListener('animationend', endAttack);
+    actor.addEventListener('animationcancel', endAttack);
     reducedMotion.addEventListener('change', queueUpdate);
     document.addEventListener('visibilitychange', queueUpdate);
     image.addEventListener('load', queueUpdate);
@@ -521,23 +610,29 @@ export function Mascot({ resumeRoute }: { resumeRoute: boolean }) {
       layoutChanges.disconnect();
       window.removeEventListener('scroll', queueUpdate);
       window.removeEventListener('resize', queueUpdate);
+      actor.removeEventListener('click', activate);
+      actor.removeEventListener('animationend', endAttack);
+      actor.removeEventListener('animationcancel', endAttack);
       reducedMotion.removeEventListener('change', queueUpdate);
       document.removeEventListener('visibilitychange', queueUpdate);
       image.removeEventListener('load', queueUpdate);
       image.removeEventListener('error', queueUpdate);
     };
-  }, [resumeRoute]);
+  }, [resumeRoute, results]);
 
   return (
     <>
       <canvas className="mascot__movement" ref={effectsRef} aria-hidden="true" hidden />
       <span className="mascot__fx mascot__takeoff" ref={takeoffRef} aria-hidden="true" style={{ backgroundImage: `url(${takeoff})` }} />
-      <div className="mascot" ref={root} aria-hidden="true" hidden>
-        <span className="mascot__facing">
-          <span className="mascot__sprite" />
-          <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
-        </span>
+      <div className="mascot" ref={root} hidden>
+        <button type="button" className="mascot__actor" ref={actorRef} aria-label="Рывок маскота">
+          <span className="mascot__facing" aria-hidden="true">
+            <span className="mascot__sprite" />
+            <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
+          </span>
+        </button>
       </div>
+      {speech && <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech} />}
     </>
   );
 }
@@ -565,6 +660,10 @@ export function ViewportMascot() {
     const appear = () => {
       if (started || document.hidden || !image.complete) return;
       started = true;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        reveal();
+        return;
+      }
       const { offsetLeft: x, offsetTop: y } = layer;
       entrance = playGroundMovement(canvas, image, { x, y }, x, (_, opacity) => {
         layer.style.opacity = String(opacity);

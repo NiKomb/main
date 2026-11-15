@@ -100,6 +100,7 @@ export const dnsCase = {
   test: {
     title: 'Результаты UX-теста',
     intro: 'В тесте нужно было подобрать комплектующие до видеокарты включительно и сохранить сборку',
+    comparison: { opened: 12, withCatalog: 24 },
     stages: [
       { count: 26, label: 'Начали тест' },
       { count: 19, label: 'Подобрали пять деталей' },
@@ -198,7 +199,7 @@ export const dnsDecisions: readonly Decision[] = [
     signal: 'Открыли ли таблицу с двумя и более товарами',
     facts: [
       {
-        title: '12 из 24 открыли таблицу сравнения',
+        title: `${dnsCase.test.comparison.opened} из ${dnsCase.test.comparison.withCatalog} открыли таблицу сравнения`,
         detail: 'Среди прохождений с открытым каталогом. В таблице было два товара или больше',
       },
     ],

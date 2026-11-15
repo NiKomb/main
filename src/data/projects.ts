@@ -61,7 +61,7 @@ export const projects = [
     id: 'dns',
     title: 'DNS',
     summary: 'Конфигуратор ПК: выбор комплектующих и материалы исследования',
-    tileSummary: 'Сборка ПК',
+    tileSummary: 'Сравнение деталей для сборки ПК',
     tileIllustration: dnsMotherboard,
     screens: [
       {
@@ -94,7 +94,7 @@ export const projects = [
     id: 'vseinstrumenti',
     title: 'ВсеИнструменты',
     summary: 'Мобильный прототип выбора доставки тяжелых товаров',
-    tileSummary: 'Доставка тяжёлых товаров',
+    tileSummary: 'Выбор доставки тяжёлых товаров',
     tileIllustration: viHeavyDelivery,
     coverImages: [viPickupScreen, viCourierScreen],
     screens: [
