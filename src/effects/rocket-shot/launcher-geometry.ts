@@ -3,6 +3,16 @@ type Point = { x: number; y: number };
 const cellSize = 36;
 const idleHands = [[29, 20], [29, 21], [29, 21], [29, 20], [29, 20], [29, 20]];
 const runningHands = [[29, 19], [26, 19], [23, 22], [21, 21], [26, 17], [24, 18], [23, 22], [27, 19]];
+const flightDistance = [0, 8, 17, 27, 37, 50, 63, 77, 92, 108, 125, 144, 163, 184, 204, 225, 246];
+
+export function flightFrame(elapsedFrames: number) {
+  const last = flightDistance.length - 1;
+  const step = Math.min(elapsedFrames, last);
+  const index = Math.floor(step);
+  const next = Math.min(index + 1, last);
+  const distance = flightDistance[index] + (flightDistance[next] - flightDistance[index]) * (step - index);
+  return { index, progress: distance / flightDistance[last], arrived: step === last };
+}
 
 export function gripPoint(bounds: Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>,
   column: number, row: number, facingLeft: boolean): Point {

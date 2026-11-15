@@ -144,6 +144,12 @@
   transform: translateX(-50%);
 }
 
+.mascot-viewport__actor .mascot-speech { max-inline-size: min(100vw - 24px, 244px); }
+.mascot-viewport__actor:not([data-centered]) .mascot-speech {
+  left: 100%;
+  translate: -100% -100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mascot-viewport .mascot[data-pose] .mascot__sprite { animation: none; }
 }

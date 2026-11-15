@@ -11,8 +11,8 @@ import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
 import catalogArticlesAfter from './screens/dns-catalog-articles-after.webp';
 import articlePanelBefore from './screens/dns-article-panel-before.webp';
 import articlePanelAfter from './screens/dns-article-panel-after.webp';
-import hoverModalBefore from './screens/dns-hover-modal-before.webp';
-import hoverModalAfter from './screens/dns-hover-modal-after.webp';
+import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
+import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
 import journalRoute from './screens/dns-journal-route.webp';
 import flowAdd from './screens/dns-article-flow-add.webp';
 import flowCatalog from './screens/dns-article-flow-catalog.webp';
@@ -138,21 +138,21 @@ export const dnsCase = {
     ] as const,
     iteration: {
       title: 'Почему убрал сравнение по наведению',
-      text: 'В ранней версии нужно было включить режим и навести курсор на карточку. Тогда в ней появлялись отличия от детали, которая уже в сборке',
+      speech: 'В тесте никто не включил режим. Оставил сравнение через таблицу',
       fact: {
         title: '0 из 5 включили режим',
         detail: 'В раннем тесте его пользу оценить не удалось. В итоговом прототипе я оставил вход в таблицу из списка',
       },
       frames: [
         {
-          src: hoverModalBefore, width: 4140, height: 2430, label: 'Было',
-          alt: 'Обновлённая модалка каталога процессоров с фильтрами, статьями и обычной карточкой Ryzen 7 5700X',
-          caption: 'В обновлённой модалке видны плитка фильтров, блок статей и обычные характеристики Ryzen 7 5700X',
+          src: hoverModalWithSwitch, width: 4140, height: 2430, label: 'Было',
+          alt: 'Каталог с активным переключателем «Сравнение с AMD Ryzen 7 9800X3D» и карточкой Ryzen 7 5700X, показывающей различия',
+          caption: 'Включён переключатель «Сравнение с AMD Ryzen 7 9800X3D». При наведении карточка показывает отличия по сокету, частотам и тепловыделению',
         },
         {
-          src: hoverModalAfter, width: 4140, height: 2430, label: 'Стало',
-          alt: 'Та же модалка с активным переключателем «Сравнение с AMD Ryzen 7 9800X3D» и карточкой Ryzen 7 5700X, показывающей различия',
-          caption: 'Включён свитчер «Сравнение с AMD Ryzen 7 9800X3D». При наведении карточка показывает отличия по сокету, частотам и тепловыделению',
+          src: hoverModalWithoutSwitch, width: 4140, height: 2430, label: 'Стало',
+          alt: 'Тот же каталог без переключателя сравнения по наведению, с обычными характеристиками в карточке Ryzen 7 5700X',
+          caption: 'Переключатель убран. Карточка Ryzen 7 5700X показывает обычные характеристики',
         },
       ] as const,
     },

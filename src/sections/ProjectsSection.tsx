@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
-import { dnsContents } from '../data/dnsCase';
+import { dnsCase, dnsContents } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
-import { RocketShot } from '../effects/rocket-shot/RocketShot';
 import { createFlight } from '../effects/shared-cover/flight';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
@@ -102,8 +101,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [activeHeading, setActiveHeading] = useState(dnsContents[0].id);
   const [contentsVisible, setContentsVisible] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
-  const [earlyFactBroken, setEarlyFactBroken] = useState(false);
-  const earlyFact = useRef<HTMLLIElement>(null);
+  const [comparisonHit, setComparisonHit] = useState(false);
   const viewportMascot = useRef<HTMLSpanElement>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
@@ -132,6 +130,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       setSelected(next);
       setArrived(!flight);
       setContentsVisible(false);
+      setComparisonHit(false);
       if (!next) setReturnedFromCase(true);
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
@@ -375,10 +374,12 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               {!isDns && <p>Содержание</p>}
               {(!isDns || contentsVisible) && contentsList}
             </nav>
-            <ViewportMascot actorRef={viewportMascot} runOnHeadingId={isDns ? 'dns-comparison' : undefined} />
+            <ViewportMascot actorRef={viewportMascot} runOnHeadingId={isDns ? 'dns-comparison' : undefined}
+              message={isDns && comparisonHit ? dnsCase.comparison.iteration.speech : undefined} />
             <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
-                <DnsCase jumpToHeading={jumpToHeading} earlyFact={earlyFact} earlyFactBroken={earlyFactBroken}
+                <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
+                  onComparisonHit={setComparisonHit}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : (
                 <>
@@ -421,7 +422,6 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             </div>
           </div>
           {isDns && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
-          {isDns && arrived && <RocketShot target={earlyFact} actor={viewportMascot} onImpact={setEarlyFactBroken} />}
         </article>
       ) : (
         <>

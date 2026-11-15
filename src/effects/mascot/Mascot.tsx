@@ -662,9 +662,10 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
   );
 }
 
-export function ViewportMascot({ actorRef: actor, runOnHeadingId }: {
+export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
   actorRef: RefObject<HTMLSpanElement | null>;
   runOnHeadingId?: string;
+  message?: string;
 }) {
   const effects = useRef<HTMLCanvasElement>(null);
 
@@ -776,13 +777,15 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId }: {
   }, [actor, runOnHeadingId]);
 
   return (
-    <div className="mascot-viewport" aria-hidden="true">
-      <canvas className="mascot__movement" ref={effects} hidden />
-      <span className="mascot mascot-viewport__actor" data-pose="blink" data-visible="true" data-direction="left" ref={actor}>
+    <div className="mascot-viewport">
+      <canvas className="mascot__movement" ref={effects} aria-hidden="true" hidden />
+      <span className="mascot mascot-viewport__actor" aria-hidden="true" data-pose="blink" data-visible="true" data-direction="left" ref={actor}>
         <span className="mascot__facing">
           <span className="mascot__sprite" />
         </span>
+        {message && <MascotSpeech message={message} position={{ y: -8, alignment: 50, above: true }} duration={10000} />}
       </span>
+      <p className="mascot-speech__transcript" role="status">{message}</p>
     </div>
   );
 }

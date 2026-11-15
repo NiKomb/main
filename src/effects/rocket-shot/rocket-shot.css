@@ -8,4 +8,5 @@
   pointer-events: none;
 }
 
-.dns-case-fact[data-rocket-broken] { visibility: hidden; }
+.rocket-shot-caption { inline-size: max-content; }
+.rocket-shot-caption[data-rocket-breaking] { opacity: 0; }
