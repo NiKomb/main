@@ -1,13 +1,14 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
-import { dividerHalfWidth, dividerPixels, pullDivider, stepDivider } from './spring';
+import { useId, useLayoutEffect, useMemo, useRef } from 'react';
+import { dividerHalfWidth, dividerPath, pullDivider, stepDivider } from './spring';
 import './comparison-divider.css';
 
 export function ComparisonDivider({ position, width, height }: { position: number; width: number; height: number }) {
+  const pathId = useId();
   const svg = useRef<SVGSVGElement>(null);
   const path = useRef<SVGPathElement>(null);
   const pull = useRef<((from: number, to: number) => void) | null>(null);
   const previous = useRef(position);
-  const straight = useMemo(() => dividerPixels(0, height), [height]);
+  const straight = useMemo(() => dividerPath(0, height), [height]);
 
   useLayoutEffect(() => {
     const element = svg.current;
@@ -34,14 +35,14 @@ export function ComparisonDivider({ position, width, height }: { position: numbe
         return;
       }
       previousTime = time;
-      stroke.setAttribute('d', dividerPixels(spring.offset, height));
+      stroke.setAttribute('d', dividerPath(spring.offset, height));
       frame = requestAnimationFrame(tick);
     }
 
     pull.current = (from, to) => {
       if (motion.matches || document.hidden || !visible) return;
       spring = pullDivider(spring, width * (from - to) / 100);
-      stroke.setAttribute('d', dividerPixels(spring.offset, height));
+      stroke.setAttribute('d', dividerPath(spring.offset, height));
       if (frame !== undefined) return;
       previousTime = performance.now();
       frame = requestAnimationFrame(tick);
@@ -71,7 +72,11 @@ export function ComparisonDivider({ position, width, height }: { position: numbe
   return (
     <svg ref={svg} className="dns-comparison-divider" aria-hidden="true" width={dividerHalfWidth * 2}
       viewBox={`-${dividerHalfWidth} 0 ${dividerHalfWidth * 2} ${height || 1}`} preserveAspectRatio="none" shapeRendering="crispEdges">
-      <path ref={path} d={straight} fill="var(--color-surface)" />
+      <defs><path id={pathId} ref={path} d={straight} /></defs>
+      <g fill="none">
+        <use href={`#${pathId}`} x="-.5" stroke="var(--color-surface)" />
+        <use href={`#${pathId}`} x=".5" stroke="var(--color-muted)" />
+      </g>
     </svg>
   );
 }

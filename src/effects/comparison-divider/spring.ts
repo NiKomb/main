@@ -1,9 +1,9 @@
 type Spring = { offset: number; velocity: number };
 
-export const dividerHalfWidth = 32;
-const pixelSize = 3;
-const pixelStep = pixelSize * 2;
 const maxStretch = 28;
+const maxVisibleStretch = 10;
+const pixelStep = 2;
+export const dividerHalfWidth = maxVisibleStretch + 2;
 const stiffness = 240;
 const damping = 22;
 
@@ -22,15 +22,19 @@ export function stepDivider(spring: Spring, seconds: number): Spring {
   return { offset: spring.offset + velocity * dt, velocity };
 }
 
-export function dividerPixels(offset: number, height: number) {
-  const stretch = limitStretch(offset);
-  let path = '';
-  for (let top = 0; top < height; top += pixelStep) {
-    // Cells near the handle follow it, while the ends take time to catch up.
-    const distance = Math.min(1, Math.abs((top + pixelSize / 2) * 2 / height - 1));
+export function dividerPath(offset: number, height: number) {
+  if (height <= 0) return '';
+  const stretch = limitStretch(offset) * maxVisibleStretch / maxStretch;
+  let x = Math.round(stretch);
+  let path = `M${x} 0`;
+  for (let y = pixelStep; y < height; y += pixelStep) {
+    // Keep the line near the handle and let the ends trail behind it.
+    const distance = Math.abs(y * 2 / height - 1);
     const weight = distance ** 2 * (3 - 2 * distance);
-    const left = Math.round(stretch * weight) - pixelSize / 2;
-    path += `M${left} ${top}h${pixelSize}v${pixelSize}h-${pixelSize}Z`;
+    const nextX = Math.round(stretch * weight);
+    if (nextX === x) continue;
+    path += `V${y}H${nextX}`;
+    x = nextX;
   }
-  return path;
+  return `${path}V${height}`;
 }

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dividerPixels, pullDivider, stepDivider } from '../src/effects/comparison-divider/spring.ts';
+import { dividerPath, pullDivider, stepDivider } from '../src/effects/comparison-divider/spring.ts';
 
-test('the divider uses three-pixel squares with a six-pixel pitch', () => {
-  assert.equal(dividerPixels(0, 15), 'M-1.5 0h3v3h-3ZM-1.5 6h3v3h-3ZM-1.5 12h3v3h-3Z');
+test('the divider is a continuous straight line at rest', () => {
+  assert.equal(dividerPath(0, 15), 'M0 0V15');
+  assert.equal(dividerPath(0, 0), '');
 });
 
 test('divider ends trail the handle with a bounded stretch in either direction', () => {
@@ -11,9 +12,18 @@ test('divider ends trail the handle with a bounded stretch in either direction',
   for (const direction of [-1, 1]) {
     const dragged = pullDivider(still, direction * 300);
     assert.equal(dragged.offset, direction * 28);
-    const pixels = dividerPixels(dragged.offset, 120);
-    assert.match(pixels, /M-1\.5 60h3v3h-3Z/);
-    assert.notEqual(pixels, dividerPixels(0, 120));
+    const path = dividerPath(dragged.offset, 120);
+    assert.match(path, new RegExp(`^M${direction * 10} 0(?:V\\d+H-?\\d+)+V120$`));
+    let x = direction * 10;
+    let crossesHandle = false;
+    for (const [, y, next] of path.matchAll(/V(\d+)H(-?\d+)/g)) {
+      assert.equal(Number(y) % 2, 0);
+      assert.equal(Math.abs(Number(next) - x), 1);
+      x = Number(next);
+      crossesHandle ||= x === 0;
+    }
+    assert.ok(crossesHandle);
+    assert.equal(x, direction * 10);
   }
 });
 
