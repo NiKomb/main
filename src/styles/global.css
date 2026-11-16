@@ -478,7 +478,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-figure { min-width: 0; margin: 0; }
 .dns-case-figure button { width: 100%; }
 .dns-case-figure figcaption {
-  margin-top: 8px;
+  margin-top: var(--space-8);
   color: var(--color-muted);
   font: var(--type-small) var(--font-body);
 }
@@ -500,22 +500,23 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .gallery-media-full > .case-screenshot-media[data-fit] {
   width: min(100vw - 16px, 1440px, max(50dvh, 100dvh - 120px) * 16 / 9);
 }
-.page:has(.dns-case-body) { padding-block-start: 72px; }
+.page:has(.dns-case-body) { padding-block: var(--space-60); }
 .dns-case-layout {
   /* The edge effects occupy 40px at the top and 44px at the bottom. */
   --dns-case-edge-inset: 48px;
+  --dns-case-contents-offset: calc(var(--size-icon-tile) + var(--space-24));
   --dns-case-project-line-height: 20px;
   --dns-case-heading-offset: calc(var(--dns-case-edge-inset) + var(--size-icon-tile) / 2);
   --dns-case-heading-anchor: 0.5;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--case-text-width) minmax(0, 1fr);
-  row-gap: 40px;
+  row-gap: var(--space-40);
 }
 .dns-case-layout > .case-layout { display: contents; }
 .dns-case-layout .case-covers {
   grid-area: 1 / 1 / 2 / -1;
   min-width: 0;
-  gap: 32px;
+  gap: var(--space-32);
 }
 .case-nav[data-dns-contents] {
   grid-area: 2 / 1 / 3 / 2;
@@ -523,18 +524,18 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   top: var(--dns-case-edge-inset);
   z-index: 2;
   margin-block-start: calc((var(--dns-case-project-line-height) - var(--size-icon-tile)) / 2);
-  padding-inline-end: 28px;
+  padding-inline-end: var(--space-32);
   text-align: end;
   pointer-events: none;
 }
 .case-nav[data-dns-contents] :is(.case-back, ul) { pointer-events: auto; }
 .case-nav[data-dns-contents] ul {
   position: absolute;
-  inset: calc(var(--size-icon-tile) + 12px) 28px auto 0;
+  inset: var(--dns-case-contents-offset) var(--space-32) auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  max-height: calc(100dvh - 2 * var(--dns-case-edge-inset) - var(--size-icon-tile) - 12px);
+  gap: var(--space-12);
+  max-height: calc(100dvh - 2 * var(--dns-case-edge-inset) - var(--dns-case-contents-offset));
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -560,26 +561,25 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .case-nav[data-dns-contents] button[aria-current] {
   color: var(--color-text);
 }
-.dns-case-body :is(h1, h2):focus-visible {
+.dns-case-body :is(h1, h2, h3)[tabindex]:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
 }
 .dns-case-body {
-  --dns-block-gap: clamp(28px, 3vw, 40px);
-  --dns-subsection-gap: clamp(36px, 4vw, 56px);
-  --dns-divider-space: clamp(36px, 3.5vw, 52px);
+  --dns-meta-gap: var(--space-32);
+  --dns-summary-padding: var(--space-16);
   grid-area: 2 / 2 / 3 / -1;
-  gap: var(--dns-divider-space);
+  gap: var(--space-32);
 }
-.dns-case-body :is(h1, h2) { scroll-margin-top: var(--dns-case-heading-offset); }
-.dns-case-body > :last-child {
+.dns-case-body :is(h1, h2, h3)[tabindex] { scroll-margin-top: var(--dns-case-heading-offset); }
+.dns-case-body > :last-child > .dns-case-subsections {
   min-block-size: calc(100dvh - var(--dns-case-heading-offset));
   align-content: start;
 }
 .dns-case-frames {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px 16px;
+  gap: var(--space-32) var(--space-16);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -594,7 +594,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .interview-gallery { position: relative; min-width: 0; }
 .interview-gallery-scroll {
   display: flex;
-  gap: 8px;
+  gap: var(--space-8);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -692,17 +692,17 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-auto-flow: column;
   place-content: center;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   width: var(--comparison-handle-size);
   height: 36px;
   transform: translate(-50%, -50%);
 }
 .dns-comparison-control:focus-visible ~ .dns-comparison-handle {
   outline: 2px solid var(--color-text);
-  outline-offset: 2px;
+  outline-offset: var(--space-2);
 }
 .dns-comparison-handle .pixel-chevron:last-child { transform: scaleX(-1); }
-.dns-case-figure figcaption strong { display: block; margin-bottom: 4px; }
+.dns-case-figure figcaption strong { display: block; margin-bottom: var(--space-4); }
 .dns-case-body > :is(.case-text, .case-content-section) { margin-inline: 0; }
 .dns-case-section :is(.dns-case-flow, .dns-case-stages) {
   width: 100%;
@@ -722,18 +722,18 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 32px;
-  margin: 24px 0 clamp(32px, 4vw, 48px);
+  gap: var(--space-12) var(--space-32);
+  margin: var(--space-24) 0 var(--dns-meta-gap);
 }
 .dns-case-meta dt { color: var(--color-muted); font: var(--type-small) var(--font-accent); }
 .dns-case-meta dd, .dns-case-summary dd { margin: 0; }
 .dns-case-summary {
-  padding: clamp(16px, 3vw, 28px);
+  padding: var(--dns-summary-padding);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
-.dns-case-summary dl { display: grid; gap: 12px; margin: 14px 0 6px; }
-.dns-case-summary dl div { display: grid; grid-template-columns: 125px 1fr; gap: 6px 16px; }
+.dns-case-summary dl { display: grid; gap: var(--space-12); margin: var(--space-16) 0 var(--space-6); }
+.dns-case-summary dl div { display: grid; grid-template-columns: 125px 1fr; gap: var(--space-6) var(--space-16); }
 .dns-case-summary dd,
 .dns-case-section p { color: var(--color-muted); }
 .dns-case-jump {
@@ -744,22 +744,46 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-align: start;
   cursor: pointer;
 }
-.dns-case-section {
-  gap: 0;
-  padding-block-start: var(--dns-divider-space);
-  border-top: 1px solid var(--color-border);
+.dns-case-section,
+.dns-case-subsections,
+.dns-case-group,
+.dns-case-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
-.dns-case-section h2 { text-wrap: balance; }
-.dns-session-heading { text-wrap: balance; }
-.dns-case-section > :is(p, blockquote, .dns-case-points),
-.dns-decision-check > :is(h3, p), .dns-case-iteration p { max-inline-size: 64ch; }
-.dns-case-section > blockquote {
+.dns-case-section { gap: var(--space-32); }
+.dns-case-subsections { gap: var(--space-24); }
+.dns-case-group { gap: var(--space-16); }
+.dns-case-block { gap: var(--space-12); }
+.dns-case-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--color-muted);
+  font: var(--type-subheading) var(--font-accent);
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.dns-case-rule { margin: 0; border: 0; }
+.dns-case-rule,
+.dns-case-divider::before,
+.dns-case-divider::after {
+  block-size: 1px;
+  background: var(--color-border);
+}
+.dns-case-divider::before,
+.dns-case-divider::after { content: ""; }
+.dns-case-section :is(h2, h3, h4) { text-wrap: balance; }
+.dns-case-section h4 { margin: 0; font: var(--type-subheading) var(--font-accent); }
+.dns-case-block > :is(p, blockquote, .dns-case-points) { max-inline-size: 64ch; }
+.dns-case-block > blockquote {
   margin: 0;
-  padding-inline-start: 16px;
+  padding-inline-start: var(--space-16);
   border-inline-start: 2px solid var(--color-border);
 }
 .dns-case-section blockquote p { color: var(--color-text); }
-.dns-decision-check { display: grid; gap: 8px; }
 .dns-scenario { position: relative; }
 .dns-scenario-frames { display: grid; }
 .dns-scenario-slide {
@@ -779,34 +803,32 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   .dns-scenario-slide { transition: opacity 220ms ease, visibility 0s 220ms; }
   .dns-scenario-slide[data-current] { transition-delay: 0s; }
 }
-.dns-case-iteration { display: grid; gap: 16px; }
 .dns-case-points {
   display: grid;
-  gap: 8px;
+  gap: var(--space-8);
   margin: 0;
-  padding-inline-start: 20px;
+  padding-inline-start: var(--space-20);
   color: var(--color-muted);
 }
 .dns-case-section strong { color: var(--color-text); }
 .dns-case-flow, .dns-case-stages {
   display: grid;
-  gap: 8px;
+  gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .dns-case-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .dns-case-flow li, .dns-case-stages li {
-  padding: 12px;
+  padding: var(--space-12);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-muted);
 }
-.dns-case-section > .dns-case-flow-preview { margin-block-start: 12px; }
 .dns-case-flow-preview li {
   position: relative;
   isolation: isolate;
-  padding: 11px;
+  padding: calc(var(--space-12) - 1px);
   border: 1px solid var(--color-border);
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--color-surface) 60%, var(--color-border)) 50%,
@@ -824,22 +846,30 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-stages { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }
-.dns-case-stages li { display: grid; gap: 6px; }
+.dns-case-stages li { display: grid; gap: var(--space-6); }
 .dns-case-stages strong { font: var(--type-display) var(--font-accent); font-variant-numeric: tabular-nums; }
 .dns-case-facts > .dns-case-fact { max-inline-size: min(100%, 38ch); align-content: start; }
-.dns-case-fact h4 { margin: 0; color: var(--color-text); font: var(--type-subheading) var(--font-accent); }
-.dns-case-section > * + * { margin-block-start: var(--dns-block-gap); }
-.dns-case-section > * + h3 { margin-block-start: var(--dns-subsection-gap); }
-.dns-case-section > h2 + h3 { margin-block-start: 18px; }
-.dns-case-section > :is(h2, h3) + :is(p, figure, ul),
-.dns-case-section > :is(p, blockquote) + :is(p, blockquote) { margin-block-start: 12px; }
+.dns-case-fact .dns-case-fact-title { color: var(--color-text); font: var(--type-subheading) var(--font-accent); }
+/* Switch spacing at the midpoint between adjacent values on the scale. */
+@media (width >= 600px) {
+  .dns-case-body { --dns-summary-padding: var(--space-20); }
+}
+@media (width >= 733.333px) {
+  .dns-case-body { --dns-summary-padding: var(--space-24); }
+}
+@media (width >= 866.667px) {
+  .dns-case-body { --dns-summary-padding: var(--space-28); }
+}
+@media (width >= 900px) {
+  .dns-case-body { --dns-meta-gap: var(--space-40); }
+}
 @media (width >= 1160px) {
   /* Keep the focused section title above the viewport blur. */
-  .dns-case-body > :has(> :is(h1, h2):focus) { z-index: 2; }
+  .dns-case-body > :has(:is(h1, h2, h3)[tabindex]:focus) { z-index: 2; }
 }
 @media (width < 1160px) {
   .dns-case-layout {
-    --dns-case-heading-offset: calc(var(--dns-case-edge-inset) + var(--size-icon-tile) + 44px + 8px);
+    --dns-case-heading-offset: calc(var(--dns-case-edge-inset) + var(--dns-case-contents-offset) + 44px + 8px);
     --dns-case-heading-anchor: 0;
     grid-template-columns: minmax(0, 1fr);
   }
@@ -853,24 +883,23 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   }
   .case-nav[data-dns-contents] ul { background: var(--color-background); }
   .case-nav[data-dns-contents] ul {
-    inset: var(--size-icon-tile) 0 auto;
+    inset-inline: 0;
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
     max-height: none;
     overflow: auto hidden;
     overscroll-behavior-inline: contain;
     scrollbar-width: none;
   }
   .case-nav[data-dns-contents] li { flex: none; max-inline-size: min(15rem, 70vw); }
-  .case-nav[data-dns-contents] button { padding-inline: 8px; justify-items: start; }
+  .case-nav[data-dns-contents] button { padding-inline: var(--space-8); justify-items: start; }
 }
 @media (width < 560px) {
-  .dns-case-layout .case-covers { gap: 16px; }
+  .dns-case-layout .case-covers { gap: var(--space-16); }
   .dns-case-frames { grid-template-columns: 1fr; }
   .dns-case-summary dl div { grid-template-columns: 1fr; gap: 0; }
   .dns-case-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dns-case-stages li { padding: 8px; font: var(--type-small) var(--font-body); }
+  .dns-case-stages li { padding: var(--space-8); font: var(--type-small) var(--font-body); }
 }
 @media (width < 430px) {
   .dns-case-facts > li:has(> strong) { inline-size: min-content; }

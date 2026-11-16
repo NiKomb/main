@@ -23,6 +23,18 @@
   --type-subheading: 16px / 22px;
   --type-body: 16px / 22px;
   --type-small: 14px / 20px;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-60: 60px;
   --radius-card: 12px;
   --size-icon-tile: 40px;
   --content-width: 1280px;
