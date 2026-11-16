@@ -1,4 +1,6 @@
 import dnsMain from './screens/portfolio-dns-main.webp';
+import dnsShowreel from './screens/dns-configurator-showreel.mp4';
+import dnsShowreelPoster from './screens/dns-configurator-showreel.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
 import dnsComparison from './screens/portfolio-dns-comparison.webp';
 import viCoverPickup from './screens/vi-cover-pickup.png';
@@ -30,6 +32,7 @@ export type Project = {
   tileSummary?: string;
   role?: string;
   cover?: { src: string; alt: string };
+  coverVideo?: { src: string; poster: string; title: string };
   coverImages?: readonly ProjectImage[];
   tileIllustration?: string;
   screens?: readonly {
@@ -63,6 +66,7 @@ export const projects = [
     summary: 'Конфигуратор ПК: выбор комплектующих и материалы исследования',
     tileSummary: 'Сравнение деталей для сборки ПК',
     tileIllustration: dnsMotherboard,
+    coverVideo: { src: dnsShowreel, poster: dnsShowreelPoster, title: 'Шоурил конфигуратора DNS' },
     screens: [
       {
         id: 'dns-build',

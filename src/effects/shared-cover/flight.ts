@@ -1,3 +1,19 @@
+function captureVideoFrame(video: HTMLVideoElement) {
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !video.videoWidth) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.min(video.videoWidth, 960);
+  canvas.height = Math.round(video.videoHeight * canvas.width / video.videoWidth);
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  try {
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', .9);
+  } catch {
+    return;
+  }
+}
+
 export function createFlight(source: HTMLElement, resizeImages = false) {
   if (typeof source.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -5,6 +21,13 @@ export function createFlight(source: HTMLElement, resizeImages = false) {
   if (start.width === 0 || start.height === 0) return;
 
   const image = source.cloneNode(true) as HTMLElement;
+  const sourceVideo = source.querySelector('video');
+  const clonedVideo = image.querySelector('video');
+  const videoFrame = sourceVideo ? captureVideoFrame(sourceVideo) : undefined;
+  if (clonedVideo) {
+    clonedVideo.removeAttribute('src');
+    if (videoFrame) clonedVideo.poster = videoFrame;
+  }
   image.setAttribute('aria-hidden', 'true');
   image.inert = true;
   image.style.removeProperty('visibility');
@@ -25,6 +48,7 @@ export function createFlight(source: HTMLElement, resizeImages = false) {
   document.body.append(image);
 
   return {
+    videoFrame,
     discard: () => image.remove(),
     to(target: HTMLElement, onFinish?: () => void, container = document.body) {
       const end = target.getBoundingClientRect();

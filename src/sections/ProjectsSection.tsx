@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
+import { connectCoverPlayback } from '../components/cover-playback';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
@@ -54,7 +55,19 @@ function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps
   );
 }
 
-function CaseCoverArtwork({ project, decorative = false }: { project: Project; decorative?: boolean }) {
+function CaseCoverArtwork({ project, decorative = false, videoRef }: {
+  project: Project;
+  decorative?: boolean;
+  videoRef?: Ref<HTMLVideoElement>;
+}) {
+  if (project.coverVideo) {
+    const { src, poster, title } = project.coverVideo;
+    return (
+      <span className="case-cover-frame case-cover-video">
+        <video ref={videoRef} src={src} poster={poster} preload="none" muted loop playsInline aria-label={title} />
+      </span>
+    );
+  }
   if (project.coverImages?.length) {
     return (
       <span className="case-cover-frame case-cover-strip">
@@ -88,11 +101,19 @@ function showMedia(content: HTMLElement, source: HTMLElement) {
   media.removeAttribute('data-cover');
   media.style.removeProperty('visibility');
   media.querySelector('img')?.removeAttribute('loading');
+  const video = media.querySelector('video');
+  if (video) video.muted = true;
   content.replaceChildren(media);
   return media;
 }
 
-type Gallery = { slides: HTMLButtonElement[]; index: number; origin: HTMLButtonElement };
+type Gallery = {
+  slides: HTMLButtonElement[];
+  index: number;
+  origin: HTMLButtonElement;
+  video: HTMLVideoElement | null;
+  controlsVisible?: boolean;
+};
 
 export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> }) {
   const [selected, setSelected] = useState(readCase);
@@ -102,6 +123,10 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [contentsVisible, setContentsVisible] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [comparisonHit, setComparisonHit] = useState(false);
+  const [activeCoverVideo, setActiveCoverVideo] = useState<HTMLVideoElement | null>(null);
+  const [coverPlaying, setCoverPlaying] = useState(false);
+  const coverPlayback = useRef<ReturnType<typeof connectCoverPlayback>>(undefined);
+  const coverPlaybackPreference = useRef<boolean | null>(null);
   const viewportMascot = useRef<HTMLSpanElement>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
@@ -115,6 +140,19 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
   const isDns = item?.id === 'dns';
+  const viewingMedia = gallery !== null;
+
+  useEffect(() => {
+    if (!activeCoverVideo || !arrived || viewingMedia) return;
+    const playback = connectCoverPlayback(activeCoverVideo, coverPlaybackPreference, setCoverPlaying);
+    coverPlayback.current = playback;
+    return () => {
+      playback?.disconnect();
+      coverPlayback.current = undefined;
+      setCoverPlaying(false);
+    };
+  }, [activeCoverVideo, arrived, viewingMedia]);
+
   function transition(next: string | null) {
     const element = section.current;
     if (!element || selected === next) return;
@@ -124,6 +162,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     if (dialog.current?.open) dismissMedia();
     const id = next ?? selected;
     const origin = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
+    const videoTime = origin?.querySelector('video')?.currentTime;
     const flight = origin && createFlight(origin);
     if (next) scrollPoint.current = window.scrollY;
     flushSync(() => {
@@ -134,6 +173,11 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       if (!next) setReturnedFromCase(true);
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
+    const targetVideo = target?.querySelector('video');
+    if (targetVideo && videoTime !== undefined) {
+      if (flight?.videoFrame) targetVideo.poster = flight.videoFrame;
+      targetVideo.currentTime = videoTime;
+    }
     if (next) {
       window.scrollTo({ top: 0, behavior: 'instant' });
       caseBack.current?.focus({ preventScroll: true });
@@ -224,9 +268,13 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     mediaFlight.current?.();
     const flight = createFlight(source, source.matches(resizeScreensOnZoom));
     const media = showMedia(content, source);
-    setGallery({ slides, index, origin: trigger });
+    const video = media.querySelector('video');
+    setGallery({ slides, index, origin: trigger, video });
     viewer.showModal();
-    mediaFlight.current = flight?.to(media, undefined, viewer);
+    content.focus({ preventScroll: true });
+    const playVideo = () => void video?.play().catch(() => {});
+    mediaFlight.current = flight?.to(media, playVideo, viewer);
+    if (!flight) playVideo();
   }
 
   function moveMedia(direction: -1 | 1) {
@@ -236,8 +284,10 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     const source = gallery.slides[index].firstElementChild;
     if (!(source instanceof HTMLElement)) return;
     mediaFlight.current?.();
-    showMedia(content, source);
-    setGallery({ ...gallery, index });
+    const media = showMedia(content, source);
+    const video = media.querySelector('video');
+    setGallery({ ...gallery, index, video, controlsVisible: false });
+    void video?.play().catch(() => {});
   }
 
   function dismissMedia() {
@@ -258,6 +308,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       return;
     }
     const source = gallery.slides[gallery.index] === gallery.origin ? content.firstElementChild : showMedia(content, target);
+    const video = source?.querySelector('video');
+    if (video) video.controls = false;
     const flight = source instanceof HTMLElement && createFlight(source, source.matches(resizeScreensOnZoom));
     dismissMedia();
     gallery.origin.focus({ preventScroll: true });
@@ -338,19 +390,35 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
             {item.screens ? item.screens.map(({ id, image }, index) => {
               const primary = index === 0;
-              const collage = primary && Boolean(item.coverImages?.length);
-              return (
+              const coverVideo = primary ? item.coverVideo : undefined;
+              const coverArtwork = primary && Boolean(coverVideo || item.coverImages?.length);
+              const label = coverVideo ? `Смотреть: ${coverVideo.title}`
+                : coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`;
+              const trigger = (
                 <button key={id} type="button"
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
-                  aria-label={collage ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`}
+                  aria-label={label}
                   onClick={(event) => openMedia(event.currentTarget)}>
                   <span className="case-cover case-screenshot-media"
                     data-cover={primary ? item.id : undefined}
-                    style={collage ? undefined : screenshotSize(image)}>
-                    {collage ? <CaseCoverArtwork project={item} /> : <CaseScreenshotFrame image={image} />}
+                    style={coverArtwork ? undefined : screenshotSize(image)}>
+                    {coverArtwork ? <CaseCoverArtwork project={item} videoRef={coverVideo ? setActiveCoverVideo : undefined} />
+                      : <CaseScreenshotFrame image={image} />}
                   </span>
                 </button>
               );
+              return coverVideo ? (
+                <div className="case-cover-slide" key={id}>
+                  {trigger}
+                  <button type="button" className="case-cover-playback"
+                    aria-label={coverPlaying ? 'Приостановить шоурил DNS' : 'Воспроизвести шоурил DNS'}
+                    onClick={() => coverPlayback.current?.toggle()}>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d={coverPlaying ? 'M5 4h3.5v12H5zM11.5 4H15v12h-3.5z' : 'M6 3.5 16 10 6 16.5Z'} />
+                    </svg>
+                  </button>
+                </div>
+              ) : trigger;
             }) : (
               <>
                 <div className="case-cover" data-cover={item.id} aria-hidden="true" />
@@ -435,7 +503,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                   transition(entry.id);
                 }}>
                   <span className="case-cover" data-cover={entry.id} aria-hidden="true">
-                    <CaseCoverArtwork project={entry} decorative />
+                    <CaseCoverArtwork project={entry} decorative videoRef={entry.coverVideo ? setActiveCoverVideo : undefined} />
                   </span>
                   <span className="tile-side">
                     <span className="tile-copy">
@@ -471,16 +539,35 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
           <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
         </>
       )}
-      <dialog ref={dialog} className="case-dialog" aria-label="Просмотр изображения"
+      <dialog ref={dialog} className="case-dialog" aria-label="Просмотр материалов"
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onKeyDown={(event) => {
-          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          if (event.target instanceof HTMLVideoElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
           event.preventDefault();
           moveMedia(event.key === 'ArrowLeft' ? -1 : 1);
         }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
-        <button type="button" className="gallery-close" onClick={closeMedia}>Закрыть ×</button>
-        <div ref={dialogContent} className="gallery-media-full" />
+        <div ref={dialogContent} className="gallery-media-full" tabIndex={-1} />
+        <div className="gallery-actions">
+          <button type="button" className="gallery-close" aria-label="Закрыть" onClick={closeMedia}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="m5 5 10 10M15 5 5 15" />
+            </svg>
+          </button>
+          {gallery?.video && (
+            <button type="button" aria-label="Управление видео" aria-pressed={gallery.controlsVisible ?? false} onClick={() => {
+              const controlsVisible = !gallery.controlsVisible;
+              if (gallery.video) gallery.video.controls = controlsVisible;
+              setGallery({ ...gallery, controlsVisible });
+            }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="M3 6h5m4 0h5M3 14h9m4 0h1" />
+                <circle cx="10" cy="6" r="2" />
+                <circle cx="14" cy="14" r="2" />
+              </svg>
+            </button>
+          )}
+        </div>
         {gallery && gallery.slides.length > 1 && (
           <>
             <div className="gallery-navigation"
@@ -496,8 +583,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                 suppressMediaClick.current = false;
                 event.stopPropagation();
               }}>
-              <button type="button" className="gallery-previous" aria-label="Предыдущий скриншот" onClick={() => moveMedia(-1)} />
-              <button type="button" className="gallery-next" aria-label="Следующий скриншот" onClick={() => moveMedia(1)} />
+              <button type="button" className="gallery-previous" aria-label="Предыдущий кадр" onClick={() => moveMedia(-1)} />
+              <button type="button" className="gallery-next" aria-label="Следующий кадр" onClick={() => moveMedia(1)} />
             </div>
             <span role="status" className="gallery-position">Кадр {gallery.index + 1} из {gallery.slides.length}</span>
           </>
