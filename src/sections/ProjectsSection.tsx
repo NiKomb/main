@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
-import { dnsContents, dnsMascotComments } from '../data/dnsCase';
+import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
@@ -279,14 +279,14 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   function jumpToHeading(id: string) {
     const heading = document.getElementById(id);
     if (!heading) return;
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
     heading.focus({ preventScroll: true });
     if (isDns) {
       const { offset, anchor } = headingAlignment(heading);
       const { top, height } = heading.getBoundingClientRect();
-      setActiveHeading(id);
-      window.scrollBy({ top: top + height * anchor - offset, behavior: 'instant' });
+      window.scrollBy({ top: top + height * anchor - offset, behavior });
     } else {
-      heading.scrollIntoView({ block: 'start' });
+      heading.scrollIntoView({ block: 'start', behavior });
     }
   }
 
@@ -504,7 +504,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               {!isDns && <p>Содержание</p>}
               {(!isDns || contentsVisible) && contentsList}
             </nav>
-            {isDns ? arrived && <CaseMascot actorRef={viewportMascot} comments={dnsMascotComments} paused={viewingMedia} />
+            {isDns ? arrived && <CaseMascot actorRef={viewportMascot} comments={dnsMascotComments}
+              shotComment={dnsCase.comparison.iteration.shotComment} paused={viewingMedia} />
               : <ViewportMascot actorRef={viewportMascot} />}
             <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (

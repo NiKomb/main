@@ -7,6 +7,8 @@ const coverCornerInset = 12;
 const wideSurfaceWidth = 144;
 export const minDashDistance = 72;
 export const shortGapDistance = 72;
+export const mascotAttackChance = .4;
+export const mascotAttackMessage = '#@!%*?';
 
 export type Point = { x: number; y: number };
 export type Surface = {
@@ -200,6 +202,22 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     motion.onfinish = finish;
   }
 
+  function dashAndReturn(start: Point, surface: Surface, pointerX: number | undefined, finish: () => void) {
+    const bounds = layer.getBoundingClientRect();
+    const offset = pointerX === undefined ? 0 : pointerX - (bounds.left + bounds.width / 2);
+    const moreRoomOnRight = surface.right - start.x > start.x - surface.left;
+    const toRight = Math.abs(offset) < 2 ? moreRoomOnRight : offset < 0;
+    const endX = onSurface(start.x + (toRight ? 1 : -1) * surface.dashDistance, surface);
+    if (endX === start.x || !dashAlongCover(start, endX, () => {
+      moveHorizontally({ x: endX, y: start.y }, start.x, () => {
+        activeSurface = undefined;
+        finish();
+      });
+    })) return false;
+    activeSurface = surface;
+    return true;
+  }
+
   function moveOnSurface(start: Point, endX: number, surface: Surface, finish: (dashed: boolean) => void) {
     activeSurface = surface;
     const done = (dashed: boolean) => {
@@ -250,7 +268,6 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
   return {
     get phase() { return phase; },
     get activeSurface() { return activeSurface; },
-    set activeSurface(surface: Surface | undefined) { activeSurface = surface; },
-    place, cancel, settle, appear, blink, leap, moveHorizontally, dashAlongCover, moveOnSurface, travel,
+    place, cancel, settle, appear, blink, leap, dashAndReturn, moveOnSurface, travel,
   };
 }

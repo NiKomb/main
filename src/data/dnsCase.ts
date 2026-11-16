@@ -7,7 +7,6 @@ import sessionCheck from './screens/dns-session-check.webp';
 import sessionSave from './screens/dns-session-save.webp';
 import interviewEvidence from './screens/dns-interview-evidence.webp';
 import interviewEvidenceFull from './screens/dns-interview-evidence-full.webp';
-import interviewQuotes from './screens/dns-interview-quotes.webp';
 import prioritizationEvidence from './screens/dns-prioritization-evidence.webp';
 import prioritizationEvidenceFull from './screens/dns-prioritization-evidence-full.webp';
 import competitorCitilink from './screens/dns-competitor-citilink.webp';
@@ -41,9 +40,11 @@ export type ScenarioStep = CaseFigure & { label: string };
 type Decision = {
   id: string;
   title: string;
+  hypothesis: number;
+  hypothesisText: string;
   contentsLabel: string;
-  contentsNote: string;
-  signal: string;
+  checkTitle: string;
+  checkMethod: string;
   metrics: readonly CaseMetric[];
   observation?: { text: string; comment: string };
   solution: string;
@@ -52,6 +53,7 @@ type Decision = {
 
 // Срез исследовательского задания task-3 из журнала DNS, 16.11.2026.
 const testCounts = { started: 26, selected: 24, assembled: 19, saved: 15 };
+const testHypotheses = { comparison: 1, evidence: 2, recommendation: 3 };
 const comparisonResult = { started: 14, opened: 12, withCatalog: 24 };
 const evidenceResult = { opened: 18, viewed: 8, selected: 7 };
 const recommendationResult = { offered: 24, viewed: 12, selected: 11 };
@@ -90,12 +92,13 @@ export const dnsCase = {
     research: 'Погружение',
     interviews: 'Интервью',
     decisions: 'Решения',
-    scenario: 'Путь выбора',
+    scenario: 'Сценарий выбора',
     test: 'Немодерируемый UX-тест',
   },
   summary: {
     task: 'Помочь покупателю выбрать деталь и продолжить сборку. Для DNS сохранённая сборка — один из шагов к заказу',
     solution: 'Вынес сравнение к фильтрам каталога, добавил обзоры по моделям из списка и сделал возврат из статьи к уже выбранным деталям',
+    check: 'В самостоятельном тесте нужно было подобрать детали до видеокарты и сохранить сборку',
     next: 'Проверить, легче ли найти сравнение и какую роль статьи играют в выборе',
   },
   research: {
@@ -118,6 +121,11 @@ export const dnsCase = {
     auditTitle: 'Что я проверил в DNS',
     audit: 'Я прошёл путь от добавления и замены детали до возврата к сборке. Проверил, где открывается сравнение, какие данные есть в карточке товара и как добавить выбранную модель',
     flow: ['Сборка', '«Добавить» или «Заменить»', 'Каталог', 'Карточка товара', 'Сравнение', 'Возврат к сборке'],
+    auditFindings: [
+      { title: 'Что уже есть', detail: 'В DNS можно подобрать совместимые детали, сравнить и заменить их. При замене сумма пересчитывается. Сборку можно сохранить, а материалы по деталям найти в Клубе DNS' },
+      { title: 'Что остаётся неясным', detail: 'Находит ли человек сравнение в момент выбора и помогает ли таблица понять значимые для его задачи отличия?' },
+      { title: 'Границы вывода', detail: 'Сборщик открыл в отдельной вкладке обзор блока питания, проверил платформу и конденсаторы и вернулся к той же сборке. В этом проходе вкладки дополнили конфигуратор. Причины переходов в других сценариях нужно проверять отдельно' },
+    ],
     sessionsTitle: 'Как проходили сессии',
     sessions: [
       'На шести сессиях участники подбирали процессор, материнскую плату, видеокарту и корпус в действующем конфигураторе DNS. Задачи и бюджеты различались. Например, в одной сессии нужно было подобрать детали для Cyberpunk 2077 в 1440p и уложиться в 150 000 ₽.',
@@ -149,6 +157,14 @@ export const dnsCase = {
         ],
       },
     ],
+    interviewResultsTitle: 'Ключевые результаты',
+    interviewResults: [
+      { title: 'Совместимость', detail: 'Совместимость отвечает на вопрос, можно ли собрать детали вместе. Для выбора модели под конкретную задачу важны различия между подходящими вариантами' },
+      { title: 'Сравнение', detail: 'Одному участнику таблица помогла заметить отличия видеокарт после подсказки. Другой нашёл вход сам, с задержкой' },
+      { title: 'Практические данные', detail: 'В разных сессиях участникам понадобились потребление под реальной нагрузкой, FPS в игре и объяснение показателей процессора' },
+      { title: 'Дополнительное мнение', detail: 'В Клубе DNS и чатах люди просили оценить выбор детали или готовую сборку. Причины обращения за оценкой нужно проверять отдельно' },
+    ],
+    interviewResultsLimit: 'Чтобы оценить, как часто и надолго покупатели задерживаются при выборе, нужны отдельные замеры',
     framesTitle: 'Материалы и кадры исследовательских сессий',
     frames: [
       {
@@ -156,11 +172,6 @@ export const dnsCase = {
         alt: 'Матрица с условиями шести интервью, отдельным проходом сборщика и дословными репликами по сессиям',
         caption: 'Условия заданий, профили и реплики из шести интервью и отдельного прохода сборщика',
         original: { src: interviewEvidenceFull, alt: 'Полная матрица исследовательских сессий' },
-      },
-      {
-        src: interviewQuotes, width: 1192, height: 328, showFull: true, label: 'Дословные реплики',
-        alt: 'Крупный план карточек с репликами участников P4, P5 и P6 из матрицы сессий',
-        caption: 'Фрагмент матрицы с репликами участников P4–P6',
       },
       {
         src: researchCatalog, width: 1427, height: 922, showFull: true, roundedCorners: 6, cropInset: 2,
@@ -224,15 +235,34 @@ export const dnsCase = {
         original: { src: prioritizationEvidenceFull, alt: 'Полная матрица приоритизации гипотез' },
       },
       selected: [
-        { title: 'Заметное сравнение', detail: 'Четверо нашли вход после подсказок. Ещё один нашёл сам, с задержкой, и отметил слабый контраст. Поэтому вход в таблицу вынес к фильтрам каталога' },
-        { title: 'Данные для выбора', detail: 'Троим участникам понадобились сведения о реальной нагрузке, FPS или смысле показателей. Сборщик проверил устройство блока питания во внешнем обзоре. В прототипе я предложил обзоры по моделям из каталога' },
-        { title: 'Возврат к подбору', detail: 'В четырёх интервью переходы затруднили возврат к выбору или добавление выбранной детали. Это стало основанием сохранить состав сборки на экране статьи и дать прямой путь обратно' },
+        {
+          title: 'Заметное сравнение',
+          hypotheses: [
+            'Если сравнение видно при выборе и замене, то его найдут без подсказки',
+            'Если видны различия CPU/GPU и можно применить выбор, то сборка продолжится',
+          ],
+        },
+        {
+          title: 'Данные для выбора',
+          hypotheses: [
+            'Если дать результаты, условия и источник, то различия легче проверить и объяснить',
+            'Материалы Клуба с различиями и условиями тестов помогут обосновать выбор между вариантами',
+          ],
+        },
+        {
+          title: 'Возврат к подбору',
+          hypotheses: [
+            'Если при переходах сохранять состав и цель, то не придётся искать заново',
+            'После целевых данных в статье и возврата в сборку выберут или заменят деталь той же категории',
+          ],
+        },
       ],
       deferred: 'Разбор различий CPU и GPU опирался на отдельные эпизоды. Выбора между двумя важными несовместимыми деталями в сессиях не возникло. Вопрос к причине предупреждения возник в одной сессии, а для отдельного показа изменения цены после замены данных оказалось недостаточно',
     },
   },
   test: {
     title: 'Результаты UX-теста',
+    shortResult: `${ratio(testCounts.assembled, testCounts.started)} подобрали пять деталей, ${ratio(testCounts.saved, testCounts.started)} сохранили полную сборку`,
     intro: 'Участники самостоятельно подбирали комплектующие до видеокарты включительно. Задание заканчивалось сохранением сборки. Все проходили одну версию прототипа без модератора и без сравнения с исходным интерфейсом DNS',
     comparison: comparisonResult,
     counts: testCounts,
@@ -249,6 +279,7 @@ export const dnsCase = {
     groups: [
       {
         title: 'Сравнение',
+        hypothesis: testHypotheses.comparison,
         metrics: [
           { value: ratio(comparisonResult.started, comparisonResult.withCatalog), label: 'Начали пользоваться сравнением', detail: 'Среди открывших каталог с полной записью засчитывал добавление товара в сравнение или открытие таблицы. Пустая таблица тоже учитывалась на этом шаге' },
           comparisonTableMetric,
@@ -257,6 +288,7 @@ export const dnsCase = {
       },
       {
         title: 'Данные в статьях',
+        hypothesis: testHypotheses.evidence,
         metrics: [
           { value: ratio(evidenceResult.viewed, evidenceResult.opened), label: 'Просмотрели целевые данные', comment: 'article-data-view', detail: 'Среди открывших статью с измеряемыми данными засчитывал прохождения, где результаты тестов, характеристики или другие размеченные сведения были видны пять секунд подряд' },
           evidenceSelectionMetric,
@@ -265,6 +297,7 @@ export const dnsCase = {
       },
       {
         title: 'Рекомендованные статьи',
+        hypothesis: testHypotheses.recommendation,
         metrics: [
           recommendationViewingMetric,
           recommendationSelectionMetric,
@@ -315,6 +348,8 @@ export const dnsCase = {
     ],
     iteration: {
       title: 'Почему убрал сравнение по наведению',
+      label: 'Ранняя итерация',
+      shotComment: 'Пятеро сравнивали детали ещё раз. Никто из них не включил этот режим. Поэтому я оставил сравнение в таблице',
       fact: {
         title: '0 из 5 включили режим',
         comment: 'hover-mode-unused',
@@ -381,9 +416,9 @@ export const dnsCase = {
         caption: 'Сверху — свёрнутая строка. Снизу — лента с моделями, ценами и стрелкой прокрутки',
       },
       {
-        src: buildRecommendedArticles, width: 700, height: 480, showFull: true, label: 'Статьи на экране сборки',
-        alt: 'Карточка общего материала Клуба DNS «Как выбрать видеокарту»',
-        caption: 'Например, руководство по выбору видеокарты',
+        src: buildRecommendedArticles, width: 700, height: 1534, showFull: true, label: 'Статьи на экране сборки',
+        alt: 'Три карточки Клуба DNS на экране сборки о выборе видеокарты, материнской платы и блока питания',
+        caption: 'Общие материалы о выборе видеокарты, материнской платы и блока питания',
       },
     ],
   },
@@ -393,44 +428,23 @@ export const dnsDecisions: readonly Decision[] = [
   {
     id: 'dns-comparison',
     title: 'Кнопка сравнения рядом с фильтрами',
+    hypothesis: testHypotheses.comparison,
+    hypothesisText: 'Если сравнение доступно при выборе или замене детали, пользователь заметит его без подсказки и сопоставит варианты внутри DNS.',
     contentsLabel: 'Сравнение',
-    contentsNote: 'Вход в таблицу',
-    signal: 'Дойдут ли участники до таблицы с двумя или больше товарами',
+    checkTitle: 'Открытие таблицы',
+    checkMethod: 'Смотрел в журнале, кто сам открыл таблицу с двумя или больше товарами. Во время теста не подсказывал',
     metrics: [{ ...comparisonTableMetric, comment: 'comparison-opened' }],
     solution: 'Покупатель отмечает модели в карточках. Кнопка рядом с фильтрами показывает, сколько моделей отмечено, и открывает таблицу. В режиме «Только различия» остаются строки, в которых значения отличаются',
     comparison: dnsCase.comparison,
   },
   {
-    id: 'dns-articles',
-    title: 'Обзоры по моделям из каталога',
-    contentsLabel: 'Статьи',
-    contentsNote: 'По моделям',
-    signal: 'Посмотрят ли участники рекомендованную статью и выберут ли деталь той же категории за одно прохождение',
-    metrics: [recommendationViewingMetric, recommendationSelectionMetric],
-    observation: { comment: 'article-skipped', text: 'На одной из сессий участник открыл статью Клуба DNS из каталога корпусов, бегло посмотрел её и закрыл. Посреди подбора он не захотел читать длинный материал.' },
-    solution: 'В прототипе над товарами я предложил показывать обзоры по моделям из текущего списка. Например, при выборе процессора можно открыть обзор с игровыми тестами интересующей модели прямо из каталога',
-    comparison: {
-      title: 'Рекомендации над списком товаров',
-      frames: [
-        {
-          src: catalogArticlesBefore, width: 2048, height: 1152, label: 'Было',
-          alt: 'В каталоге процессоров сразу под фильтрами начинаются карточки товаров',
-          caption: 'Сразу под фильтрами — список процессоров',
-        },
-        {
-          src: catalogArticlesAfter, width: 2048, height: 1152, label: 'Стало',
-          alt: 'Над списком процессоров появилась лента обзоров Клуба DNS с оранжевыми метками моделей',
-          caption: 'Над товарами появилась лента обзоров. Метка «AMD Ryzen 7 9800X3D» связывает обзор с моделью в выдаче',
-        },
-      ],
-    },
-  },
-  {
     id: 'dns-return',
     title: 'Из статьи обратно к сборке',
+    hypothesis: testHypotheses.evidence,
+    hypothesisText: 'Если участник просмотрит в статье целевые данные о комплектующих (тесты, характеристики, совместимость), то после возврата в конфигуратор он выберет или заменит деталь той же категории.',
     contentsLabel: 'Возврат',
-    contentsNote: 'Состав сохранён',
-    signal: 'Продолжат ли участники подбор в той же категории после просмотра данных в статье и возврата к сборке',
+    checkTitle: 'Продолжение подбора',
+    checkMethod: 'В журнале смотрел, кто выбрал деталь после просмотра данных и возврата. Почему выбрали эту модель, стоит спросить у участников',
     metrics: [evidenceSelectionMetric],
     solution: 'Если покупатель открывает статью из конфигуратора, над текстом видна панель с выбранными деталями и общей суммой. Кнопка «В конфигуратор» возвращает к той же сборке',
     comparison: {
@@ -450,14 +464,44 @@ export const dnsDecisions: readonly Decision[] = [
       ],
     },
   },
+  {
+    id: 'dns-articles',
+    title: 'Обзоры по моделям из каталога',
+    hypothesis: testHypotheses.recommendation,
+    hypothesisText: 'Если при выборе или сравнении показать подходящие материалы Клуба, объясняющие различия и условия тестов, пользователю будет легче обосновать выбор между вариантами.',
+    contentsLabel: 'Обзоры',
+    checkTitle: 'Просмотр рекомендации',
+    checkMethod: 'В журнале смотрел, кто просмотрел рекомендацию и выбрал деталь. Чтобы узнать, помогла ли статья, нужно спросить участника',
+    metrics: [recommendationViewingMetric, recommendationSelectionMetric],
+    observation: { comment: 'article-skipped', text: 'На одной из сессий участник открыл статью Клуба DNS из каталога корпусов, бегло посмотрел её и закрыл. Посреди подбора он не захотел читать длинный материал.' },
+    solution: 'В прототипе над товарами я предложил показывать обзоры по моделям из текущего списка. Например, при выборе процессора можно открыть обзор с игровыми тестами интересующей модели прямо из каталога',
+    comparison: {
+      title: 'Рекомендации над списком товаров',
+      frames: [
+        {
+          src: catalogArticlesBefore, width: 2048, height: 1152, label: 'Было',
+          alt: 'В каталоге процессоров сразу под фильтрами начинаются карточки товаров',
+          caption: 'Сразу под фильтрами — список процессоров',
+        },
+        {
+          src: catalogArticlesAfter, width: 2048, height: 1152, label: 'Стало',
+          alt: 'Над списком процессоров появилась лента обзоров Клуба DNS с оранжевыми метками моделей',
+          caption: 'Над товарами появилась лента обзоров. Метка «AMD Ryzen 7 9800X3D» связывает обзор с моделью в выдаче',
+        },
+      ],
+    },
+  },
 ];
 
 export const dnsContents = [
   { id: 'projects-heading', label: 'Обзор', note: 'Кейс вкратце' },
-  { id: 'dns-research', label: 'Анализ', note: 'Где сомневались' },
-  ...dnsDecisions.map(({ id, contentsLabel, contentsNote }) => ({ id, label: contentsLabel, note: contentsNote })),
-  { id: 'dns-scenario', label: 'Сценарий', note: 'В статью и назад' },
-  { id: 'dns-results', label: 'UX-тест', note: 'До сохранения' },
+  { id: 'dns-research', label: 'Анализ', note: 'Обсуждения и аудит' },
+  { id: 'dns-interviews', label: 'Интервью', note: 'Ключевые результаты' },
+  { id: 'dns-competitors', label: 'Конкуренты', note: 'Три подхода' },
+  { id: 'dns-prioritization', label: 'Приоритеты', note: 'Отбор гипотез' },
+  ...dnsDecisions.map(({ id, contentsLabel, hypothesis }) => ({ id, label: contentsLabel, note: `Гипотеза ${hypothesis}` })),
+  { id: 'dns-scenario', label: 'Сценарий', note: 'Выбор детали' },
+  { id: 'dns-results', label: 'UX-тест', note: 'Результаты и метрики' },
 ];
 
 export const dnsMascotComments: Readonly<Record<string, string>> = {

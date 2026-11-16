@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { aimLauncher, flightFrame, gripPoint } from './launcher-geometry';
-import { shotDeadline } from './scroll-trigger';
+import { rocketCaptionHitEvent, shotCaptionVisible, shotDeadline } from './scroll-trigger';
 import { drawFragments, fragmentDuration, sampleText } from './fragments';
 import launcher from './launcher.png';
 import flight from './flight.png';
@@ -126,6 +126,7 @@ export function RocketShot({ target, actor }: Props) {
         if (impactTime === undefined) {
           impactTime = time;
           page.setAttribute('data-rocket-caption-hit', '');
+          mascot.dispatchEvent(new CustomEvent(rocketCaptionHitEvent, { detail: block }));
           window.removeEventListener('scroll', queue);
         }
         const impactElapsed = time - impactTime;
@@ -153,7 +154,7 @@ export function RocketShot({ target, actor }: Props) {
           queue();
         }, () => {});
       }
-      const visible = bounds.height > 0 && bounds.top < innerHeight && bounds.bottom > edge;
+      const visible = shotCaptionVisible(bounds, innerHeight, edge);
       fireAt = shotDeadline(fireAt, time, visible);
       if (fireAt === undefined) return;
       if (time < fireAt) {

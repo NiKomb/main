@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
+import { caseRouteComment, metricCommentRightEdge } from '../src/effects/mascot/case-comments.ts';
 import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechPosition } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
@@ -90,6 +90,18 @@ test('metric rows traverse adjacent tiles to the right and stop on their own las
   assert.equal(rightmostCaseSurface(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextRight, tiles), undefined);
+});
+
+test('a metric grid comment uses the last tile edge even when the row leaves an empty column', () => {
+  const edge = (right) => ({ getBoundingClientRect: () => ({ right }) });
+  const grid = edge(1120);
+  const tile = edge(851);
+  const check = edge(940);
+
+  assert.equal(metricCommentRightEdge(tile, grid, null), 851);
+  assert.equal(metricCommentRightEdge(edge(1120), grid, null), 1120);
+  assert.equal(metricCommentRightEdge(tile, null, check), 940);
+  assert.equal(metricCommentRightEdge(tile, null, null), undefined);
 });
 
 test('blink vanishes at the origin and cues arrival on a different row', () => {

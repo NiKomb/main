@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
+import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
 import { MascotSpeech } from './MascotSpeech';
-import { caseRouteComment } from './case-comments';
+import { caseRouteComment, metricCommentRightEdge } from './case-comments';
 import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
-import { createMascotMovement, footOffset, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
+import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
 import { speechPosition, type SpeechPosition } from './speech-position';
 import './mascot.css';
@@ -20,9 +21,10 @@ function stop(surface: Surface, edge: Stop['edge'], x: number): Stop {
   return { surface, edge, point: { x: onSurface(x, surface), y: surface.y } };
 }
 
-export function CaseMascot({ actorRef, comments, paused }: {
+export function CaseMascot({ actorRef, comments, shotComment, paused }: {
   actorRef: RefObject<HTMLSpanElement | null>;
   comments: Readonly<Record<string, string>>;
+  shotComment: string;
   paused: boolean;
 }) {
   const route = useRef<HTMLDivElement>(null);
@@ -31,12 +33,14 @@ export function CaseMascot({ actorRef, comments, paused }: {
   const lift = useRef<HTMLSpanElement>(null);
   const setPaused = useRef<(paused: boolean) => void>(undefined);
   const [speech, setSpeech] = useState<Speech>();
+  const [speechReplay, setSpeechReplay] = useState(0);
 
   useEffect(() => {
     const layer = route.current;
     const article = layer?.closest('article');
     const actor = actorRef.current;
-    if (!layer || !article || !actor) return;
+    const control = actor?.querySelector<HTMLButtonElement>('.mascot__actor');
+    if (!layer || !article || !actor || !control) return;
 
     const image = new Image();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -65,6 +69,8 @@ export function CaseMascot({ actorRef, comments, paused }: {
     let point: Point | undefined;
     let visibleActor: (Point & { facing: 'left' | 'right' }) | undefined;
     let departure: ReturnType<typeof playGroundMovement>;
+    let shotCaption: HTMLElement | undefined;
+    let gestureTile: Element | undefined;
 
     const rememberActor = (bounds = layer.getBoundingClientRect()) => {
       if (actor.hidden || actor.style.opacity === '0') return;
@@ -111,11 +117,12 @@ export function CaseMascot({ actorRef, comments, paused }: {
         hideSpeech();
         return;
       }
-      if (rightStop && (stop.surface.tile !== rightStop.surface.tile || stop.point.x !== rightStop.point.x)) {
+      const reaction = gestureTile === stop.surface.tile ? mascotAttackMessage : shotCaption ? shotComment : undefined;
+      if (!reaction && rightStop && (stop.surface.tile !== rightStop.surface.tile || stop.point.x !== rightStop.point.x)) {
         hideSpeech();
         return;
       }
-      const message = caseRouteComment(stop.surface.tile, comments);
+      const message = reaction ?? caseRouteComment(stop.surface.tile, comments);
       if (!message) {
         setSpeech(undefined);
         return;
@@ -127,12 +134,12 @@ export function CaseMascot({ actorRef, comments, paused }: {
         return;
       }
       const metricBlock = metricCheck ?? metricGrid;
-      const commentBlock = metricBlock ?? galleryComment;
+      const commentBlock = reaction ? null : metricBlock ?? galleryComment;
       if (commentBlock) {
         position.alignment = 0;
         position.above = true;
         if (bounds.width >= (metricBlock ? 1280 : 960)) {
-          const textRight = metricBlock ? commentBlock.getBoundingClientRect().right : Math.max(commentBlock.getBoundingClientRect().left,
+          const textRight = metricCommentRightEdge(stop.surface.tile, metricGrid, metricCheck) ?? Math.max(commentBlock.getBoundingClientRect().left,
             ...Array.from(commentBlock.querySelectorAll(':scope > h4, :scope > p'), (element) => element.getBoundingClientRect().right));
           position.left = textRight - bounds.left + 12;
           position.maxWidth = Math.min(244, bounds.width - position.left - 12);
@@ -156,6 +163,43 @@ export function CaseMascot({ actorRef, comments, paused }: {
         previous.maxWidth === next.maxWidth ? previous : next);
     };
 
+    const replaySpeech = () => setSpeechReplay((replay) => replay + 1);
+
+    const clearGesture = () => {
+      gestureTile = undefined;
+      delete actor.dataset.attacking;
+    };
+
+    const activate = (event: MouseEvent) => {
+      const origin = current;
+      if (!origin || actor.hidden || actor.dataset.visible !== 'true' || movement.phase !== 'idle' || actor.hasAttribute('data-attacking')) return;
+      const { point, surface } = origin;
+      const pointerX = event.detail && point.x > surface.left && point.x < surface.right ? event.clientX : undefined;
+      clearGesture();
+      if (Math.random() < mascotAttackChance) {
+        gestureTile = surface.tile;
+        if (!motion.matches) actor.dataset.attacking = '';
+      } else if (!motion.matches && movement.dashAndReturn(point, surface, pointerX, () => {
+        replaySpeech();
+        finish(origin);
+      })) {
+        hideSpeech();
+        return;
+      }
+      replaySpeech();
+      drawSpeech(layer.getBoundingClientRect());
+    };
+
+    const endAttack = (event: AnimationEvent) => {
+      if (event.animationName === 'mascot-attack') delete actor.dataset.attacking;
+    };
+
+    const onCaptionHit = (event: Event) => {
+      if (!(event instanceof CustomEvent) || !(event.detail instanceof HTMLElement)) return;
+      shotCaption = event.detail;
+      queue();
+    };
+
     const update = () => {
       frame = 0;
       const enabled = !suspended && !document.hidden;
@@ -163,6 +207,7 @@ export function CaseMascot({ actorRef, comments, paused }: {
       if (!enabled || motion.matches) departure?.cancel();
       if (!enabled) {
         movement.cancel();
+        clearGesture();
         actor.hidden = true;
         visibleActor = undefined;
         hideSpeech();
@@ -173,6 +218,7 @@ export function CaseMascot({ actorRef, comments, paused }: {
       }
       const bounds = layer.getBoundingClientRect();
       if (!motion.matches && !image.complete) return;
+      if (shotCaption && !shotCaptionVisible(shotCaption.getBoundingClientRect(), innerHeight)) shotCaption = undefined;
       const departing = departureCanvas.current;
       if (departing && !departing.hidden) {
         const box = departing.getBoundingClientRect();
@@ -209,6 +255,7 @@ export function CaseMascot({ actorRef, comments, paused }: {
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
       const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
       rightStop = rightmost ? stop(rightmost.surface, 'finish', rightmost.surface.right) : undefined;
+      if (gestureTile && gestureTile !== rightStop?.surface.tile) clearGesture();
 
       let interrupted = false;
       let resumeFrom: Point | undefined;
@@ -327,6 +374,10 @@ export function CaseMascot({ actorRef, comments, paused }: {
     window.addEventListener('resize', queue);
     document.addEventListener('visibilitychange', updateVisibility);
     motion.addEventListener('change', queue);
+    control.addEventListener('click', activate);
+    control.addEventListener('animationend', endAttack);
+    control.addEventListener('animationcancel', endAttack);
+    actor.addEventListener(rocketCaptionHitEvent, onCaptionHit);
     setPaused.current = (value) => {
       suspended = value;
       queue();
@@ -345,11 +396,15 @@ export function CaseMascot({ actorRef, comments, paused }: {
       window.removeEventListener('scroll', queue, true);
       window.removeEventListener('resize', queue);
       document.removeEventListener('visibilitychange', updateVisibility);
+      control.removeEventListener('click', activate);
+      control.removeEventListener('animationend', endAttack);
+      control.removeEventListener('animationcancel', endAttack);
+      actor.removeEventListener(rocketCaptionHitEvent, onCaptionHit);
       image.removeEventListener('load', queue);
       image.removeEventListener('error', queue);
       motion.removeEventListener('change', queue);
     };
-  }, [actorRef, comments]);
+  }, [actorRef, comments, shotComment]);
 
   useEffect(() => setPaused.current?.(paused), [paused]);
 
@@ -360,14 +415,16 @@ export function CaseMascot({ actorRef, comments, paused }: {
         <canvas className="mascot__movement" ref={departureCanvas} hidden />
       </div>
       <span className="mascot__fx mascot__takeoff" ref={lift} aria-hidden="true" style={{ backgroundImage: `url(${takeoff})` }} />
-      <span className="mascot" ref={actorRef} aria-hidden="true" hidden>
-        <span className="mascot__facing">
-          <span className="mascot__sprite" />
-          <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
-        </span>
+      <span className="mascot" ref={actorRef} hidden>
+        <button className="mascot__actor" type="button" aria-label="Рывок маскота">
+          <span className="mascot__facing" aria-hidden="true">
+            <span className="mascot__sprite" />
+            <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
+          </span>
+        </button>
       </span>
       {speech && <span hidden={speech.hidden}>
-        <MascotSpeech key={speech.message} message={speech.message} position={speech} duration="persistent" />
+        <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech} duration="persistent" />
       </span>}
       <p className="mascot-speech__transcript" role="status">{!speech?.hidden && speech?.message}</p>
     </div>

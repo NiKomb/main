@@ -3,7 +3,7 @@ import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { playGroundMovement } from './ground-movement';
-import { createMascotMovement, footOffset, minDashDistance, onSurface, readSurface, sectionEdgeInset,
+import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
 import { MascotSpeech } from './MascotSpeech';
 import { selectNarrowCover } from './narrow-cover';
@@ -35,7 +35,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
     const image = new Image();
     const movement = createMascotMovement(layer, effectsRef.current, takeoffRef.current, image);
-    const { place, settle, leap, moveHorizontally, dashAlongCover, moveOnSurface, travel } = movement;
+    const { place, settle, leap, dashAndReturn, moveOnSurface, travel } = movement;
     const narrow = matchMedia('(width < 1040px)');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let narrowLayout = narrow.matches;
@@ -53,7 +53,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null) {
       const anchor = { x: point.x + spriteWidth / 2, top: point.y, bottom: point.y + footOffset };
       const position = speechPosition(anchor, bounds, innerHeight, narrowLayout);
-      const message = censored ? '#@!%*?' : sectionId ? results[sectionId] : undefined;
+      const message = censored ? mascotAttackMessage : sectionId ? results[sectionId] : undefined;
       const next = message && position ? { ...position, message } : null;
       setSpeech((current) => current && next && current.message === next.message && current.y === next.y &&
         current.alignment === next.alignment && current.above === next.above ? current : next);
@@ -94,7 +94,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (layer.hidden || layer.dataset.visible !== 'true' || movement.phase !== 'idle' || layer.hasAttribute('data-attacking')) return;
       const point = narrowLayout ? narrowTarget : currentStop?.point;
       const surface = narrowLayout ? narrowTarget?.surface : currentStop?.surface;
-      if (point && Math.random() < .4) {
+      if (point && Math.random() < mascotAttackChance) {
         censored = true;
         if (!reducedMotion.matches) layer.dataset.attacking = '';
         showSpeech(point, grid.getBoundingClientRect(), null);
@@ -110,23 +110,14 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         return;
       }
 
-      const bounds = layer.getBoundingClientRect();
-      const offset = event.detail ? event.clientX - (bounds.left + bounds.width / 2) : 0;
-      const moreRoomOnRight = surface.right - point.x > point.x - surface.left;
-      const toRight = Math.abs(offset) < 2 ? moreRoomOnRight : offset < 0;
-      const endX = onSurface(point.x + (toRight ? 1 : -1) * surface.dashDistance, surface);
-      if (endX === point.x || !dashAlongCover(point, endX, () => {
-        moveHorizontally({ x: endX, y: point.y }, point.x, () => {
-          movement.activeSurface = undefined;
-          settle(point);
-          queueUpdate();
-        });
+      if (!dashAndReturn(point, surface, event.detail ? event.clientX : undefined, () => {
+        settle(point);
+        queueUpdate();
       })) {
         setSpeechReplay((replay) => replay + 1);
         return;
       }
 
-      movement.activeSurface = surface;
       hideSpeech();
     };
 
