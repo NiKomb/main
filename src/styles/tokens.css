@@ -20,10 +20,11 @@
   --font-accent: "Departure Mono", ui-monospace, monospace;
   --type-display: 32px/40px;
   --type-section-heading: 20px/26px;
-  --type-subheading: 16px/22px;
-  --type-body: 15px/22px;
-  --type-small: 13px/20px;
+  --type-subheading: 16px / 22px;
+  --type-body: 16px / 22px;
+  --type-small: 14px / 20px;
   --radius-card: 12px;
+  --size-icon-tile: 40px;
   --content-width: 1280px;
   --case-text-width: 800px;
 }

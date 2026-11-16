@@ -1,6 +1,7 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { Fragment, useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { DnsScenario } from '../components/DnsScenario';
 import { InterviewGallery } from '../components/InterviewGallery';
+import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsDecisions, type CaseFact, type CaseFigure } from '../data/dnsCase';
 import type { ProjectImage } from '../data/projects';
 import { ComparisonParticles } from '../effects/case-pixels/ComparisonParticles';
@@ -20,7 +21,20 @@ function renderCount({ count, label }: { count: number; label: string }) {
 }
 
 function renderFact({ title, detail }: CaseFact) {
-  return <li className="dns-case-fact" key={title}><h3>{title}</h3><p>{detail}</p></li>;
+  return <li className="dns-case-fact" key={title}><h4>{title}</h4><p>{detail}</p></li>;
+}
+
+function ScreenshotPlaceholders({ frames }: { frames: readonly { label: string; caption: string }[] }) {
+  return (
+    <div className="dns-case-frames dns-case-placeholders">
+      {frames.map(({ label, caption }) => (
+        <figure className="dns-case-figure" key={label}>
+          <div className="dns-case-placeholder" aria-hidden="true" />
+          <figcaption><strong>{label}</strong>{caption}</figcaption>
+        </figure>
+      ))}
+    </div>
+  );
 }
 
 function DnsComparison({ frames, headingId, sliderLabel = 'Разделитель «Было / Стало»',
@@ -83,7 +97,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId}>
       <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-pixel-swap={clips ? '' : undefined} style={style}>
-        <input ref={slider} className="dns-comparison-control" type="range" min="0" max="100" value={position}
+        <input ref={slider} className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
           aria-valuetext={`Было — ${position}%, стало — ${100 - position}%`}
           onPointerDown={() => cancelAnimationFrame(slideFrame.current)}
@@ -99,7 +113,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
         </div>
         {pixelSwapSupported && <ComparisonParticles position={position} width={size.width} height={size.height} />}
         <ComparisonDivider position={position} width={size.width} height={size.height} />
-        <span className="dns-comparison-handle" aria-hidden="true">
+        <span className="icon-tile dns-comparison-handle" aria-hidden="true">
           <span className="pixel-chevron" />
           <span className="pixel-chevron" />
         </span>
@@ -114,7 +128,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 }
 
 export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onComparisonHit }: Props) {
-  const { research, summary, comparison, scenario, test } = dnsCase;
+  const { research, summary, comparison, scenario, quickChoice, test } = dnsCase;
   const [started, assembled, saved] = test.stages;
 
   function renderFigure(figure: CaseFigure) {
@@ -150,7 +164,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onCompar
             </div>
             <div>
               <dt>Следующий шаг</dt>
-              <dd>Сравнить заметность входа, выяснить роль статей и разобрать прохождения без сохранения</dd>
+              <dd>{summary.next}</dd>
             </div>
           </dl>
           <div className="project-links">
@@ -166,39 +180,47 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onCompar
 
       <section className="case-content-section dns-case-section" aria-labelledby="dns-research">
         <h2 id="dns-research" tabIndex={-1}>{research.title}</h2>
+        <h3>{research.discussionsTitle}</h3>
+        {research.discussions.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         <h3>{research.auditTitle}</h3>
         <p>{research.audit}</p>
         <ol className="dns-case-flow" aria-label="Путь выбора комплектующего">
-          {research.flow.map((step, index) => (
-            <li key={step}>{index === 2 ? <strong>{step}</strong> : step}</li>
-          ))}
+          {research.flow.map((step) => <li key={step}>{step}</li>)}
         </ol>
-        <h3 className="dns-session-heading">{research.sessionsTitle}</h3>
-        <p>{research.sessions}</p>
+        <ol className="dns-case-flow dns-case-flow-preview" aria-hidden="true">
+          {research.flow.map((step) => <li key={step}>{step}</li>)}
+        </ol>
+        <h3>{research.sessionsTitle}</h3>
+        {research.sessions.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        {research.findings.map(({ title, passages }) => (
+          <Fragment key={title}>
+            <h3 className="dns-session-heading">{title}</h3>
+            {passages.map(({ text, quote }) => quote
+              ? <blockquote key={quote}><p>{quote}</p></blockquote>
+              : <p key={text}>{text}</p>)}
+          </Fragment>
+        ))}
         <InterviewGallery label={research.framesTitle}>
           {research.frames.map(renderFigure)}
         </InterviewGallery>
-        <ul className="dns-case-stages dns-case-facts" aria-label="Масштаб исследования">
-          {research.sessionFacts.map(renderCount)}
-        </ul>
+        <h3>{research.competitors.title}</h3>
+        <p>{research.competitors.intro}</p>
+        <ScreenshotPlaceholders frames={research.competitors.frames} />
         <h3>{research.conclusionTitle}</h3>
-        <ul className="dns-case-points">
-          {research.priorities.map(({ title, text }) => <li key={title}><strong>{title}</strong> {text}</li>)}
-        </ul>
-        <p>{research.deferred}</p>
+        {research.conclusion.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
       </section>
 
       {dnsDecisions.map((decision) => (
         <section className="case-content-section dns-case-section" key={decision.id} aria-labelledby={decision.id}>
           <h2 id={decision.id} tabIndex={-1}>{decision.title}</h2>
-          <p>{decision.observation}</p>
+          {decision.observation && <p>{decision.observation}</p>}
           <p>{decision.solution}</p>
           <h3 id={`${decision.id}-changes`}>{decision.comparison.title}</h3>
           <DnsComparison frames={decision.comparison.frames} headingId={`${decision.id}-changes`} renderScreenshot={renderScreenshot} />
           <div className="dns-decision-check">
-            <h3>Гипотеза. {decision.hypothesis}</h3>
-            <p><strong>Что смотрел в тесте.</strong> {decision.signal}</p>
-            <ul className="dns-case-stages dns-case-facts" aria-label="Факты итогового UX-теста">
+            {decision.signal && <p><strong>Что проверял.</strong> {decision.signal}</p>}
+            <h3>Что увидел</h3>
+            <ul className="dns-case-stages dns-case-facts">
               {decision.facts.map(renderFact)}
             </ul>
           </div>
@@ -220,6 +242,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onCompar
         <h2 id="dns-scenario" tabIndex={-1}>{scenario.title}</h2>
         <p>{scenario.intro}</p>
         <DnsScenario steps={scenario.steps} renderScreenshot={renderScreenshot} />
+        <h3>{quickChoice.title}</h3>
+        {quickChoice.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        <ScreenshotPlaceholders frames={quickChoice.frames} />
       </section>
 
       <section className="case-content-section dns-case-section" aria-labelledby="dns-results">
@@ -229,11 +254,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onCompar
           {test.stages.map(renderCount)}
         </ol>
         <p>{test.note}</p>
-        <h3 id="dns-hypotheses">{test.methodTitle}</h3>
-        <p>{test.method}</p>
-        <p>{test.methodLimit}</p>
-        <h3>{test.journalTitle}</h3>
+        <h3 id="dns-hypotheses">{test.journalTitle}</h3>
         {renderFigure(test.journal)}
+        <p>{test.journalLimit}</p>
         <h3>Что проверю дальше</h3>
         <ul className="dns-case-points">
           {test.next.map((step) => <li key={step}>{step}</li>)}

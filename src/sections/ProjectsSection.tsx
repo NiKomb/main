@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { connectCoverPlayback } from '../components/cover-playback';
+import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
@@ -41,9 +42,14 @@ type CaseScreenshotProps = {
 };
 
 function CaseScreenshotImage({ image, decorative, loading }: CaseScreenshotProps) {
-  const { src, width, height, alt, roundedCorners } = image;
+  const { src, width, height, alt, roundedCorners, cropInset } = image;
+  const fixedRadius = typeof roundedCorners === 'number';
   return <img src={src} width={width} height={height} alt={decorative ? '' : alt} loading={loading} draggable={false}
-    data-rounded-screen={roundedCorners ? '' : undefined} />;
+    data-rounded-screen={fixedRadius ? 'fixed' : roundedCorners ? '' : undefined}
+    style={{
+      borderRadius: fixedRadius ? roundedCorners : undefined,
+      clipPath: cropInset ? `inset(${cropInset}px round ${fixedRadius ? roundedCorners : 0}px)` : undefined,
+    }} />;
 }
 
 function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps) {
@@ -345,8 +351,9 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
           <button type="button" onClick={() => jumpToHeading(id)}
             aria-label={note ? label : undefined}
             aria-describedby={note ? `${id}-contents-note` : undefined}
+            title={note}
             aria-current={isDns && activeHeading === id ? 'location' : undefined}>
-            <span className="case-contents-title">{label}</span>
+            <span>{label}</span>
             {note && <span id={`${id}-contents-note`} className="case-contents-note">{note}</span>}
           </button>
         </li>
@@ -410,7 +417,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               return coverVideo ? (
                 <div className="case-cover-slide" key={id}>
                   {trigger}
-                  <button type="button" className="case-cover-playback"
+                  <button type="button" className="icon-tile case-cover-playback" {...iconTilePress}
                     aria-label={coverPlaying ? 'Приостановить шоурил DNS' : 'Воспроизвести шоурил DNS'}
                     onClick={() => coverPlayback.current?.toggle()}>
                     <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -428,7 +435,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
           </div>
           <div className="case-layout">
             <nav className="case-nav" data-dns-contents={isDns ? '' : undefined} aria-label="Навигация по кейсу">
-              <a ref={caseBack} className="case-back" href="#projects" aria-label="К кейсам" onClick={(event) => {
+              <a ref={caseBack} className="icon-tile case-back" {...iconTilePress} href="#projects" aria-label="К кейсам" onClick={(event) => {
                 if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault();
                 if (history.state?.fromCaseList) history.back();
@@ -549,13 +556,13 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
         <div ref={dialogContent} className="gallery-media-full" tabIndex={-1} />
         <div className="gallery-actions">
-          <button type="button" className="gallery-close" aria-label="Закрыть" onClick={closeMedia}>
+          <button type="button" className="icon-tile gallery-close" {...iconTilePress} aria-label="Закрыть" onClick={closeMedia}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="m5 5 10 10M15 5 5 15" />
             </svg>
           </button>
           {gallery?.video && (
-            <button type="button" aria-label="Управление видео" aria-pressed={gallery.controlsVisible ?? false} onClick={() => {
+            <button type="button" className="icon-tile" {...iconTilePress} aria-label="Управление видео" aria-pressed={gallery.controlsVisible ?? false} onClick={() => {
               const controlsVisible = !gallery.controlsVisible;
               if (gallery.video) gallery.video.controls = controlsVisible;
               setGallery({ ...gallery, controlsVisible });

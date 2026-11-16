@@ -1,5 +1,6 @@
 import pixelAvatar from '../data/pixel-avatar.webp';
 import { site } from '../data/site';
+import { iconTilePress } from './icon-tile-press';
 
 // Brand marks from Simple Icons.
 const socialIcons = {
@@ -46,8 +47,8 @@ export function PortfolioProfile() {
           return (
             <li key={id}>
               {href
-                ? <a href={href} aria-label={label} title={label}>{icon}</a>
-                : <span role="img" aria-label={unavailable} title={unavailable}>{icon}</span>}
+                ? <a className="icon-tile" {...iconTilePress} href={href} aria-label={label} title={label}>{icon}</a>
+                : <span className="icon-tile" role="img" aria-label={unavailable} title={unavailable}>{icon}</span>}
             </li>
           );
         })}
