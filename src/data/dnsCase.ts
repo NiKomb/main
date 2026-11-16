@@ -15,16 +15,15 @@ import competitorRegard from './screens/dns-competitor-regard.webp';
 import competitorXcore from './screens/dns-competitor-xcore.webp';
 import compareBefore from './screens/dns-compare-before.webp';
 import compareSelection from './screens/dns-compare-select.webp';
-import filterComparisonBefore from './screens/dns-filter-comparison-before.webp';
-import filterComparisonSelected from './screens/dns-filter-comparison-selected.webp';
+import productCardComparison from './screens/dns-product-card-comparison.webp';
+import filterPanelComparison from './screens/dns-filter-panel-comparison.png';
 import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
 import catalogArticlesAfter from './screens/dns-catalog-articles-after.webp';
 import articlePanelBefore from './screens/dns-article-panel-before.webp';
 import articlePanelAfter from './screens/dns-article-panel-after.webp';
 import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
 import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
-import hoverToggleOff from './screens/dns-hover-toggle-off.webp';
-import hoverToggleOn from './screens/dns-hover-toggle-on.webp';
+import hoverToggleStates from './screens/dns-hover-toggle-states.png';
 import journalMetrics from './screens/dns-journal-metrics.webp';
 import flowAdd from './screens/dns-article-flow-add.webp';
 import flowCatalog from './screens/dns-article-flow-catalog.webp';
@@ -302,16 +301,16 @@ export const dnsCase = {
         caption: 'Те же модели отмечены. Кнопка со счётчиком «2» рядом с фильтрами открывает таблицу',
       },
     ] as const,
-    buttonFrames: [
+    detailFrames: [
       {
-        src: filterComparisonBefore, width: 1096, height: 160, showFull: true, label: 'Было',
-        alt: 'Поле поиска по фильтрам без кнопки сравнения',
-        caption: 'В панели было только поле поиска по фильтрам',
+        src: productCardComparison, width: 1600, height: 900, showFull: true, label: 'Карточка товара',
+        alt: 'Сверху чекбокс «Сравнить» в карточке товара. Снизу иконка сравнения рядом с избранным',
+        caption: 'Чекбокс «Сравнить» заменили иконкой рядом с избранным',
       },
       {
-        src: filterComparisonSelected, width: 1096, height: 160, showFull: true, label: 'После отметки товара',
-        alt: 'Поле поиска по фильтрам и кнопка сравнения с оранжевым счётчиком «1»',
-        caption: 'Справа от поиска появилась кнопка сравнения. Счётчик показывает число отмеченных товаров',
+        src: filterPanelComparison, width: 1600, height: 900, showFull: true, label: 'Панель фильтров',
+        alt: 'Сверху поле поиска по фильтрам. Снизу то же поле с кнопкой сравнения',
+        caption: 'Справа от поиска появилась кнопка сравнения. Счётчик на ней показывает, сколько товаров отмечено',
       },
     ],
     iteration: {
@@ -319,7 +318,7 @@ export const dnsCase = {
       fact: {
         title: '0 из 5 включили режим',
         comment: 'hover-mode-unused',
-        detail: 'В ранней версии карточка по наведению показывала отличия от детали из сборки. Оценить, помогал ли режим при выборе, не получилось. В итоговом прототипе я оставил сравнение через таблицу',
+        detail: 'На тестах никто из тех, кто сравнивал детали повторно, не включил переключатель «Различия при наведении». Я оставил сравнение через таблицу',
       },
       frames: [
         {
@@ -333,18 +332,11 @@ export const dnsCase = {
           caption: 'Переключатель убран. Карточка Ryzen 7 5700X показывает обычные характеристики',
         },
       ] as const,
-      toggleFrames: [
-        {
-          src: hoverToggleOff, width: 550, height: 72, showFull: true, label: 'Режим выключен',
-          alt: 'Неактивный переключатель «Различия при наведении»',
-          caption: 'При повторном входе в категорию режим можно было включить переключателем',
-        },
-        {
-          src: hoverToggleOn, width: 550, height: 72, showFull: true, label: 'Режим включён',
-          alt: 'Активный переключатель с подписью «Сравнение с AMD Ryzen 7 9800X3D»',
-          caption: 'В подписи видно, с какой деталью из сборки сравниваются модели',
-        },
-      ],
+      toggleFigure: {
+        src: hoverToggleStates, width: 1600, height: 900, showFull: true, label: 'Переключатель «Различия при наведении»',
+        alt: 'Сверху режим выключен. Снизу включён, в подписи указан AMD Ryzen 7 9800X3D',
+        caption: 'При повторном входе в категорию режим можно было включить переключателем. В подписи было видно, с какой деталью из сборки сравниваются модели',
+      },
     },
   },
   scenario: {

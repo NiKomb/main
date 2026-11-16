@@ -664,6 +664,16 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   padding: 0;
   list-style: none;
 }
+.dns-hover-details .dns-case-fact { align-content: space-between; }
+@media (width >= 740px) {
+  .dns-hover-details > .dns-case-stages {
+    align-self: start;
+    aspect-ratio: 16 / 9;
+  }
+}
+@media (width < 740px) {
+  .dns-hover-details { grid-template-columns: minmax(0, 1fr); }
+}
 .interview-gallery { position: relative; min-width: 0; }
 .interview-gallery-scroll {
   display: flex;

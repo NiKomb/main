@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { DnsScenario } from '../components/DnsScenario';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -49,7 +49,7 @@ function renderDecisionCheck({ signal, metrics }: (typeof dnsDecisions)[number])
 }
 
 function DnsComparison({ frames, headingId, sliderLabel = 'Разделитель «Было / Стало»',
-  renderScreenshot, rocketActor }: Pick<Props, 'renderScreenshot' | 'rocketActor'> & {
+  renderScreenshot }: Pick<Props, 'renderScreenshot'> & {
   frames: readonly [CaseFigure, CaseFigure];
   headingId: string;
   sliderLabel?: string;
@@ -57,9 +57,6 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
   const [position, setPosition] = useState(50);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const tile = useRef<HTMLDivElement>(null);
-  const slider = useRef<HTMLInputElement>(null);
-  const slideFrame = useRef(0);
-  const afterLabel = useRef<HTMLElement>(null);
   const [before, after] = frames;
   const pixelSwapSupported = CSS.supports('clip-path', 'path(evenodd, "M0 0H1V1Z")');
   const clips = useMemo(
@@ -72,20 +69,6 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
     '--comparison-clip-after': clips?.far,
   } as CSSProperties;
 
-  const onImpact = useCallback(() => {
-    const destination = 30;
-    const from = slider.current?.valueAsNumber ?? destination;
-    if (from <= destination) return;
-
-    const started = performance.now();
-    const move = (time: number) => {
-      const progress = Math.min(1, Math.max(0, (time - started) / 320));
-      setPosition(Math.round(destination + (from - destination) * (1 - progress) ** 3));
-      if (progress < 1) slideFrame.current = requestAnimationFrame(move);
-    };
-    slideFrame.current = requestAnimationFrame(move);
-  }, []);
-
   useLayoutEffect(() => {
     const element = tile.current;
     if (!element) return;
@@ -96,23 +79,16 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(slideFrame.current);
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
       <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-pixel-swap={clips ? '' : undefined} style={style}>
-        <input ref={slider} className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
+        <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
           aria-valuetext={`Было — ${position}%, стало — ${100 - position}%`}
-          onPointerDown={() => cancelAnimationFrame(slideFrame.current)}
-          onChange={(event) => {
-            cancelAnimationFrame(slideFrame.current);
-            setPosition(event.currentTarget.valueAsNumber);
-          }} />
+          onChange={(event) => setPosition(event.currentTarget.valueAsNumber)} />
         <div className="dns-comparison-frame" data-side="before" hidden={position === 0}>
           {renderScreenshot(before)}
         </div>
@@ -128,9 +104,8 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
       </div>
       <figcaption className="dns-case-frames">
         <span><strong>{before.label}</strong>{before.caption}</span>
-        <span><strong ref={afterLabel} className={rocketActor ? 'rocket-shot-caption' : undefined}>{after.label}</strong>{after.caption}</span>
+        <span><strong>{after.label}</strong>{after.caption}</span>
       </figcaption>
-      {rocketActor && <RocketShot target={afterLabel} comparison={tile} actor={rocketActor} onImpact={onImpact} />}
     </figure>
   );
 }
@@ -138,12 +113,13 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props) {
   const { sectionLabels, research, summary, comparison, scenario, quickChoice, test } = dnsCase;
   const { started, assembled, saved } = test.counts;
+  const toggleCaption = useRef<HTMLElement>(null);
 
-  function renderFigure(figure: CaseFigure) {
+  function renderFigure(figure: CaseFigure, captionTarget?: RefObject<HTMLElement | null>) {
     return (
       <figure className="dns-case-figure" key={figure.src}>
         {renderScreenshot(figure)}
-        <figcaption>
+        <figcaption ref={captionTarget} className={captionTarget ? 'rocket-shot-caption' : undefined}>
           {figure.label && <strong>{figure.label}</strong>}
           {figure.caption}
         </figcaption>
@@ -216,7 +192,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
                 <h4>{research.sessionsTitle}</h4>
                 {research.sessions.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
                 <InterviewGallery label={research.framesTitle}>
-                  {research.frames.map(renderFigure)}
+                  {research.frames.map((figure) => renderFigure(figure))}
                 </InterviewGallery>
               </section>
               {research.findings.map(({ title, passages }) => (
@@ -232,7 +208,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
               <h3>{research.competitors.title}</h3>
               <p>{research.competitors.intro}</p>
               <InterviewGallery label={research.competitors.title}>
-                {research.competitors.frames.map(renderFigure)}
+                {research.competitors.frames.map((figure) => renderFigure(figure))}
               </InterviewGallery>
             </section>
             <section className="dns-case-block">
@@ -260,27 +236,26 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
               </div>
               <section className="dns-case-block" data-mascot-comment={decision.observation?.comment}>
                 <h4 id={`${decision.id}-changes`}>{decision.comparison.title}</h4>
-                {decision.id === 'dns-articles' && renderDecisionCheck(decision)}
                 <DnsComparison frames={decision.comparison.frames} headingId={`${decision.id}-changes`} renderScreenshot={renderScreenshot} />
                 {decision.id === 'dns-comparison' && (
                   <div className="dns-case-frames" data-media-gallery>
-                    {comparison.buttonFrames.map(renderFigure)}
+                    {comparison.detailFrames.map((figure) => renderFigure(figure))}
                   </div>
                 )}
               </section>
-              {decision.id !== 'dns-articles' && renderDecisionCheck(decision)}
+              {renderDecisionCheck(decision)}
               {decision.id === 'dns-comparison' && (
                 <section className="dns-case-block">
                   <h4 id="dns-comparison-iteration">{comparison.iteration.title}</h4>
                   <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
-                    sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot}
-                    rocketActor={rocketActor} />
-                  <div className="dns-case-frames" data-media-gallery>
-                    {comparison.iteration.toggleFrames.map(renderFigure)}
+                    sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
+                  <div className="dns-case-frames dns-hover-details">
+                    {renderFigure(comparison.iteration.toggleFigure, toggleCaption)}
+                    <ul className="dns-case-stages" aria-label="Факт раннего теста">
+                      {renderFact(comparison.iteration.fact)}
+                    </ul>
                   </div>
-                  <ul className="dns-case-stages dns-case-facts" aria-label="Факт раннего теста">
-                    {renderFact(comparison.iteration.fact)}
-                  </ul>
+                  {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} />}
                 </section>
               )}
             </section>
@@ -301,7 +276,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
             <p>{quickChoice.intro}</p>
             <p>{quickChoice.articlesIntro}</p>
             <InterviewGallery label={quickChoice.title}>
-              {quickChoice.frames.map(renderFigure)}
+              {quickChoice.frames.map((figure) => renderFigure(figure))}
             </InterviewGallery>
           </section>
         </div>

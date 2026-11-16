@@ -8,5 +8,4 @@
   pointer-events: none;
 }
 
-.rocket-shot-caption { inline-size: max-content; }
-.rocket-shot-caption[data-rocket-breaking] { opacity: 0; }
+body[data-rocket-caption-hit] .rocket-shot-caption { opacity: 0; }

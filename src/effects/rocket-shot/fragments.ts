@@ -1,5 +1,4 @@
 import { particleFrame, particleSeed } from '../case-pixels/particles';
-import { switchCrop } from './switch-crop';
 
 export const fragmentDuration = 520;
 
@@ -33,19 +32,26 @@ function sampleFragments(bounds: Pick<DOMRectReadOnly, 'width' | 'height'>, scal
 }
 
 export function sampleText(element: HTMLElement, bounds: DOMRectReadOnly, scale: number) {
-  const style = getComputedStyle(element);
-  return sampleFragments(bounds, scale, (context, width, height) => {
-    context.font = `${style.fontWeight} ${parseFloat(style.fontSize) / scale}px ${style.fontFamily}`;
-    context.fillStyle = style.color;
-    context.textAlign = 'center';
+  return sampleFragments(bounds, scale, (context) => {
     context.textBaseline = 'middle';
-    context.fillText(element.textContent?.trim() ?? '', width / 2, height / 2, width);
-  });
-}
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node instanceof Text) || !node.parentElement) continue;
+      const style = getComputedStyle(node.parentElement);
+      context.font = `${style.fontWeight} ${parseFloat(style.fontSize) / scale}px ${style.fontFamily}`;
+      context.fillStyle = style.color;
 
-export function sampleSwitch(image: HTMLImageElement, bounds: { width: number; height: number; sourceWidth: number }, scale: number) {
-  return sampleFragments(bounds, scale, (context, width, height) => {
-    context.drawImage(image, switchCrop.x, switchCrop.y, bounds.sourceWidth, switchCrop.height, 0, 0, width, height);
+      for (const word of node.data.matchAll(/\S+/gu)) {
+        range.setStart(node, word.index);
+        range.setEnd(node, word.index + word[0].length);
+        const box = range.getBoundingClientRect();
+        const x = (box.left - bounds.left) / scale;
+        const y = (box.top - bounds.top + box.height / 2) / scale;
+        const text = style.textTransform === 'uppercase' ? word[0].toUpperCase() : word[0];
+        context.fillText(text, x, y);
+      }
+    }
   });
 }
 
