@@ -340,13 +340,13 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 .case-nav :is(a, button):hover { color: var(--color-text); }
 .case-back { justify-content: center; }
 .pixel-chevron { position: relative; width: 9px; height: 15px; }
-:is(.project-links a, .dns-case-jump, .skip-link) {
+:is(.project-links a, .dns-case-jump) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 .pixel-chevron::before,
-:is(.project-links a, .dns-case-jump, .skip-link)::after {
+:is(.project-links a, .dns-case-jump)::after {
   width: 3px;
   height: 3px;
   background: currentColor;
@@ -354,13 +354,13 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   content: "";
 }
 .pixel-chevron::before { position: absolute; top: 6px; left: 0; }
-:is(.project-links a, .dns-case-jump, .skip-link)::after {
+:is(.project-links a, .dns-case-jump)::after {
   flex: none;
   margin-inline-start: 6px;
   color: var(--color-muted);
   transform: scaleX(-1);
 }
-:is(.project-links a, .dns-case-jump, .skip-link):is(:hover, :focus-visible)::after { color: inherit; }
+:is(.project-links a, .dns-case-jump):is(:hover, :focus-visible)::after { color: inherit; }
 .case-body { display: grid; min-width: 0; gap: 32px; }
 .case-body[data-arrived="false"] { visibility: hidden; }
 .case-text, .case-content-section { width: min(100%, var(--case-text-width)); margin-inline: auto; }
@@ -1067,16 +1067,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   border-top: 1px solid var(--color-border);
 }
 .intro p { max-width: 600px; color: var(--color-muted); }
-.skip-link {
-  position: absolute;
-  z-index: 2;
-  top: 16px;
-  left: 16px;
-  transform: translateY(-200%);
-  background: var(--color-surface);
-  padding: 8px;
-}
-.skip-link:focus { transform: none; }
 
 @media (prefers-reduced-motion: no-preference) {
   .case-tile .case-cover { transition: filter 140ms ease, transform 140ms ease; }

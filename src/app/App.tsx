@@ -9,7 +9,6 @@ export function App() {
 
   return (
     <>
-      <a className="skip-link" href="#projects">К кейсам</a>
       <main ref={page} className="page">
         <PortfolioProfile />
         <div className="portfolio-flow">
