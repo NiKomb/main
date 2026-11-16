@@ -142,8 +142,9 @@
 
 .mascot-case {
   position: absolute;
-  inset: -72px calc((100% - 100vw) / 2) 0;
+  inset: -72px calc((100% - 100vw) / 2) calc(-1 * var(--dns-case-page-padding, 0px));
   z-index: 3;
+  overflow: clip;
   pointer-events: none;
 }
 
@@ -175,7 +176,7 @@
   background: transparent;
   cursor: pointer;
 }
-.mascot__actor::after {
+.mascot__actor:not([inert])::after {
   position: absolute;
   inset: -15px;
   content: '';

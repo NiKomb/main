@@ -6,6 +6,7 @@ import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/me
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
+import { site } from '../data/site';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
@@ -551,6 +552,18 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               )}
             </div>
           </div>
+          {isDns && arrived && (
+            <footer className="dns-case-footer">
+              <div className="dns-case-footer-actions" data-mascot-route-end>
+                <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 1" />
+                <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 2" />
+              </div>
+              <div className="dns-case-footer-signature">
+                <span>{site.profile.name}</span>
+                <time dateTime={String(dnsCase.year)}>{dnsCase.year}</time>
+              </div>
+            </footer>
+          )}
           {isDns && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
         </article>
       ) : (

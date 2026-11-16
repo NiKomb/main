@@ -570,7 +570,11 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .gallery-media-full > .case-screenshot-media[data-fit] {
   width: min(100vw - 16px, 1440px, max(50dvh, 100dvh - 120px) * 16 / 9);
 }
-.page:has(.dns-case-body) { padding-block: var(--space-80); }
+.page:has(.dns-case-body) {
+  --dns-case-page-padding: var(--space-80);
+  padding-block: var(--dns-case-page-padding);
+}
+.page:has(.dns-case-body) + .site-footer { display: none; }
 .dns-case-layout {
   position: relative;
   /* The edge effects occupy 40px at the top and 44px at the bottom. */
@@ -589,6 +593,29 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-area: 1 / 1 / 2 / -1;
   min-width: 0;
   gap: var(--space-32);
+}
+.dns-case-footer {
+  grid-area: 3 / 1 / 4 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding-block-start: var(--space-16);
+  border-block-start: 1px solid var(--color-border);
+}
+.dns-case-footer-actions {
+  display: flex;
+  gap: var(--space-8);
+  justify-self: end;
+  margin-inline-end: var(--dns-case-contents-gap);
+}
+.dns-case-footer-signature {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-8);
+  font: var(--type-small) var(--font-accent);
+  color: var(--color-muted);
+  text-transform: uppercase;
 }
 .case-nav[data-dns-contents] {
   grid-area: 2 / 1 / 3 / 2;
@@ -684,10 +711,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-40);
 }
 .dns-case-body :is(h1, h2, h3)[tabindex] { scroll-margin-top: var(--dns-case-heading-offset); }
-.dns-case-body > :last-child > .dns-case-subsections {
-  min-block-size: calc(100dvh - var(--dns-case-heading-offset));
-  align-content: start;
-}
 .dns-case-frames {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1084,6 +1107,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     row-gap: var(--space-12);
   }
   .dns-case-body { grid-area: 2 / 2 / 3 / 3; }
+  .dns-case-footer {
+    grid-area: 3 / 2 / 4 / 3;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-16);
+  }
+  .dns-case-footer-actions { margin-inline-end: 0; }
   .dns-case-overview { padding-block-start: calc(var(--size-icon-tile) + var(--space-8)); }
   .case-nav[data-dns-contents] {
     grid-area: 2 / 2 / 3 / 3;

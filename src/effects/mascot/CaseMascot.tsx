@@ -5,7 +5,7 @@ import impact from './heavy-landing.png';
 import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment, metricCommentRightEdge } from './case-comments';
-import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
+import { caseFooterRoute, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
@@ -16,8 +16,10 @@ const gallerySelector = '.case-covers, .interview-gallery-scroll, .dns-case-fram
 const cardSelector = '.dns-case-fact, .dns-case-summary, .dns-case-block > blockquote';
 type RouteSurface = CaseSurface & { surface: Surface };
 type Speech = SpeechPosition & { message: string; hidden?: boolean };
+type CaseSurfaceGeometry = Surface & { routeEnd?: true };
+type CaseStop = Stop & { surface: CaseSurfaceGeometry };
 
-function stop(surface: Surface, edge: Stop['edge'], x: number): Stop {
+function stop(surface: CaseSurfaceGeometry, edge: Stop['edge'], x: number): CaseStop {
   return { surface, edge, point: { x: onSurface(x, surface), y: surface.y } };
 }
 
@@ -45,6 +47,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const image = new Image();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const movement = createMascotMovement(actor, canvas.current, lift.current, image);
+    const footerActions = article.querySelector('[data-mascot-route-end]');
+    const textColumn = article.querySelector('.dns-case-body > .case-text');
     const tiles = Array.from(article.querySelectorAll<HTMLElement>([
       '.case-covers .case-cover', '.dns-comparison-tile', '.dns-scenario-frames',
       '.case-screenshot:not(.dns-comparison-tile *, .dns-scenario-frames *)', cardSelector,
@@ -55,9 +59,9 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const group = gallery ?? tile.closest('.dns-case-stages, .dns-decision-tile') ?? tile;
       return { tile, kind, group, clip };
     });
-    let current: Stop | undefined;
-    let destination: Stop | undefined;
-    let rightStop: Stop | undefined;
+    let current: CaseStop | undefined;
+    let destination: CaseStop | undefined;
+    let routeFinish: CaseStop | undefined;
     let galleryComment: Element | null = null;
     let metricCheck: Element | null = null;
     let metricGrid: Element | null = null;
@@ -100,12 +104,47 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       rememberActor();
     }
 
-    function finish(next: Stop) {
+    function finish(next: CaseStop) {
       destination = undefined;
       current = next;
       settle(next.point);
       queue();
     }
+
+    const renderedPosition = (bounds: DOMRect) => {
+      if (actor.hidden || actor.style.opacity === '0') return;
+      const box = actor.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < innerHeight) return { x: box.left - bounds.left, y: box.top - bounds.top };
+    };
+
+    const readRouteEnd = (bounds: DOMRect) => {
+      if (!footerActions || !textColumn) return;
+      const buttons = Array.from(footerActions.querySelectorAll(':is(button, a[href]):not(:disabled, [aria-disabled="true"])'))
+        .filter((tile) => !tile.closest('[inert], [aria-hidden="true"]') && getComputedStyle(tile).visibility === 'visible')
+        .map((tile) => {
+          const { left, right, top, bottom } = tile.getBoundingClientRect();
+          return { tile, left, right, top, bottom };
+        });
+      const footer = caseFooterRoute(buttons, innerWidth, innerHeight, textColumn.getBoundingClientRect().right, spriteWidth);
+      if (!footer) return;
+
+      const { button } = footer;
+      const finishX = footer.rightFinish.x - bounds.left;
+      const buttonX = footer.buttonX - bounds.left;
+      const floor: CaseSurfaceGeometry = {
+        tile: footerActions, routeEnd: true, canDash: true, dashDistance: minDashDistance,
+        left: Math.min(buttonX, finishX), right: Math.max(buttonX, finishX), y: Math.floor(footer.rightFinish.y - bounds.top),
+      };
+      const buttonSurface: CaseSurfaceGeometry = {
+        tile: button.tile, routeEnd: true, canDash: false, dashDistance: minDashDistance,
+        left: buttonX, right: buttonX, y: Math.round(button.top - bounds.top - footOffset),
+      };
+      return {
+        leftFinish: stop(buttonSurface, 'left-finish', buttonX),
+        landing: stop(floor, 'landing', buttonX),
+        rightFinish: stop(floor, 'finish', finishX),
+      };
+    };
 
     const hideSpeech = () => {
       setSpeech((previous) => previous && !previous.hidden ? { ...previous, hidden: true } : previous);
@@ -113,12 +152,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     const drawSpeech = (bounds: DOMRect) => {
       const stop = current;
-      if (!stop || actor.hidden || movement.phase !== 'idle') {
+      if (!stop || control.inert || actor.hidden || movement.phase !== 'idle') {
         hideSpeech();
         return;
       }
       const reaction = gestureTile === stop.surface.tile ? mascotAttackMessage : shotCaption ? shotComment : undefined;
-      if (!reaction && rightStop && (stop.surface.tile !== rightStop.surface.tile || stop.point.x !== rightStop.point.x)) {
+      if (!reaction && routeFinish && (stop.surface.tile !== routeFinish.surface.tile || stop.point.x !== routeFinish.point.x)) {
         hideSpeech();
         return;
       }
@@ -212,6 +251,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         visibleActor = undefined;
         hideSpeech();
         current = destination = undefined;
+        control.inert = false;
         lastScroll = scrollY;
         direction = 0;
         return;
@@ -230,9 +270,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const canFollow = delta <= innerHeight / 3;
       if (delta !== 0) direction = Math.sign(delta);
       lastScroll = scrollY;
+
+      const routeEnd = direction < 0 ? undefined : readRouteEnd(bounds);
+      control.inert = !!routeEnd;
       const contents = article.querySelector('.case-nav[data-dns-contents] ul');
       const topLimit = innerWidth < 1200 && contents ? Math.max(48, contents.getBoundingClientRect().bottom) : 48;
-      const surfaces: RouteSurface[] = tiles.flatMap(({ tile, kind, group, clip }) => {
+      const surfaces: RouteSurface[] = routeEnd ? [] : tiles.flatMap(({ tile, kind, group, clip }) => {
         const box = tile.getBoundingClientRect();
         if (!box.height || box.top < 0 || box.top > innerHeight - 48) return [];
         const clipBox = clip?.getBoundingClientRect();
@@ -254,30 +297,36 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
       const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
-      rightStop = rightmost ? stop(rightmost.surface, 'finish', rightmost.surface.right) : undefined;
-      if (gestureTile && gestureTile !== rightStop?.surface.tile) clearGesture();
+      routeFinish = routeEnd?.rightFinish ?? (rightmost && stop(rightmost.surface, 'finish', rightmost.surface.right));
+      if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
 
+      const target = (destination ?? current)?.surface;
+      const crossingRouteEnd = !!target?.routeEnd !== !!routeEnd;
+      const blinkFrom = crossingRouteEnd ? renderedPosition(bounds) : undefined;
       let interrupted = false;
       let resumeFrom: Point | undefined;
       if (movement.phase !== 'idle' && !actor.hidden) {
-        const target = (destination ?? current)?.surface;
-        const live = surfaces.find(({ tile }) => tile === target?.tile);
-        if (!motion.matches && target && live && selected && live.top >= topLimit && live.top <= innerHeight / 2 &&
-          sameCaseRow(live, selected) && (!selected.hasOwnComment || live.tile === selected.tile) &&
-          live.surface.left === target.left && live.surface.right === target.right && live.surface.y === target.y) {
+        const live = routeEnd
+          ? [routeEnd.rightFinish.surface, routeEnd.leftFinish.surface].find(({ tile }) => tile === target?.tile)
+          : selected && upperSurfaces.find((candidate) => candidate.tile === target?.tile &&
+            candidate.top <= innerHeight / 2 && sameCaseRow(candidate, selected) &&
+            (!selected.hasOwnComment || candidate.tile === selected.tile))?.surface;
+        if (!motion.matches && target && live && live.left === target.left && live.right === target.right && live.y === target.y) {
           drawSpeech(bounds);
           return;
         }
-        if (!motion.matches && movement.phase !== 'blink') {
-          const box = actor.getBoundingClientRect();
-          if (box.bottom > 0 && box.top < innerHeight) resumeFrom = { x: box.left - bounds.left, y: box.top - bounds.top };
+        if (!motion.matches && !crossingRouteEnd && !routeEnd && movement.phase !== 'blink') {
+          resumeFrom = renderedPosition(bounds);
         }
         movement.cancel();
         interrupted = true;
         destination = undefined;
       }
 
-      if (!selected || !rightStop) {
+      const surface = routeEnd
+        ? current?.surface.tile === routeEnd.rightFinish.surface.tile ? routeEnd.rightFinish.surface : routeEnd.leftFinish.surface
+        : selected?.surface;
+      if (!surface || !routeFinish) {
         if (!actor.hidden) {
           playDeparture(bounds);
           movement.cancel();
@@ -287,13 +336,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return;
       }
 
-      const { surface } = selected;
       const runUp = surface.canDash ? surface.dashDistance + 12 : sectionEdgeInset - 12;
-      const start = stop(surface, 'start', surface.right - runUp);
+      const entry = routeEnd?.leftFinish ?? stop(surface, 'start', surface.right - runUp);
 
       if (motion.matches) {
-        current = rightStop;
-        settle(rightStop.point);
+        current = routeFinish;
+        settle(routeFinish.point);
         appeared = true;
         drawSpeech(bounds);
         return;
@@ -307,29 +355,30 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return;
       }
 
-      if (current?.surface.tile !== surface.tile || actor.hidden) {
-        const landing = previous?.group === selected.group || surface.tile === rightStop.surface.tile
-          ? rightStop : stop(surface, 'landing', surface.left);
+      if (crossingRouteEnd || (routeEnd && interrupted) || current?.surface.tile !== surface.tile || actor.hidden) {
+        const landing = previous?.group === selected?.group || surface.tile === routeFinish.surface.tile
+          ? routeFinish : stop(surface, 'landing', surface.left);
         const from = previous && current && stop(previous.surface, current.edge, current.point.x);
         const nearby = from && Math.abs(from.point.y - landing.point.y) <= Math.min(400, innerHeight / 2) &&
           Math.max(0, from.surface.left - landing.surface.right, landing.surface.left - from.surface.right) <= shortGapDistance;
-        if (!actor.hidden && previous && nearby && canFollow) {
+        if (!crossingRouteEnd && !actor.hidden && selected && previous && nearby && canFollow) {
           destination = landing;
           movement.travel(from, landing, selected.top >= previous.top, () => finish(landing), true);
         } else {
-          current = start;
+          current = entry;
           const foot = point && bounds.top + point.y + footOffset;
-          if (appeared && !interrupted && !actor.hidden && point && foot !== undefined &&
-            foot > 0 && foot < innerHeight) {
-            destination = start;
-            movement.blink(point, start.point, () => finish(start));
+          const origin = blinkFrom ?? (appeared && !interrupted && !actor.hidden &&
+            foot !== undefined && foot > 0 && foot < innerHeight ? point : undefined);
+          if (origin) {
+            destination = entry;
+            movement.blink(origin, entry.point, () => finish(entry));
           } else {
             const leftWithBlink = playDeparture(bounds);
-            const reveal = leftWithBlink || !appeared || actor.hidden || Math.abs(delta) > innerHeight / 3;
-            settle(start.point);
+            const reveal = crossingRouteEnd || !!routeEnd || leftWithBlink || !appeared || actor.hidden || Math.abs(delta) > innerHeight / 3;
+            settle(entry.point);
             if (reveal) {
               actor.dataset.direction = 'left';
-              movement.appear(start.point, 'left', () => finish(start));
+              movement.appear(entry.point, 'left', () => finish(entry));
             }
           }
           appeared = true;
@@ -340,16 +389,17 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       }
 
       current = stop(surface, current.edge, current.point.x);
-      if (surface.tile !== rightStop.surface.tile || current.point.x !== rightStop.point.x) {
-        const nextTile = surface.tile !== rightStop.surface.tile ? nextCaseSurfaceToRight(selected, upperSurfaces) : undefined;
-        const arrival = nextTile ? stop(nextTile.surface, 'landing', nextTile.surface.left) : rightStop;
+      if (surface.tile !== routeFinish.surface.tile || current.point.x !== routeFinish.point.x) {
+        const nextTile = selected && surface.tile !== routeFinish.surface.tile ? nextCaseSurfaceToRight(selected, upperSurfaces) : undefined;
+        const arrival = routeEnd?.leftFinish.surface.tile === surface.tile
+          ? routeEnd.landing : nextTile ? stop(nextTile.surface, 'landing', nextTile.surface.left) : routeFinish;
         destination = arrival;
         const arrive = () => finish(arrival);
-        if (surface.tile !== arrival.surface.tile) movement.travel(current, arrival, true, arrive, true);
-        else movement.moveOnSurface(current.point, arrival.point.x, surface, arrive);
+        if (surface.tile === arrival.surface.tile) movement.moveOnSurface(current.point, arrival.point.x, surface, arrive);
+        else movement.travel(current, arrival, true, arrive, true);
       } else {
-        current = rightStop;
-        settle(rightStop.point);
+        current = routeFinish;
+        settle(routeFinish.point);
       }
       drawSpeech(bounds);
     };
@@ -369,6 +419,14 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     const resize = new ResizeObserver(queue);
     resize.observe(article);
+    const footerChanges = new MutationObserver(queue);
+    if (footerActions) {
+      resize.observe(footerActions);
+      footerChanges.observe(footerActions, {
+        subtree: true, childList: true, attributes: true,
+        attributeFilter: ['class', 'style', 'hidden', 'disabled', 'href', 'aria-disabled', 'aria-hidden', 'inert'],
+      });
+    }
     const scrollOptions = { passive: true, capture: true };
     window.addEventListener('scroll', queue, scrollOptions);
     window.addEventListener('resize', queue);
@@ -389,10 +447,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     return () => {
       setPaused.current = undefined;
+      control.inert = false;
       cancelAnimationFrame(frame);
       departure?.cancel();
       movement.cancel();
       resize.disconnect();
+      footerChanges.disconnect();
       window.removeEventListener('scroll', queue, true);
       window.removeEventListener('resize', queue);
       document.removeEventListener('visibilitychange', updateVisibility);

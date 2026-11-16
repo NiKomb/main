@@ -41,3 +41,21 @@ export function nextCaseSurfaceToRight<T extends CaseSurface>(surface: T, surfac
   }
   return next;
 }
+
+export function caseFooterRoute<T extends Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>>(buttons: readonly T[],
+  width: number, height: number, textRight: number, spriteSize: number) {
+  if (width <= spriteSize) return;
+
+  const rightEdge = width - spriteSize;
+  const visible = buttons.filter(({ left, right, top, bottom }) => (
+    left >= 0 && right <= width && top >= spriteSize && bottom <= height && right > left && bottom > top
+  )).map((button) => ({ button, center: (button.left + button.right) / 2 }));
+  if (!visible.length) return;
+
+  const { button, center } = visible.reduce((best, next) => next.center > best.center ? next : best);
+  return {
+    button,
+    buttonX: Math.max(0, Math.min(rightEdge, center - spriteSize / 2)),
+    rightFinish: { x: Math.max(0, Math.min(width, textRight) - spriteSize), y: height - spriteSize },
+  };
+}
