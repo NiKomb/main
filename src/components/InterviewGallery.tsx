@@ -116,6 +116,7 @@ export function InterviewGallery({ label, children }: { label: string; children:
         onClickCapture={(event) => {
           if (event.detail === 0 || !suppressClick.current) return;
           suppressClick.current = false;
+          event.preventDefault();
           event.stopPropagation();
         }}>
         {children}

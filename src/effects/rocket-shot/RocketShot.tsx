@@ -191,7 +191,13 @@ export function RocketShot({ target, comparison, actor, onImpact }: Props) {
         shotTimer = window.setTimeout(queue, fireAt - time);
         return;
       }
-      if (!images) return;
+      if (!images || mascot.hidden) return;
+      if (mascot.style.opacity === '0') {
+        shotTimer = window.setTimeout(queue, 100);
+        return;
+      }
+      const gripBounds = sprite.getBoundingClientRect();
+      if (!gripBounds.width || gripBounds.bottom <= 0 || gripBounds.top >= innerHeight) return;
       const tileBounds = tile.getBoundingClientRect();
       const box = switchBounds(tileBounds);
       const fullSwitch = switchBounds(tileBounds, 100);

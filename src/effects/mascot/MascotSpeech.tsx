@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { SpeechPosition } from './speech-position';
 
 export function MascotSpeech({ message, position, duration }: {
-  message: string; position: SpeechPosition; duration?: number;
+  message: string; position: SpeechPosition; duration?: number | 'persistent';
 }) {
   const [printed, setPrinted] = useState(0);
   const [visible, setVisible] = useState(true);
@@ -21,7 +21,7 @@ export function MascotSpeech({ message, position, duration }: {
       window.clearInterval(typingTimer);
       if (duration === undefined) closeTimer = window.setTimeout(hide, 5000);
     };
-    if (duration !== undefined) closeTimer = window.setTimeout(hide, duration);
+    if (typeof duration === 'number') closeTimer = window.setTimeout(hide, duration);
     if (reducedMotion.matches) {
       setPrinted(message.length);
       finish();
@@ -43,6 +43,8 @@ export function MascotSpeech({ message, position, duration }: {
   return visible && (
     <span className="mascot-speech" data-above={position.above} aria-hidden="true" style={{
       top: position.y,
+      left: position.left,
+      maxInlineSize: position.maxWidth,
       '--speech-alignment': `${position.alignment}%`,
     } as CSSProperties}>
       {message.slice(0, printed)}

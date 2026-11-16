@@ -7,6 +7,7 @@ export interface Actor { feet(): [number, number]; silhouette?(): { x: number; y
 export interface Options {
   kind?: "dash" | "blink";
   arrivalOnly?: boolean;
+  departureOnly?: boolean;
   actor?: Actor;
   x?: number;
   y?: number;
@@ -14,6 +15,7 @@ export interface Options {
   distance?: number;
   time?: number;
   to?: number;
+  toY?: number;
   colors?: readonly number[];
   groundColor?: number;
   ground?: number | ((x: number) => number);
@@ -127,9 +129,9 @@ function dash(e: Env): Kit {
 }
 function blink(e: Env): Kit {
   const { o, R, ps } = e;
-  const [AX, FY] = e.feet(), BX = o.to ?? AX + 260;
+  const [AX, FY] = e.feet(), BX = o.to ?? AX + 260, BY = o.toY ?? FY;
   const [C, A] = o.colors ? [o.colors, o.colors] : [ICE, ARCANE];
-  const OUT = 0.3, IN = o.arrivalOnly ? 0.12 : 0.55, ARRIVE = IN + 0.35;
+  const OUT = 0.3, IN = o.departureOnly ? Infinity : o.arrivalOnly ? 0.12 : 0.55, ARRIVE = IN + 0.35;
   const COLS = [WHITE, C[1]!, C[2]!, A[1]!, A[2]!, C[3]!];
   const lights: Light[] = [];
   let sil: Sil | null = null, out = Boolean(o.arrivalOnly), unhid = false, arrived = false;
@@ -137,8 +139,9 @@ function blink(e: Env): Kit {
   const inbound: { tx: number; ty: number; ox: number; oy: number; t0: number; c: number }[] = [];
   const box = { x0: Math.round(AX / PX) - 20, y0: Math.round(FY / PX) - 48, w: 48, h: 50 };
   const cx = box.x0 + 20, my = box.y0 + box.h * 0.55, shift = Math.round((BX - AX) / PX);
+  const shiftY = Math.round((BY - FY) / PX);
   return {
-    done: (t) => t > ARRIVE + 0.5 && bits.length === 0,
+    done: (t) => t > (o.departureOnly ? OUT + 0.9 : ARRIVE + 0.5) && bits.length === 0,
     update(t, dt) {
       if (t < (o.arrivalOnly ? IN : OUT)) sil = grab(o.actor?.silhouette?.() ?? null, box.x0, box.y0, box.w, box.h) ?? sil;
       if (!o.arrivalOnly && t < OUT && R.chance(0.6)) {
@@ -160,13 +163,13 @@ function blink(e: Env): Kit {
       }
       if (t >= IN && !unhid) {
         unhid = true;
-        o.cue?.("appear", { x: BX, y: FY });
+        o.cue?.("appear", { x: BX, y: BY });
         if (sil)
           for (let y = 0; y < sil.h; y++)
             for (let x = 0; x < sil.w; x++) {
               if (!sil.px[y * sil.w + x] || R.chance(0.2)) continue;
               const a = R.range(0, TAU), d = R.range(14, 34);
-              inbound.push({ tx: sil.x0 + x + shift, ty: sil.y0 + y, ox: Math.cos(a) * d, oy: Math.sin(a) * d - 10, t0: IN + R.range(0, 0.12), c: R.pick(COLS) });
+              inbound.push({ tx: sil.x0 + x + shift, ty: sil.y0 + y + shiftY, ox: Math.cos(a) * d, oy: Math.sin(a) * d - 10, t0: IN + R.range(0, 0.12), c: R.pick(COLS) });
             }
       }
       if (t >= ARRIVE && !arrived) {
@@ -174,7 +177,7 @@ function blink(e: Env): Kit {
         o.shake?.(0.2);
         for (let i = 0; i < 30; i++) {
           const a = R.range(0, TAU), sp = R.range(60, 260);
-          ps.spawn(K.STAR, BX, FY - 36, Math.cos(a) * sp, Math.sin(a) * sp * 0.7 - 40, R.range(0.4, 0.9), R.pick(COLS), R.range(0.6, 1.6));
+          ps.spawn(K.STAR, BX, BY - 36, Math.cos(a) * sp, Math.sin(a) * sp * 0.7 - 40, R.range(0.4, 0.9), R.pick(COLS), R.range(0.6, 1.6));
         }
       }
       for (let i = bits.length - 1; i >= 0; i--) {
@@ -190,13 +193,13 @@ function blink(e: Env): Kit {
     },
     draw(buf, light, layer, t) {
       if (layer === "back") return;
-      for (const [x, t0] of [[AX, OUT], [BX, ARRIVE - 0.02]] as const) {
+      for (const [x, y, t0] of [[AX, FY, OUT], [BX, BY, ARRIVE - 0.02]] as const) {
         if (o.arrivalOnly && t0 === OUT) continue;
         const k = (t - t0) / 0.45;
         if (k < 0 || k > 1) continue;
-        ringE(buf, x / PX, FY / PX, 4 + 30 * outCubic(k), 1 + 6 * outCubic(k), 2 * (1 - k) + 0.5, k < 0.3 ? WHITE : C[2]!, 1.1 - k);
+        ringE(buf, x / PX, y / PX, 4 + 30 * outCubic(k), 1 + 6 * outCubic(k), 2 * (1 - k) + 0.5, k < 0.3 ? WHITE : C[2]!, 1.1 - k);
       }
-      if (!o.arrivalOnly && t > OUT + 0.04 && t < OUT + 0.3) {
+      if (!o.arrivalOnly && !o.departureOnly && FY === BY && t > OUT + 0.04 && t < OUT + 0.3) {
         const k = (t - OUT - 0.04) / 0.26, head = lerp(AX, BX, outExpo(k)) / PX, tail = lerp(AX, BX, outExpo(k - 0.25)) / PX, y = (FY - 40) / PX;
         for (let x = Math.min(head, tail); x <= Math.max(head, tail); x += 0.5) {
           const u = (x - tail) / (head - tail || 1);
@@ -226,14 +229,14 @@ function blink(e: Env): Kit {
           const k = (t - IN) / (ARRIVE - IN);
           if (k < 0.55) {
             const hh = (sil.h / 2 + 3) * outCubic(k / 0.55);
-            for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
-          } else drawSil(buf, sil, cx, outCubic((k - 0.55) / 0.45), k > 0.85 ? WHITE : C[1]!, k > 0.85 ? C[2]! : C[3]!, 1, shift);
-          light.glow(cx + shift, my, 34, C[2]!, 0.7 * k);
+            for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y + shiftY, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
+          } else drawSil(buf, sil, cx, outCubic((k - 0.55) / 0.45), k > 0.85 ? WHITE : C[1]!, k > 0.85 ? C[2]! : C[3]!, 1, shift, shiftY);
+          light.glow(cx + shift, my + shiftY, 34, C[2]!, 0.7 * k);
         }
       } else if (t > IN && t < ARRIVE + 0.02) {
         const k = (t - IN) / (ARRIVE - IN), hh = 28 * outCubic(k / 0.55) * (1 - smooth(0.8, 1, k));
-        for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
-        light.glow(cx + shift, my, 34, C[2]!, 0.7 * k);
+        for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y + shiftY, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
+        light.glow(cx + shift, my + shiftY, 34, C[2]!, 0.7 * k);
       }
       for (const p of inbound) {
         const k = (t - p.t0) / (ARRIVE - p.t0);
@@ -247,13 +250,13 @@ function blink(e: Env): Kit {
   };
 }
 interface Light { x: number; y: number; r: number; color: number; k: number; life: number; max: number }
-function drawSil(buf: Px, s: Sil, cx: number, sx: number, c: number, edge: number, a: number, dx = 0) {
+function drawSil(buf: Px, s: Sil, cx: number, sx: number, c: number, edge: number, a: number, dx = 0, dy = 0) {
   if (sx <= 0.02) return;
   const half = s.w / 2 + 2;
   for (let y = 0; y < s.h; y++)
     for (let x = Math.floor(cx - half * sx); x <= Math.ceil(cx + half * sx); x++) {
       const i = Math.round(cx + (x + 0.5 - cx) / sx - 0.5) - s.x0, v = i < 0 || i >= s.w ? 0 : s.px[y * s.w + i]!;
-      if (v) dot(buf, x + dx, s.y0 + y, v === 1 ? edge : c, a);
+      if (v) dot(buf, x + dx, s.y0 + y + dy, v === 1 ? edge : c, a);
     }
 }
 function shade(c: number) {

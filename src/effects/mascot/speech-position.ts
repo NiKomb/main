@@ -1,4 +1,4 @@
-export type SpeechPosition = { y: number; alignment: number; above: boolean };
+export type SpeechPosition = { y: number; alignment: number; above: boolean; left?: number; maxWidth?: number };
 
 export function speechPosition(
   anchor: { x: number; top: number; bottom: number },

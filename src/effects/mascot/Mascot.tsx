@@ -3,19 +3,15 @@ import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { playGroundMovement } from './ground-movement';
+import { createMascotMovement, footOffset, minDashDistance, onSurface, readSurface, sectionEdgeInset,
+  spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
 import { MascotSpeech } from './MascotSpeech';
 import { selectNarrowCover } from './narrow-cover';
 import { speechPosition, type SpeechPosition } from './speech-position';
 import './mascot.css';
 
-const spriteWidth = 72;
-const footOffset = 68;
-const sectionEdgeInset = 48;
-const coverCornerInset = 12;
 const scrollThreshold = 96;
-const wideSurfaceWidth = 144;
-const minDashDistance = 72;
-const shortGapDistance = 72;
+
 export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results: Readonly<Partial<Record<string, string>>> }) {
   const root = useRef<HTMLDivElement>(null);
   const actorRef = useRef<HTMLButtonElement>(null);
@@ -37,30 +33,14 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       tiles: Array.from(section.querySelectorAll('.case-cover, .tile-copy, .tile-preview')),
     }));
 
-    type Point = { x: number; y: number };
-    type Surface = {
-      tile: Element;
-      left: number;
-      right: number;
-      y: number;
-      canDash: boolean;
-      dashDistance: number;
-    };
-
-    type Stop = { surface: Surface; edge: 'start' | 'landing' | 'finish' | 'left-finish'; point: Point };
-
-    const lift = takeoffRef.current;
     const image = new Image();
+    const movement = createMascotMovement(layer, effectsRef.current, takeoffRef.current, image);
+    const { place, settle, leap, moveHorizontally, dashAlongCover, moveOnSurface, travel } = movement;
     const narrow = matchMedia('(width < 1040px)');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let narrowLayout = narrow.matches;
     let narrowTarget: (Point & { sectionId: string | null; surface: Surface }) | undefined;
     let frame = 0;
-    let entrance: ReturnType<typeof playGroundMovement>;
-    let motion: Animation | undefined;
-    let dust: Animation | undefined;
-    let recovery = 0;
-    let phase: 'waiting' | 'blink' | 'run' | 'dash' | 'jump' | 'land' | 'idle' = 'waiting';
     let currentStop: Stop | undefined;
     let introduction = !resumeRoute;
     let introScroll: number | undefined;
@@ -68,12 +48,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let resumedAtTop = false;
     let plannedTarget: Stop | undefined;
     let pending: Stop[] = [];
-    let activeSurface: Surface | undefined;
     let censored = false;
-
-    const place = (point: Point) => {
-      layer.style.transform = `translate(${point.x}px, ${point.y}px)`;
-    };
 
     function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null) {
       const anchor = { x: point.x + spriteWidth / 2, top: point.y, bottom: point.y + footOffset };
@@ -90,184 +65,11 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       setSpeech(null);
     };
 
-    function cancelMotion() {
-      entrance?.cancel();
-      if (motion) {
-        motion.onfinish = null;
-        motion.cancel();
-      }
-      activeSurface = undefined;
-      dust?.cancel();
-      window.clearTimeout(recovery);
-    }
-
-    function settle(point: Point) {
-      if (!layer) return;
-      phase = 'idle';
-      layer.dataset.pose = phase;
-      layer.hidden = false;
-      layer.style.opacity = '';
-      place(point);
-    }
-
-    function leap(start: Point, to: Point, onLand: () => void, carriedByDash = false) {
-      if (!layer) return;
-      layer.style.opacity = '';
-      place(to);
-      if (typeof layer.animate !== 'function') {
-        onLand();
-        return;
-      }
-
-      if (Math.abs(to.x - start.x) > 8) layer.dataset.direction = to.x < start.x ? 'left' : 'right';
-      const dx = to.x - start.x;
-      const dy = to.y - start.y;
-      const flight = carriedByDash ? 220 : Math.min(850, Math.max(360, Math.hypot(dx, dy) * 1.15));
-      const push = carriedByDash ? 0 : 95;
-      const duration = push + flight;
-      const rise = carriedByDash ? 8 : Math.abs(dx) <= 72 ? 14 : Math.min(68, Math.max(28, Math.abs(dy) / 4 + 24));
-      const arc = Math.abs(dy) + 2 * rise + 2 * Math.sqrt(rise * (rise + Math.abs(dy)));
-      if (lift) {
-        lift.style.left = `${start.x + spriteWidth / 2}px`;
-        lift.style.top = `${start.y + footOffset - 44}px`;
-        dust?.cancel();
-        dust = lift.animate([
-          { backgroundPositionX: '0px', opacity: .55 },
-          { backgroundPositionX: '-800px', opacity: 0 },
-        ], { duration: 280, delay: push, easing: 'steps(8, end)' });
-      }
-      layer.style.setProperty('--jump-duration', `${duration}ms`);
-      phase = 'jump';
-      layer.dataset.pose = phase;
-      const wideGap = Math.abs(dx) > shortGapDistance;
-      const startFrame = { transform: `translate(${start.x}px, ${start.y}px)` };
-      const frames = wideGap ? [
-        startFrame,
-        {
-          ...startFrame,
-          offset: push / duration,
-          easing: 'ease-in-out',
-        },
-        {
-          transform: dy < 0 ? `translate(${start.x}px, ${to.y}px)` : `translate(${to.x}px, ${start.y}px)`,
-          offset: (push + flight * (dy < 0 ? Math.abs(dy) : Math.abs(dx)) / (Math.abs(dx) + Math.abs(dy))) / duration,
-          easing: 'ease-in-out',
-        },
-        { transform: `translate(${to.x}px, ${to.y}px)` },
-      ] : [
-        startFrame,
-        ...Array.from({ length: 25 }, (_, step) => {
-          const t = step / 24;
-          return {
-            offset: (push + t * flight) / duration,
-            transform: `translate(${start.x + dx * t}px, ${start.y + dy * t - arc * t * (1 - t)}px)`,
-          };
-        }),
-      ];
-      motion = layer.animate(frames, { duration });
-
-      motion.onfinish = () => {
-        phase = 'land';
-        layer.dataset.pose = phase;
-        recovery = window.setTimeout(onLand, 160);
-      };
-    }
-
-    function dashAlongCover(start: Point, endX: number, finish: () => void) {
-      const canvas = effectsRef.current;
-      if (!layer || !canvas) return false;
-      entrance?.cancel();
-      entrance = playGroundMovement(canvas, image, start, endX, (x, opacity) => {
-        place({ x, y: start.y });
-        layer.style.opacity = String(opacity);
-      }, finish, undefined, 'dash');
-      if (!entrance) return false;
-      layer.dataset.direction = endX < start.x ? 'left' : 'right';
-      phase = 'dash';
-      layer.dataset.pose = phase;
-      return true;
-    }
-
-    function readSurface(tile: Element, bounds: DOMRect, box: DOMRect, dashDistance: number): Surface {
-      const left = Math.round(box.left - bounds.left - spriteWidth / 2);
-      const right = Math.round(box.right - bounds.left - spriteWidth / 2);
-      const inset = Math.min(coverCornerInset, Math.floor((right - left) / 2));
-      return {
-        tile,
-        left: left + inset,
-        right: right - inset,
-        y: Math.round(box.top - bounds.top - footOffset),
-        canDash: tile.classList.contains('case-cover') && box.width >= wideSurfaceWidth,
-        dashDistance,
-      };
-    }
-
-    function moveHorizontally(start: Point, endX: number, finish: () => void) {
-      if (!layer) return;
-      place({ x: endX, y: start.y });
-      if (typeof layer.animate !== 'function') {
-        finish();
-        return;
-      }
-      layer.dataset.direction = endX < start.x ? 'left' : 'right';
-      phase = 'run';
-      layer.dataset.pose = phase;
-      motion = layer.animate([
-        { transform: `translate(${start.x}px, ${start.y}px)` },
-        { transform: layer.style.transform },
-      ], { duration: Math.abs(endX - start.x) * 5 });
-      motion.onfinish = finish;
-    }
-
-    function moveOnSurface(start: Point, endX: number, surface: Surface, finish: (dashed: boolean) => void) {
-      activeSurface = surface;
-      const done = (dashed: boolean) => {
-        activeSurface = undefined;
-        finish(dashed);
-      };
-      if (start.x === endX) {
-        done(false);
-        return;
-      }
-      if (surface.canDash && Math.abs(endX - start.x) >= surface.dashDistance &&
-        dashAlongCover(start, endX, () => done(true))) return;
-      moveHorizontally(start, endX, () => done(false));
-    }
-
-    function travel(current: Stop, next: Stop, forward: boolean, finish: () => void) {
-      if (!layer) return;
-      const { point: start, surface: from } = current;
-      const into = next.surface;
-      const fixedLanding = next.edge !== 'landing';
-      let takeoffX = start.x;
-      if (from.canDash) {
-        takeoffX = fixedLanding ? onSurface(next.point.x, from) : forward ? from.right : from.left;
-      }
-      const approach = onSurface(takeoffX, into);
-      if (from.canDash || Math.abs(takeoffX - approach) > shortGapDistance) {
-        takeoffX = onSurface(approach, from);
-      }
-      const takeoff = { x: takeoffX, y: from.y };
-      const landingX = fixedLanding && !into.canDash &&
-        Math.abs(next.point.x - takeoff.x) <= shortGapDistance ? next.point.x : onSurface(takeoff.x, into);
-      const landing = { x: landingX, y: into.y };
-      if (next.edge === 'landing') next.point = landing;
-      const arrive = () => moveOnSurface(landing, next.point.x, into, finish);
-
-      moveOnSurface(start, takeoff.x, from, (dashed) => {
-        activeSurface = into;
-        const gap = Math.abs(landing.x - takeoff.x);
-        leap(takeoff, landing, arrive, dashed && takeoff.y === landing.y && gap > 0 && gap <= shortGapDistance);
-      });
-    }
-
-    function onSurface(x: number, surface: Surface) {
-      return Math.max(surface.left, Math.min(surface.right, x));
-    }
+    const cancelMotion = movement.cancel;
 
     const resumeAtTop = () => {
       if (!resumeRoute || narrowLayout || scrollY > 0 || resumedAtTop) return;
-      if (returnScroll === undefined && phase !== 'waiting' && phase !== 'blink') return;
+      if (returnScroll === undefined && movement.phase !== 'waiting' && movement.phase !== 'blink') return;
       resumedAtTop = true;
       queueUpdate();
     };
@@ -289,7 +91,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     }
 
     const activate = (event: MouseEvent) => {
-      if (layer.hidden || layer.dataset.visible !== 'true' || phase !== 'idle' || layer.hasAttribute('data-attacking')) return;
+      if (layer.hidden || layer.dataset.visible !== 'true' || movement.phase !== 'idle' || layer.hasAttribute('data-attacking')) return;
       const point = narrowLayout ? narrowTarget : currentStop?.point;
       const surface = narrowLayout ? narrowTarget?.surface : currentStop?.surface;
       if (point && Math.random() < .4) {
@@ -315,7 +117,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       const endX = onSurface(point.x + (toRight ? 1 : -1) * surface.dashDistance, surface);
       if (endX === point.x || !dashAlongCover(point, endX, () => {
         moveHorizontally({ x: endX, y: point.y }, point.x, () => {
-          activeSurface = undefined;
+          movement.activeSurface = undefined;
           settle(point);
           queueUpdate();
         });
@@ -324,7 +126,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         return;
       }
 
-      activeSurface = surface;
+      movement.activeSurface = surface;
       hideSpeech();
     };
 
@@ -354,8 +156,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         y: Math.round(next.box.top - bounds.top - footOffset),
       };
       if (narrowTarget?.x === point.x && narrowTarget.y === point.y && narrowTarget.sectionId === next.id &&
-        (!reducedMotion.matches || phase === 'idle')) {
-        if (phase === 'idle') showSpeech(point, bounds, next.id);
+        (!reducedMotion.matches || movement.phase === 'idle')) {
+        if (movement.phase === 'idle') showSpeech(point, bounds, next.id);
         return;
       }
 
@@ -489,17 +291,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
           settle(start.point);
           queueUpdate();
         };
-        if (effectsRef.current) {
-          entrance = playGroundMovement(effectsRef.current, image, start.point, start.point.x, (_, opacity) => {
-            layer.style.opacity = String(opacity);
-          }, reveal, introduction ? 'right' : 'left');
-          if (entrance) {
-            phase = 'blink';
-            layer.dataset.pose = phase;
-            layer.style.opacity = '0';
-          }
-        }
-        if (!entrance) reveal();
+        movement.appear(start.point, introduction ? 'right' : 'left', reveal);
         return;
       }
 
@@ -510,14 +302,15 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (current.surface.tile === currentStop.surface.tile && current.edge === 'landing') {
         current.point.x = onSurface(currentStop.point.x - currentStop.surface.left + current.surface.left, current.surface);
       }
-      const updatedSurface = activeSurface && stops.find((stop) => stop.surface.tile === activeSurface?.tile)?.surface;
+      const activeSurface = movement.activeSurface;
+      const updatedSurface = activeSurface && stops.find((stop) => stop.surface.tile === activeSurface.tile)?.surface;
       const surfaceMoved = activeSurface && (!updatedSurface || activeSurface.left !== updatedSurface.left ||
         activeSurface.right !== updatedSurface.right || activeSurface.y !== updatedSurface.y);
-      if (phase !== 'idle') {
+      if (movement.phase !== 'idle') {
         if (!visible || currentIndex < 0 || current.point.x !== currentStop.point.x ||
           current.point.y !== currentStop.point.y || surfaceMoved) {
           cancelMotion();
-          if (resumeRoute && phase === 'blink') returnScroll = window.scrollY;
+          if (resumeRoute && movement.phase === 'blink') returnScroll = window.scrollY;
           currentStop = current;
           settle(current.point);
           queueUpdate();
@@ -662,11 +455,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
   );
 }
 
-export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
-  actorRef: RefObject<HTMLSpanElement | null>;
-  runOnHeadingId?: string;
-  message?: string;
-}) {
+export function ViewportMascot({ actorRef: actor }: { actorRef: RefObject<HTMLSpanElement | null> }) {
   const effects = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -678,47 +467,12 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
     const image = new Image();
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let entrance: ReturnType<typeof playGroundMovement>;
-    let run: Animation | undefined;
-    let headingAppeared = false;
     let started = false;
     let frame = 0;
-
-    const stopRunning = () => {
-      if (!run) return;
-      run.cancel();
-      run = undefined;
-      layer.dataset.pose = 'idle';
-    };
-
-    const runToCenter = () => {
-      if (!headingAppeared || document.hidden || layer.dataset.pose !== 'idle' || layer.hasAttribute('data-centered')) return;
-      const { left, width } = layer.getBoundingClientRect();
-      const distance = innerWidth / 2 - (left + width / 2);
-      layer.dataset.centered = '';
-      if (reducedMotion.matches || !distance || typeof layer.animate !== 'function') return;
-
-      layer.dataset.direction = distance < 0 ? 'left' : 'right';
-      layer.dataset.pose = 'run';
-      run = layer.animate([
-        { transform: `translateX(${-width / 2 - distance}px)` },
-        { transform: 'translateX(-50%)' },
-      ], { duration: Math.abs(distance) * 5 });
-      run.onfinish = stopRunning;
-    };
-
-    const heading = runOnHeadingId ? document.getElementById(runOnHeadingId) : null;
-    const observer = heading && new IntersectionObserver(([entry], source) => {
-      if (entry.intersectionRatio < .25) return;
-      source.disconnect();
-      headingAppeared = true;
-      runToCenter();
-    }, { threshold: .25 });
-    if (heading && observer) observer.observe(heading);
 
     const reveal = () => {
       layer.style.opacity = '1';
       layer.dataset.pose = 'idle';
-      runToCenter();
     };
 
     const appear = () => {
@@ -731,7 +485,7 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
       const { offsetLeft: x, offsetTop: y } = layer;
       entrance = playGroundMovement(canvas, image, { x, y }, x, (_, opacity) => {
         layer.style.opacity = String(opacity);
-      }, reveal, 'left');
+      }, reveal, { kind: 'blink-arrival', facing: 'left' });
       if (!entrance) reveal();
     };
 
@@ -739,16 +493,10 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
       layer.dataset.visible = String(!document.hidden);
       if (!document.hidden) {
         queueAppear();
-        runToCenter();
       } else if (started) {
-        stopRunning();
         entrance?.cancel();
         reveal();
       }
-    };
-
-    const updateMotion = () => {
-      if (reducedMotion.matches) stopRunning();
     };
 
     function queueAppear() {
@@ -759,22 +507,17 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
     image.addEventListener('load', queueAppear);
     image.addEventListener('error', queueAppear);
     document.addEventListener('visibilitychange', updateVisibility);
-    reducedMotion.addEventListener('change', updateMotion);
     image.src = rider;
     queueAppear();
 
     return () => {
-      observer && observer.disconnect();
-      stopRunning();
-      delete layer.dataset.centered;
       entrance?.cancel();
       cancelAnimationFrame(frame);
       image.removeEventListener('load', queueAppear);
       image.removeEventListener('error', queueAppear);
       document.removeEventListener('visibilitychange', updateVisibility);
-      reducedMotion.removeEventListener('change', updateMotion);
     };
-  }, [actor, runOnHeadingId]);
+  }, [actor]);
 
   return (
     <div className="mascot-viewport">
@@ -783,9 +526,7 @@ export function ViewportMascot({ actorRef: actor, runOnHeadingId, message }: {
         <span className="mascot__facing">
           <span className="mascot__sprite" />
         </span>
-        {message && <MascotSpeech message={message} position={{ y: -8, alignment: 50, above: true }} duration={10000} />}
       </span>
-      <p className="mascot-speech__transcript" role="status">{message}</p>
     </div>
   );
 }

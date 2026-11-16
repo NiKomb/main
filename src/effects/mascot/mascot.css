@@ -95,8 +95,10 @@
   background: #171717;
   color: var(--color-text);
   font: 11px/16px var(--font-accent);
+  text-align: start;
   text-transform: uppercase;
   white-space: pre-line;
+  text-wrap: pretty;
   overflow-wrap: anywhere;
   translate: calc(0% - var(--speech-alignment)) var(--speech-offset, 0%);
   pointer-events: none;
@@ -138,20 +140,22 @@
   opacity: 0;
 }
 
-.mascot-viewport__actor[data-centered] {
-  position: fixed;
-  inset: auto auto -4px 50%;
-  transform: translateX(-50%);
+.mascot-case {
+  position: absolute;
+  inset: -72px calc((100% - 100vw) / 2) 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
-.mascot-viewport__actor .mascot-speech { max-inline-size: min(100vw - 24px, 244px); }
-.mascot-viewport__actor:not([data-centered]) .mascot-speech {
-  left: 100%;
-  translate: -100% -100%;
+.mascot-case .mascot-speech { max-inline-size: min(244px, 100% - 24px); }
+
+.mascot-case__departure {
+  position: absolute;
+  inset: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mascot-viewport .mascot[data-pose] .mascot__sprite { animation: none; }
+  :is(.mascot-viewport, .mascot-case) .mascot[data-pose] .mascot__sprite { animation: none; }
 }
 
 .mascot[data-pose="run"] .mascot__sprite {

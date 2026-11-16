@@ -3,10 +3,11 @@ import { flushSync } from 'react-dom';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
-import { dnsCase, dnsContents } from '../data/dnsCase';
+import { dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
+import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
@@ -129,7 +130,6 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [activeHeading, setActiveHeading] = useState(dnsContents[0].id);
   const [contentsVisible, setContentsVisible] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
-  const [comparisonHit, setComparisonHit] = useState(false);
   const [originalView, setOriginalView] = useState<'preview' | 'loading' | 'original' | 'error'>('preview');
   const [activeCoverVideo, setActiveCoverVideo] = useState<HTMLVideoElement | null>(null);
   const [coverPlaying, setCoverPlaying] = useState(false);
@@ -138,6 +138,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const viewportMascot = useRef<HTMLSpanElement>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
+  const caseContents = useRef<HTMLUListElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const dialogContent = useRef<HTMLDivElement>(null);
   const originalViewport = useRef<HTMLDivElement>(null);
@@ -185,7 +186,6 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       setSelected(next);
       setArrived(!flight);
       setContentsVisible(false);
-      setComparisonHit(false);
       if (!next) setReturnedFromCase(true);
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
@@ -258,6 +258,25 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       window.removeEventListener('resize', resize);
     };
   }, [isDns, arrived]);
+
+  useEffect(() => {
+    const list = caseContents.current;
+    const active = list?.querySelector('button[aria-current="location"]');
+    if (!isDns || !contentsVisible || !list || !active) return;
+
+    const reveal = () => {
+      const bounds = list.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      list.scrollBy({
+        left: Math.min(0, item.left - bounds.left) + Math.max(0, item.right - bounds.right),
+        top: Math.min(0, item.top - bounds.top) + Math.max(0, item.bottom - bounds.bottom),
+        behavior: 'instant',
+      });
+    };
+    reveal();
+    window.addEventListener('resize', reveal);
+    return () => window.removeEventListener('resize', reveal);
+  }, [isDns, contentsVisible, activeHeading]);
 
   function jumpToHeading(id: string) {
     const heading = document.getElementById(id);
@@ -377,19 +396,25 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     ...(item?.links.length ? [{ id: 'case-materials-heading', label: 'Материалы' }] : []),
   ];
   const contentsList = (
-    <ul>
-      {contents.map(({ id, label, note }) => (
-        <li key={id}>
-          <button type="button" onClick={() => jumpToHeading(id)}
-            aria-label={note ? label : undefined}
-            aria-describedby={note ? `${id}-contents-note` : undefined}
-            title={note}
-            aria-current={isDns && activeHeading === id ? 'location' : undefined}>
-            <span>{label}</span>
-            {note && <span id={`${id}-contents-note`} className="case-contents-note">{note}</span>}
-          </button>
-        </li>
-      ))}
+    <ul ref={caseContents}>
+      {contents.map(({ id, label, note }) => {
+        const current = isDns && activeHeading === id;
+        return (
+          <li key={id}>
+            <button type="button" onClick={() => jumpToHeading(id)}
+              aria-label={note ? label : undefined}
+              aria-describedby={note ? `${id}-contents-note` : undefined}
+              title={note}
+              aria-current={current ? 'location' : undefined}
+              style={current ? { '--contents-label-length': label.length } as CSSProperties : undefined}>
+              <span className="case-contents-label">
+                <span className="case-contents-text">{label}</span>
+              </span>
+              {note && <span id={`${id}-contents-note`} className="case-contents-note">{note}</span>}
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 
@@ -481,12 +506,11 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               {!isDns && <p>Содержание</p>}
               {(!isDns || contentsVisible) && contentsList}
             </nav>
-            <ViewportMascot actorRef={viewportMascot} runOnHeadingId={isDns ? 'dns-comparison' : undefined}
-              message={isDns && comparisonHit ? dnsCase.comparison.iteration.speech : undefined} />
+            {isDns ? arrived && <CaseMascot actorRef={viewportMascot} comments={dnsMascotComments} paused={viewingMedia} />
+              : <ViewportMascot actorRef={viewportMascot} />}
             <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
-                  onComparisonHit={setComparisonHit}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : (
                 <>
