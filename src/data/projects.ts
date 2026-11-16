@@ -24,6 +24,7 @@ export type ProjectImage = {
   roundedCorners?: boolean | number;
   cropInset?: number;
   showFull?: boolean;
+  original?: { src: string; alt: string };
 };
 
 export type Project = {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type Ref, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -93,6 +93,7 @@ function CaseScreenshot({ image, onOpen }: {
 }) {
   return (
     <button type="button" className="case-zoom-trigger case-screenshot" aria-label={`Увеличить: ${image.alt}`}
+      data-original-src={image.original?.src} data-original-alt={image.original?.alt}
       onClick={(event) => onOpen(event.currentTarget)}>
       <span className="case-cover case-screenshot-media" style={screenshotSize(image)}
         data-portrait-preview={image.height > image.width ? '' : undefined} data-fit={image.showFull ? '' : undefined}>
@@ -129,6 +130,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [contentsVisible, setContentsVisible] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [comparisonHit, setComparisonHit] = useState(false);
+  const [originalView, setOriginalView] = useState<'preview' | 'loading' | 'original' | 'error'>('preview');
   const [activeCoverVideo, setActiveCoverVideo] = useState<HTMLVideoElement | null>(null);
   const [coverPlaying, setCoverPlaying] = useState(false);
   const coverPlayback = useRef<ReturnType<typeof connectCoverPlayback>>(undefined);
@@ -138,6 +140,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const caseBack = useRef<HTMLAnchorElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const dialogContent = useRef<HTMLDivElement>(null);
+  const originalViewport = useRef<HTMLDivElement>(null);
+  const originalTrigger = useRef<HTMLButtonElement>(null);
   const mediaSwipe = useRef<{ pointer: number; x: number; y: number } | null>(null);
   const suppressMediaClick = useRef(false);
   const coverFlight = useRef<(() => void) | undefined>(undefined);
@@ -147,6 +151,12 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const item = cases.find((entry) => entry.id === selected);
   const isDns = item?.id === 'dns';
   const viewingMedia = gallery !== null;
+  const original = gallery?.slides[gallery.index].dataset;
+  const showingOriginal = originalView === 'original';
+
+  useEffect(() => {
+    if (showingOriginal) originalViewport.current?.focus({ preventScroll: true });
+  }, [showingOriginal]);
 
   useEffect(() => {
     if (!activeCoverVideo || !arrived || viewingMedia) return;
@@ -292,6 +302,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     mediaFlight.current?.();
     const media = showMedia(content, source);
     const video = media.querySelector('video');
+    if (document.activeElement === originalTrigger.current) content.focus({ preventScroll: true });
+    setOriginalView('preview');
     setGallery({ ...gallery, index, video, controlsVisible: false });
     void video?.play().catch(() => {});
   }
@@ -301,6 +313,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     dialogContent.current?.replaceChildren();
     mediaSwipe.current = null;
     suppressMediaClick.current = false;
+    setOriginalView('preview');
     setGallery(null);
   }
 
@@ -322,15 +335,34 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     mediaFlight.current = flight ? flight.to(target) : undefined;
   }
 
-  function finishMediaSwipe(event: PointerEvent<HTMLDivElement>) {
+  function startMediaSwipe(event: PointerEvent<HTMLElement>) {
+    suppressMediaClick.current = false;
+    mediaSwipe.current = event.isPrimary && event.pointerType === 'touch'
+      ? { pointer: event.pointerId, x: event.clientX, y: event.clientY } : null;
+  }
+
+  function finishMediaSwipe(event: PointerEvent<HTMLElement>) {
     const start = mediaSwipe.current;
     mediaSwipe.current = null;
-    if (!start || start.pointer !== event.pointerId) return;
+    if (!start || start.pointer !== event.pointerId || !gallery || gallery.slides.length < 2) return;
     const direction = swipeDirection(event.clientX - start.x, event.clientY - start.y);
     if (!direction) return;
     suppressMediaClick.current = true;
     moveMedia(direction);
   }
+
+  function preventClickAfterSwipe(event: MouseEvent<HTMLElement>) {
+    if (!suppressMediaClick.current || event.detail === 0) return;
+    suppressMediaClick.current = false;
+    event.stopPropagation();
+  }
+
+  const mediaSwipeHandlers = {
+    onPointerDown: startMediaSwipe,
+    onPointerUp: finishMediaSwipe,
+    onPointerCancel: () => { mediaSwipe.current = null; },
+    onClickCapture: preventClickAfterSwipe,
+  };
 
   function stopCoverDrag(event: PointerEvent<HTMLDivElement>) {
     if (coverDrag.current?.pointer !== event.pointerId) return;
@@ -549,18 +581,56 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       <dialog ref={dialog} className="case-dialog" aria-label="Просмотр материалов"
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onKeyDown={(event) => {
-          if (event.target instanceof HTMLVideoElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+          if (showingOriginal || event.target instanceof HTMLVideoElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
           event.preventDefault();
           moveMedia(event.key === 'ArrowLeft' ? -1 : 1);
         }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
-        <div ref={dialogContent} className="gallery-media-full" tabIndex={-1} />
+        <div className="gallery-preview" inert={showingOriginal}>
+          <div ref={dialogContent} className="gallery-media-full" tabIndex={-1} />
+          {original?.originalSrc && !showingOriginal && (
+            <button ref={originalTrigger} type="button" className="case-zoom-trigger gallery-original-trigger"
+              {...mediaSwipeHandlers} aria-label="Показать оригинал в масштабе 100%"
+              aria-disabled={originalView === 'loading'}
+              onClick={() => {
+                if (originalView === 'loading') return;
+                mediaFlight.current?.();
+                setOriginalView('loading');
+              }} />
+          )}
+          <span className="gallery-original-status" role="status">
+            {original?.originalSrc && originalView === 'preview' && (
+              <span aria-hidden="true">Нажмите, чтобы увеличить до 100%</span>
+            )}
+            {originalView === 'loading' && 'Загрузка оригинала…'}
+            {originalView === 'error' && 'Не удалось загрузить оригинал. Нажмите, чтобы повторить'}
+          </span>
+        </div>
+        {original?.originalSrc && (originalView === 'loading' || showingOriginal) && (
+          <div ref={originalViewport} className="gallery-original" role="region" aria-label="Изображение в масштабе 100%"
+            tabIndex={0} hidden={!showingOriginal}>
+            <img src={original.originalSrc} alt={original.originalAlt} draggable={false}
+              onLoad={() => setOriginalView('original')} onError={() => setOriginalView('error')} />
+          </div>
+        )}
         <div className="gallery-actions">
           <button type="button" className="icon-tile gallery-close" {...iconTilePress} aria-label="Закрыть" onClick={closeMedia}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="m5 5 10 10M15 5 5 15" />
             </svg>
           </button>
+          {showingOriginal && (
+            <button type="button" className="icon-tile" {...iconTilePress} aria-label="Вернуться к превью"
+              onClick={() => {
+                flushSync(() => setOriginalView('preview'));
+                originalTrigger.current?.focus({ preventScroll: true });
+              }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <circle cx="8.5" cy="8.5" r="5.5" />
+                <path d="m12.5 12.5 4.5 4.5M5.5 8.5h6" />
+              </svg>
+            </button>
+          )}
           {gallery?.video && (
             <button type="button" className="icon-tile" {...iconTilePress} aria-label="Управление видео" aria-pressed={gallery.controlsVisible ?? false} onClick={() => {
               const controlsVisible = !gallery.controlsVisible;
@@ -575,21 +645,9 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             </button>
           )}
         </div>
-        {gallery && gallery.slides.length > 1 && (
+        {gallery && gallery.slides.length > 1 && !showingOriginal && (
           <>
-            <div className="gallery-navigation"
-              onPointerDown={(event) => {
-                suppressMediaClick.current = false;
-                mediaSwipe.current = event.isPrimary && event.pointerType === 'touch'
-                  ? { pointer: event.pointerId, x: event.clientX, y: event.clientY } : null;
-              }}
-              onPointerUp={finishMediaSwipe}
-              onPointerCancel={() => { mediaSwipe.current = null; }}
-              onClickCapture={(event) => {
-                if (!suppressMediaClick.current || event.detail === 0) return;
-                suppressMediaClick.current = false;
-                event.stopPropagation();
-              }}>
+            <div className="gallery-navigation" {...mediaSwipeHandlers}>
               <button type="button" className="gallery-previous" aria-label="Предыдущий кадр" onClick={() => moveMedia(-1)} />
               <button type="button" className="gallery-next" aria-label="Следующий кадр" onClick={() => moveMedia(1)} />
             </div>

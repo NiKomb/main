@@ -221,6 +221,11 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor, onCompar
               <ScreenshotPlaceholders frames={research.competitors.frames} />
             </section>
             <section className="dns-case-block">
+              <h3>{research.prioritization.title}</h3>
+              <p>{research.prioritization.intro}</p>
+              {renderFigure(research.prioritization.evidence)}
+            </section>
+            <section className="dns-case-block">
               <h3>{research.conclusionTitle}</h3>
               {research.conclusion.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
             </section>

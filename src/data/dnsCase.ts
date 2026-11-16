@@ -5,6 +5,10 @@ import sessionMotherboard from './screens/dns-session-motherboard.webp';
 import sessionCase from './screens/dns-session-case.webp';
 import sessionCheck from './screens/dns-session-check.webp';
 import sessionSave from './screens/dns-session-save.webp';
+import interviewEvidence from './screens/dns-interview-evidence.webp';
+import interviewEvidenceFull from './screens/dns-interview-evidence-full.webp';
+import prioritizationEvidence from './screens/dns-prioritization-evidence.webp';
+import prioritizationEvidenceFull from './screens/dns-prioritization-evidence-full.webp';
 import compareBefore from './screens/dns-compare-before.webp';
 import compareSelection from './screens/dns-compare-select.webp';
 import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
@@ -87,8 +91,14 @@ export const dnsCase = {
         ],
       },
     ],
-    framesTitle: 'Кадры шести исследовательских сессий',
+    framesTitle: 'Материалы и кадры исследовательских сессий',
     frames: [
+      {
+        src: interviewEvidence, width: 3110, height: 774, showFull: true, label: 'Матрица сессий',
+        alt: 'Матрица с условиями шести интервью, отдельным проходом сборщика и дословными репликами по сессиям',
+        caption: 'Условия заданий, профили и реплики из шести интервью и отдельного прохода сборщика',
+        original: { src: interviewEvidenceFull, alt: 'Полная матрица исследовательских сессий' },
+      },
       {
         src: researchCatalog, width: 1427, height: 922, showFull: true, roundedCorners: 6, cropInset: 2,
         alt: 'Каталог процессоров Ryzen с отметкой «Сравнить» под названиями моделей',
@@ -128,6 +138,16 @@ export const dnsCase = {
         { label: 'Регард', caption: 'Поиск по модели и активные фильтры в каталоге' },
         { label: 'X-core.by', caption: 'Цена, прогресс сборки и проверки совместимости рядом с выбором детали' },
       ],
+    },
+    prioritization: {
+      title: 'Приоритизация гипотез',
+      intro: 'Сопоставил восемь исходных гипотез с эпизодами шести интервью и отдельного прохода сборщика. Для каждой записал, по какому действию или реплике можно заметить потребность, и отметил основание по каждой записи',
+      evidence: {
+        src: prioritizationEvidence, width: 2560, height: 1536,
+        alt: 'Верхняя часть матрицы приоритизации с выводами по восьми гипотезам и проверкой признаков по сессиям',
+        caption: 'Матрица проверки потребностей. Для каждой гипотезы указаны признак, наблюдения по сессиям и границы вывода',
+        original: { src: prioritizationEvidenceFull, alt: 'Полная матрица приоритизации гипотез' },
+      },
     },
     conclusionTitle: 'Что взял в работу',
     conclusion: [
