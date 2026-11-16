@@ -32,10 +32,12 @@ export function rightmostCaseSurface<T extends CaseSurface>(surface: T, surfaces
   ), surface);
 }
 
-export function adjacentCaseSurface<T extends CaseSurface>(surface: T, surfaces: readonly T[]): T | undefined {
-  return surfaces.find((candidate) => {
-    if (candidate.tile === surface.tile || !sameCaseRow(candidate, surface)) return false;
-    const gap = candidate.left >= surface.right ? candidate.left - surface.right : surface.left - candidate.right;
-    return gap >= 0 && gap <= 72;
-  });
+export function nextCaseSurfaceToRight<T extends CaseSurface>(surface: T, surfaces: readonly T[]): T | undefined {
+  let next: T | undefined;
+  for (const candidate of surfaces) {
+    const gap = candidate.left - surface.right;
+    if (gap < 0 || gap > 72 || !sameCaseRow(candidate, surface)) continue;
+    if (!next || candidate.left < next.left) next = candidate;
+  }
+  return next;
 }

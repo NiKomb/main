@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
-import { adjacentCaseSurface, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
+import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechPosition } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
@@ -69,9 +69,27 @@ test('case movement selects a single row above the viewport midpoint', () => {
   assert.equal(selectCaseSurface([{ ...screen, top: 451 }], undefined, 900), undefined);
   assert.equal(sameCaseRow(screen, adjacent), true);
   assert.equal(sameCaseRow(screen, { ...adjacent, top: 390 }), false);
-  assert.equal(adjacentCaseSurface(screen, [card, distant, adjacent]), adjacent);
-  assert.equal(adjacentCaseSurface(screen, [card, distant]), undefined);
+  assert.equal(nextCaseSurfaceToRight(screen, [card, distant, adjacent]), adjacent);
+  assert.equal(nextCaseSurfaceToRight(screen, [card, distant]), undefined);
   assert.equal(rightmostCaseSurface(screen, [card, distant, adjacent]), distant);
+});
+
+test('metric rows traverse adjacent tiles to the right and stop on their own last tile', () => {
+  const group = {};
+  const tile = (left, top) => ({ tile: {}, group, kind: 'card', left, right: left + 250, top });
+  const left = tile(320, 180);
+  const middle = tile(578, 180);
+  const right = tile(836, 180);
+  const nextLeft = tile(320, 340);
+  const nextRight = tile(578, 340);
+  const tiles = [left, right, middle, nextLeft, nextRight];
+
+  assert.equal(nextCaseSurfaceToRight(left, tiles), middle);
+  assert.equal(nextCaseSurfaceToRight(middle, tiles), right);
+  assert.equal(nextCaseSurfaceToRight(right, tiles), undefined);
+  assert.equal(rightmostCaseSurface(nextLeft, tiles), nextRight);
+  assert.equal(nextCaseSurfaceToRight(nextLeft, tiles), nextRight);
+  assert.equal(nextCaseSurfaceToRight(nextRight, tiles), undefined);
 });
 
 test('blink vanishes at the origin and cues arrival on a different row', () => {

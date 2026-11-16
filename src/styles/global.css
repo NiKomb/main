@@ -990,6 +990,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-results > li { align-content: start; }
 .dns-case-results > .dns-case-metric { align-content: space-between; }
+@media (width < 1280px) {
+  .dns-case-results[data-mascot-comment] { margin-block-start: 80px; }
+}
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }
 .dns-case-stages li { display: grid; gap: var(--space-6); }

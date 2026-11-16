@@ -4,7 +4,7 @@ import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment } from './case-comments';
-import { adjacentCaseSurface, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
+import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
@@ -51,12 +51,12 @@ export function CaseMascot({ actorRef, comments, paused }: {
       const group = gallery ?? tile.closest('.dns-case-stages, .dns-decision-tile') ?? tile;
       return { tile, kind, group, clip };
     });
-    const moved = new Set<Element>();
     let current: Stop | undefined;
     let destination: Stop | undefined;
     let rightStop: Stop | undefined;
     let galleryComment: Element | null = null;
     let metricCheck: Element | null = null;
+    let metricGrid: Element | null = null;
     let frame = 0;
     let appeared = false;
     let suspended = false;
@@ -126,18 +126,25 @@ export function CaseMascot({ actorRef, comments, paused }: {
         hideSpeech();
         return;
       }
-      const commentBlock = metricCheck ?? galleryComment;
+      const metricBlock = metricCheck ?? metricGrid;
+      const commentBlock = metricBlock ?? galleryComment;
       if (commentBlock) {
         position.alignment = 0;
         position.above = true;
-        if (bounds.width >= (metricCheck ? 1280 : 960)) {
-          const textRight = metricCheck ? commentBlock.getBoundingClientRect().right : Math.max(commentBlock.getBoundingClientRect().left,
+        if (bounds.width >= (metricBlock ? 1280 : 960)) {
+          const textRight = metricBlock ? commentBlock.getBoundingClientRect().right : Math.max(commentBlock.getBoundingClientRect().left,
             ...Array.from(commentBlock.querySelectorAll(':scope > h4, :scope > p'), (element) => element.getBoundingClientRect().right));
           position.left = textRight - bounds.left + 12;
           position.maxWidth = Math.min(244, bounds.width - position.left - 12);
-          position.y = y - 8;
+          position.above = !metricGrid;
+          position.y = metricGrid ? y + footOffset : y - 8;
         } else {
-          const column = metricCheck && stop.surface.tile.closest('.dns-case-block');
+          const firstCard = metricGrid?.firstElementChild;
+          if (firstCard && Math.abs(firstCard.getBoundingClientRect().top - (bounds.top + y + footOffset)) >= 1) {
+            hideSpeech();
+            return;
+          }
+          const column = metricGrid ?? (metricCheck && stop.surface.tile.closest('.dns-case-block'));
           position.left = column ? column.getBoundingClientRect().left - bounds.left + 12 : 16;
           position.maxWidth = Math.min(244, x - position.left - 8);
           position.y = y + footOffset - 4;
@@ -174,7 +181,6 @@ export function CaseMascot({ actorRef, comments, paused }: {
 
       const delta = scrollY - lastScroll;
       rememberActor(bounds);
-      const reversed = delta !== 0 && direction !== 0 && Math.sign(delta) !== direction;
       const canFollow = delta <= innerHeight / 3;
       if (delta !== 0) direction = Math.sign(delta);
       lastScroll = scrollY;
@@ -200,7 +206,8 @@ export function CaseMascot({ actorRef, comments, paused }: {
       galleryComment = selected?.group.matches('.interview-gallery-scroll')
         ? selected.group.closest('.dns-case-block[data-mascot-comment]') : null;
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
-      const rightmost = selected && (galleryComment ? rightmostCaseSurface(selected, upperSurfaces) : metricCheck ? selected : undefined);
+      metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
+      const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
       rightStop = rightmost ? stop(rightmost.surface, 'finish', rightmost.surface.right) : undefined;
 
       let interrupted = false;
@@ -223,7 +230,7 @@ export function CaseMascot({ actorRef, comments, paused }: {
         destination = undefined;
       }
 
-      if (!selected) {
+      if (!selected || !rightStop) {
         if (!actor.hidden) {
           playDeparture(bounds);
           movement.cancel();
@@ -233,16 +240,20 @@ export function CaseMascot({ actorRef, comments, paused }: {
         return;
       }
 
-      const { surface, group } = selected;
-      const neighbour = moved.has(group) || selected.hasOwnComment ? undefined : adjacentCaseSurface(selected, upperSurfaces);
-      const nextOnRight = !neighbour || neighbour.left > selected.left;
+      const { surface } = selected;
       const runUp = surface.canDash ? surface.dashDistance + 12 : sectionEdgeInset - 12;
-      const startX = nextOnRight ? surface.right - runUp : surface.left + runUp;
-      const start = stop(surface, 'start', startX);
+      const start = stop(surface, 'start', surface.right - runUp);
+
+      if (motion.matches) {
+        current = rightStop;
+        settle(rightStop.point);
+        appeared = true;
+        drawSpeech(bounds);
+        return;
+      }
 
       if (resumeFrom && canFollow) {
-        const edge = current?.surface.tile === surface.tile ? current.edge : 'landing';
-        const landing = stop(surface, edge, current?.surface.tile === surface.tile ? current.point.x : resumeFrom.x);
+        const landing = stop(surface, 'landing', current?.surface.tile === surface.tile ? current.point.x : resumeFrom.x);
         destination = landing;
         movement.leap(resumeFrom, landing.point, () => finish(landing), { arcAcrossWideGap: true });
         drawSpeech(bounds);
@@ -250,30 +261,28 @@ export function CaseMascot({ actorRef, comments, paused }: {
       }
 
       if (current?.surface.tile !== surface.tile || actor.hidden) {
-        const landing = stop(surface, 'finish', surface.right);
+        const landing = previous?.group === selected.group || surface.tile === rightStop.surface.tile
+          ? rightStop : stop(surface, 'landing', surface.left);
         const from = previous && current && stop(previous.surface, current.edge, current.point.x);
-        const distance = (origin: Surface) => Math.max(0, origin.left - surface.right, surface.left - origin.right);
         const nearby = from && Math.abs(from.point.y - landing.point.y) <= Math.min(400, innerHeight / 2) &&
-          distance(from.surface) <= shortGapDistance;
-        if (!motion.matches && !actor.hidden && previous && nearby && canFollow) {
-          moved.add(group);
+          Math.max(0, from.surface.left - landing.surface.right, landing.surface.left - from.surface.right) <= shortGapDistance;
+        if (!actor.hidden && previous && nearby && canFollow) {
           destination = landing;
           movement.travel(from, landing, selected.top >= previous.top, () => finish(landing), true);
         } else {
-          const arrival = moved.has(group) ? landing : start;
-          current = arrival;
+          current = start;
           const foot = point && bounds.top + point.y + footOffset;
-          if (!motion.matches && appeared && !interrupted && !actor.hidden && point && foot !== undefined &&
+          if (appeared && !interrupted && !actor.hidden && point && foot !== undefined &&
             foot > 0 && foot < innerHeight) {
-            destination = arrival;
-            movement.blink(point, arrival.point, () => finish(arrival));
+            destination = start;
+            movement.blink(point, start.point, () => finish(start));
           } else {
             const leftWithBlink = playDeparture(bounds);
-            const reveal = !motion.matches && (leftWithBlink || !appeared || actor.hidden || Math.abs(delta) > innerHeight / 3);
-            settle(arrival.point);
+            const reveal = leftWithBlink || !appeared || actor.hidden || Math.abs(delta) > innerHeight / 3;
+            settle(start.point);
             if (reveal) {
               actor.dataset.direction = 'left';
-              movement.appear(arrival.point, 'left', () => finish(arrival));
+              movement.appear(start.point, 'left', () => finish(start));
             }
           }
           appeared = true;
@@ -284,31 +293,17 @@ export function CaseMascot({ actorRef, comments, paused }: {
       }
 
       current = stop(surface, current.edge, current.point.x);
-      if (rightStop && (moved.has(group) || !neighbour || motion.matches) &&
-        (current.surface.tile !== rightStop.surface.tile || current.point.x !== rightStop.point.x)) {
-        const arrival = rightStop;
-        if (motion.matches) finish(arrival);
-        else {
-          destination = arrival;
-          movement.moveOnSurface(current.point, arrival.point.x, surface, () => finish(arrival));
-        }
-        drawSpeech(bounds);
-        return;
+      if (surface.tile !== rightStop.surface.tile || current.point.x !== rightStop.point.x) {
+        const nextTile = surface.tile !== rightStop.surface.tile ? nextCaseSurfaceToRight(selected, upperSurfaces) : undefined;
+        const arrival = nextTile ? stop(nextTile.surface, 'landing', nextTile.surface.left) : rightStop;
+        destination = arrival;
+        const arrive = () => finish(arrival);
+        if (surface.tile !== arrival.surface.tile) movement.travel(current, arrival, true, arrive, true);
+        else movement.moveOnSurface(current.point, arrival.point.x, surface, arrive);
+      } else {
+        current = rightStop;
+        settle(rightStop.point);
       }
-      if (!motion.matches && !reversed && !moved.has(group)) {
-        if (neighbour) {
-          const landing = stop(neighbour.surface, 'landing', nextOnRight ? neighbour.surface.left : neighbour.surface.right);
-          moved.add(group);
-          destination = landing;
-          movement.travel(current, landing, nextOnRight, () => finish(landing), true);
-        } else if (selected.kind === 'screen' && current.edge === 'start' && current.point.x !== surface.right) {
-          const finishStop = stop(surface, 'finish', surface.right);
-          moved.add(group);
-          destination = finishStop;
-          movement.moveOnSurface(current.point, finishStop.point.x, surface, () => finish(finishStop));
-        }
-      }
-      if (!destination) settle(current.point);
       drawSpeech(bounds);
     };
 
