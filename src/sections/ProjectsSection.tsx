@@ -234,10 +234,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     const headings = [...dnsContents].reverse().map(({ id }) => document.getElementById(id));
     let alignment = headingAlignment(overviewHeading);
     const update = () => {
-      const overviewBottom = overview.getBoundingClientRect().bottom;
-      // The mobile contents bar counts as the top of the reading area once revealed.
-      const readingTop = alignment.anchor === 0 ? alignment.offset : 0;
-      setContentsVisible((visible) => overviewBottom <= (visible ? readingTop : 0));
+      setContentsVisible(overview.getBoundingClientRect().bottom <= 0);
       const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
       const current = atBottom ? headings[0] : headings.find((heading) => {
         if (!heading) return false;
@@ -265,6 +262,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     if (!isDns || !contentsVisible || !list || !active) return;
 
     const reveal = () => {
+      if (!list.clientWidth) return;
       const bounds = list.getBoundingClientRect();
       const item = active.getBoundingClientRect();
       list.scrollBy({
