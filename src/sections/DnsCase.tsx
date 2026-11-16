@@ -114,7 +114,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 }
 
 export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props) {
-  const { sectionLabels, research, summary, comparison, scenario, quickChoice, test } = dnsCase;
+  const { sectionLabels, research, summary, comparison, scenario, quickChoice, test, reflection } = dnsCase;
   const toggleCaption = useRef<HTMLElement>(null);
 
   function renderFigure(figure: CaseFigure, captionTarget?: RefObject<HTMLElement | null>) {
@@ -343,13 +343,22 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
               <p>{test.journalLimit}</p>
             </div>
           </section>
-          <section className="dns-case-block">
-            <h3>Что проверю дальше</h3>
-            <ul className="dns-case-points">
-              {test.next.map((step) => <li key={step}>{step}</li>)}
-            </ul>
-            <p>{test.nextIteration}</p>
-          </section>
+        </div>
+      </section>
+
+      <section className="case-content-section dns-case-section" aria-labelledby="dns-reflection">
+        <h2 className="dns-case-divider" id="dns-reflection" tabIndex={-1}>{reflection.title}</h2>
+        <div className="dns-case-subsections">
+          <div className="dns-case-group">
+            {reflection.points.map(({ title, problem, next }) => (
+              <section className="dns-case-block" key={title}>
+                <h3>{title}</h3>
+                <p>{problem}</p>
+                <p>{next}</p>
+              </section>
+            ))}
+            <p>{reflection.nextIteration}</p>
+          </div>
         </div>
       </section>
     </>
