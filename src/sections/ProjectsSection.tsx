@@ -547,7 +547,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : isVseinstrumenti ? (
-                <VseinstrumentiCase jumpToHeading={jumpToHeading} links={item.links}
+                <VseinstrumentiCase jumpToHeading={jumpToHeading}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : (
                 <>

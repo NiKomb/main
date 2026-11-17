@@ -1,15 +1,14 @@
 import type { ReactNode } from 'react';
 import type { CaseFigure } from '../data/dnsCase';
-import type { ProjectImage, ProjectLink } from '../data/projects';
+import type { ProjectImage } from '../data/projects';
 import { viCase, viDecisions, viFollowupFigures, viJournalFigure, viScenario } from '../data/vseinstrumentiCase';
 
 type Props = {
   jumpToHeading: (id: string) => void;
   renderScreenshot: (image: ProjectImage) => ReactNode;
-  links: readonly ProjectLink[];
 };
 
-export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, links }: Props) {
+export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
   const { audit, followup, scenario, summary, test } = viCase;
   const ratio = (count: number) => `${count} из ${test.runs}`;
 
@@ -111,7 +110,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, links }: P
           <ol className="dns-case-frames" data-media-gallery>
             {viScenario.map((frame) => <li key={frame.src}>{renderFigure(frame)}</li>)}
           </ol>
-          <ul className="project-links"><li><a href={scenario.prototype}>Открыть прототип «Стало»</a></li></ul>
         </div>
       </section>
 
@@ -140,7 +138,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, links }: P
           {renderFigure(viJournalFigure)}
           <div className="dns-case-block">
             <p>{test.limitations}</p>
-            <ul className="project-links"><li><a href={test.journal}>Открыть журнал UX-теста</a></li></ul>
           </div>
         </div>
       </section>
@@ -159,15 +156,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, links }: P
             <h3>Что проверю дальше</h3>
             <p>{followup.next}</p>
           </div>
-        </div>
-      </section>
-
-      <section className="case-content-section dns-case-section" aria-labelledby="case-materials-heading">
-        <div className="dns-case-block">
-          <h2 id="case-materials-heading" tabIndex={-1}>Материалы</h2>
-          <ul className="project-links">
-            {links.map(({ id, href, label }) => <li key={id}><a href={href} data-track-id={id}>{label}</a></li>)}
-          </ul>
         </div>
       </section>
     </>
