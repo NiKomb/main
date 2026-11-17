@@ -96,7 +96,7 @@
   color: var(--color-text);
   font: 11px/16px var(--font-accent);
   text-align: start;
-  text-transform: uppercase;
+  text-transform: var(--type-accent-transform);
   white-space: pre-line;
   text-wrap: pretty;
   overflow-wrap: anywhere;

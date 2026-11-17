@@ -9,31 +9,18 @@ const socialIcons = {
 };
 
 export function PortfolioProfile() {
-  const { name, role, practice, experience, socialLinks } = site.profile;
+  const { name, practice, experience, socialLinks } = site.profile;
 
   return (
     <div className="portfolio-profile">
-      <header className="portfolio-profile-header">
-        <ProfileAvatar />
-        <div className="portfolio-profile-identity">
-          <h1>{name}</h1>
-          <p>{role}</p>
-        </div>
-      </header>
-      <section className="portfolio-profile-section" aria-labelledby="practice-title">
-        <h2 id="practice-title">Что делаю</h2>
+      <ProfileAvatar />
+      <header className="portfolio-profile-section">
+        <h2 className="portfolio-profile-name">{name}</h2>
         <p>{practice}</p>
-      </section>
+      </header>
       <section className="portfolio-profile-section" aria-labelledby="experience-title">
         <h2 id="experience-title">Опыт</h2>
-        <ul className="portfolio-experience">
-          {experience.map(({ project, detail }) => (
-            <li key={project}>
-              <strong>{project}</strong>
-              <p>{detail}</p>
-            </li>
-          ))}
-        </ul>
+        <p>{experience}</p>
       </section>
       <ul className="portfolio-socials" aria-label="Социальные сети">
         {socialLinks.map(({ id, label, href }) => {

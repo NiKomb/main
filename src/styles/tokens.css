@@ -18,6 +18,7 @@
   --color-cover-matte: #f2f2f2;
   --font-body: Geist, system-ui, sans-serif;
   --font-accent: "Departure Mono", ui-monospace, monospace;
+  --type-accent-transform: uppercase;
   --type-display: 28px/32px;
   --type-section-heading: 20px/26px;
   --type-subheading: 16px / 22px;

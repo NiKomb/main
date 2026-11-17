@@ -171,7 +171,7 @@ export const dnsCase = {
     framesTitle: 'Материалы и кадры исследовательских сессий',
     frames: [
       {
-        src: interviewEvidence, width: 3110, height: 774, showFull: true, label: 'Матрица сессий',
+        src: interviewEvidence, width: 3110, height: 774, showFull: true,
         alt: 'Матрица с условиями шести интервью, отдельным проходом сборщика и дословными репликами по сессиям',
         caption: 'Условия заданий, профили и реплики из шести интервью и отдельного прохода сборщика',
         original: { src: interviewEvidenceFull, alt: 'Полная матрица исследовательских сессий' },
@@ -339,7 +339,7 @@ export const dnsCase = {
     nextIteration: 'После разбора причин остановок внесу правки, заранее задам критерии и повторю тест',
   },
   comparison: {
-    title: 'Было / Стало',
+    title: 'Счётчик моделей для сравнения',
     frames: [
       {
         src: compareBefore, width: 4020, height: 2400, label: 'Было',
@@ -454,8 +454,8 @@ export const dnsDecisions: readonly Decision[] = [
     metrics: [{ ...comparisonTableMetric, comment: 'comparison-opened' }],
     solution: 'Покупатель отмечает модели в карточках. Кнопка рядом с фильтрами показывает, сколько моделей отмечено, и открывает таблицу. В режиме «Только различия» остаются строки, в которых значения отличаются',
     solutionFigure: {
-      src: compareTable, width: 1905, height: 1680,
-      alt: 'Таблица сравнения Ryzen 7 7800X3D и 9800X3D в режиме «Только различия»',
+      src: compareTable, width: 1380, height: 1022,
+      alt: 'Таблица сравнения Ryzen 7 7800X3D, 9800X3D и 9700X в режиме «Только различия»',
       caption: 'Перед выбором детали для сборки здесь можно сверить цены и отличия в характеристиках отмеченных моделей',
     },
     comparison: dnsCase.comparison,
