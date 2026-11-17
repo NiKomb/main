@@ -14,6 +14,7 @@ import competitorRegard from './screens/dns-competitor-regard.webp';
 import competitorXcore from './screens/dns-competitor-xcore.webp';
 import compareBefore from './screens/dns-compare-before.webp';
 import compareSelection from './screens/dns-compare-select.webp';
+import compareTable from './screens/dns-compare-table.webp';
 import productCardComparison from './screens/dns-product-card-comparison.webp';
 import filterPanelComparison from './screens/dns-filter-panel-comparison.png';
 import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
@@ -48,6 +49,7 @@ type Decision = {
   metrics: readonly CaseMetric[];
   observation?: { text: string; comment: string };
   solution: string;
+  solutionFigure?: CaseFigure;
   comparison: { title: string; frames: readonly [CaseFigure, CaseFigure] };
 };
 
@@ -152,7 +154,7 @@ export const dnsCase = {
       {
         title: 'Выбранную деталь ещё нужно было перенести в сборку',
         passages: [
-          { text: 'Один участник выбрал видеокарту в таблице и нажал «В корзину». Он ждал, что карта появится в сборке, а она добавилась в корзину магазина.' },
+          { text: 'Один участник выбрал видеокарту в таблице сравнения и нажал «В корзину». Он ждал, что карта появится в сборке, а она добавилась в корзину магазина.' },
           { quote: '«А подожди, а почему она просто добавилась в корзину? Отсюда я в конструктор интересно могу вернуться?»' },
           { text: 'Другой вернулся во вкладку конфигуратора, заново нашёл выбранную видеокарту в каталоге и добавил её оттуда' },
         ],
@@ -207,12 +209,12 @@ export const dnsCase = {
     ],
     competitors: {
       title: 'Как устроен выбор у других',
-      intro: 'Я посмотрел, что остаётся перед глазами, пока человек выбирает деталь. В Ситилинке совместимость видна в фильтрах, а требования к сборке остаются рядом. В Регарде можно искать по точной модели и видеть активные фильтры. В X-core.by рядом с выбором остаются цена, прогресс сборки и результаты проверок совместимости',
+      intro: 'В конфигураторе Ситилинка клубная цена видна прямо при выборе детали. В Регарде можно искать по точной модели и видеть активные фильтры. В X-core.by рядом с выбором остаются цена, прогресс сборки и результаты проверок совместимости',
       frames: [
         {
-          src: competitorCitilink, width: 592, height: 443, showFull: true, label: 'Ситилинк',
-          alt: 'Панель статуса конфигурации Ситилинка. Компоненты совместимы, часть обязательных деталей ещё не выбрана',
-          caption: 'В панели статуса видно, совместимы ли детали и все ли обязательные компоненты добавлены',
+          src: competitorCitilink, width: 1056, height: 594, showFull: true, label: 'Ситилинк',
+          alt: 'Слева открыта подсказка о клубной цене в конфигураторе Ситилинка. Справа видны цена со скидкой и клубная цена',
+          caption: 'По нажатию на клубную цену появляется подсказка, что для скидки достаточно зарегистрироваться',
         },
         {
           src: competitorRegard, width: 430, height: 430, showFull: true, label: 'Регард',
@@ -451,6 +453,11 @@ export const dnsDecisions: readonly Decision[] = [
     checkMethod: 'Смотрел в журнале, кто сам открыл таблицу с двумя или больше товарами. Во время теста не подсказывал',
     metrics: [{ ...comparisonTableMetric, comment: 'comparison-opened' }],
     solution: 'Покупатель отмечает модели в карточках. Кнопка рядом с фильтрами показывает, сколько моделей отмечено, и открывает таблицу. В режиме «Только различия» остаются строки, в которых значения отличаются',
+    solutionFigure: {
+      src: compareTable, width: 1905, height: 1680,
+      alt: 'Таблица сравнения Ryzen 7 7800X3D и 9800X3D в режиме «Только различия»',
+      caption: 'Перед выбором детали для сборки здесь можно сверить цены и отличия в характеристиках отмеченных моделей',
+    },
     comparison: dnsCase.comparison,
   },
   {

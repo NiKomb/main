@@ -265,6 +265,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
                     {comparison.detailFrames.map((figure) => renderFigure(figure))}
                   </div>
                 )}
+                {decision.solutionFigure && renderFigure(decision.solutionFigure)}
               </section>
               {renderDecisionCheck(decision)}
               {decision.id === 'dns-comparison' && (
