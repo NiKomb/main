@@ -39,5 +39,7 @@
   --radius-card: 12px;
   --size-icon-tile: 40px;
   --content-width: 1280px;
+  --home-content-width: 1200px;
+  --home-tile-gap: 16px;
   --case-text-width: 800px;
 }

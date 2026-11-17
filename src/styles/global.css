@@ -90,6 +90,10 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 56px;
 }
+.page:not(:has(.projects[data-case-open])),
+.page:not(:has(.projects[data-case-open])) + .site-footer {
+  --content-width: var(--home-content-width);
+}
 .portfolio-profile {
   align-self: start;
   position: sticky;
@@ -139,7 +143,7 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
   --tile-highlight: 0%;
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
-  gap: 24px;
+  gap: var(--home-tile-gap);
   border-radius: var(--radius-card);
 }
 a.tile-layout { cursor: url('./open-case-cursor.svg') 30 10, pointer; }
@@ -152,7 +156,7 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
 .tile-side {
   display: grid;
   grid-template-rows: 1fr 1fr;
-  gap: 24px;
+  gap: var(--home-tile-gap);
   /* The cover sets the height of this row. */
   contain: size;
 }
