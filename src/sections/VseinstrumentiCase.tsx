@@ -55,7 +55,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
 
       <section className="case-content-section dns-case-section" aria-labelledby="vi-audit">
         <p className="dns-case-divider">Погружение</p>
-        <div className="dns-case-group">
+        <div className="vi-case-group">
           <div className="dns-case-block">
             <h2 id="vi-audit" tabIndex={-1}>Условия приходилось выяснять по ходу оформления</h2>
             <p>{audit.introduction}</p>
@@ -68,7 +68,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
               </li>
             ))}
           </ul>
-          <div className="dns-case-block">
+          <div className="dns-case-block vi-case-subtopic">
             <h3 id="vi-competitors" tabIndex={-1}>Как показывают условия в других сервисах</h3>
             <ul className="dns-case-stages dns-case-results">
               {audit.competitors.map(({ title, detail }) => (
@@ -86,7 +86,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
         <h2 id="vi-solutions" className="dns-case-divider" tabIndex={-1}>Решения</h2>
         <div className="dns-case-subsections">
           {viDecisions.map(({ id, title, hypothesis, solution, frames }) => (
-            <section className="dns-case-group" key={id} aria-labelledby={id}>
+            <section className="vi-case-group" key={id} aria-labelledby={id}>
               <div className="dns-case-block">
                 <h3 id={id}>{title}</h3>
                 <p><strong>Гипотеза.</strong> {hypothesis}</p>
@@ -102,7 +102,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
 
       <section className="case-content-section dns-case-section" aria-labelledby="vi-scenario">
         <p className="dns-case-divider">Сценарий</p>
-        <div className="dns-case-group">
+        <div className="vi-case-group">
           <div className="dns-case-block">
             <h2 id="vi-scenario" tabIndex={-1}>От генератора в корзине до запроса расчёта</h2>
             <p>{scenario.intro}</p>
@@ -115,7 +115,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
 
       <section className="case-content-section dns-case-section" aria-labelledby="vi-test">
         <p className="dns-case-divider">Немодерируемый UX-тест</p>
-        <div className="dns-case-group">
+        <div className="vi-case-group">
           <div className="dns-case-block">
             <h2 id="vi-test" tabIndex={-1}>Как участники оформляли доставку</h2>
             <p>{test.introduction}</p>
@@ -144,7 +144,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
 
       <section className="case-content-section dns-case-section" aria-labelledby="vi-followup">
         <p className="dns-case-divider">После теста</p>
-        <div className="dns-case-group">
+        <div className="vi-case-group">
           <div className="dns-case-block">
             <h2 id="vi-followup" tabIndex={-1}>Уточнил подсказки про подъём и согласование</h2>
             <p>{followup.introduction}</p>
@@ -152,7 +152,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
           <div className="dns-case-frames" data-media-gallery data-mascot-comment="followup">
             {viFollowupFigures.map((frame) => <div key={frame.src}>{renderFigure(frame)}</div>)}
           </div>
-          <div className="dns-case-block">
+          <div className="dns-case-block vi-case-subtopic">
             <h3>Что проверю дальше</h3>
             <p>{followup.next}</p>
           </div>
