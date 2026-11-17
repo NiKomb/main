@@ -37,8 +37,8 @@ export function playGroundMovement(
   const bounds = canvas.parentElement?.getBoundingClientRect();
   if (!bounds) return;
   const w = Math.ceil(bounds.width / scale);
-  const ox = Math.max(0, Math.floor((Math.min(start.x, endX) - 160) / scale));
-  const oy = Math.max(0, Math.floor((Math.min(start.y, endY) - 120) / scale));
+  const ox = Math.max(Math.floor(Math.min(0, -bounds.left) / scale), Math.floor((Math.min(start.x, endX) - 160) / scale));
+  const oy = Math.max(Math.floor(Math.min(0, -bounds.top) / scale), Math.floor((Math.min(start.y, endY) - 120) / scale));
   const width = Math.min(w, Math.ceil((Math.max(start.x, endX) + 220) / scale)) - ox;
   const height = Math.min(Math.ceil(bounds.height / scale), Math.ceil((Math.max(start.y, endY) + 170) / scale)) - oy;
   if (width <= 0 || height <= 0) return;

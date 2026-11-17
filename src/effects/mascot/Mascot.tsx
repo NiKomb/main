@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
+import { mascotAppearanceEvent, mascotTakeoffEvent } from '../profile-avatar/rotation';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
@@ -26,6 +27,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     const actor = actorRef.current;
     if (!layer || !grid || !actor) return;
 
+    const avatar = grid.closest('main')?.querySelector('.portfolio-avatar');
     const sections = Array.from(grid.querySelectorAll('.case-tile'), (section) => ({
       element: section,
       id: section.getAttribute('data-section-id'),
@@ -170,7 +172,9 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     function update() {
       if (!layer || !grid) return;
       const bounds = grid.getBoundingClientRect();
-      const visible = bounds.bottom > 0 && bounds.top < innerHeight && !document.hidden;
+      const avatarBox = introduction ? avatar?.getBoundingClientRect() : undefined;
+      const top = Math.min(bounds.top, avatarBox?.top ?? bounds.top);
+      const visible = bounds.bottom > 0 && top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
       if (!visible) hideSpeech();
 
@@ -181,21 +185,20 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         currentStop = undefined;
         plannedTarget = undefined;
         pending = [];
-        introduction = !resumeRoute;
         introScroll = undefined;
         returnScroll = undefined;
         resumedAtTop = false;
         layer.hidden = true;
         hideSpeech();
       }
-      if (narrowLayout) {
+      if (narrowLayout && !introduction) {
         updateNarrow(bounds, visible);
         return;
       }
 
       const stops: Stop[] = [];
       const routes: { id: string | null; top: number; landings: Stop[]; finish: Stop; leftFinish?: Stop }[] = [];
-      for (const { element, id, tiles } of sections) {
+      for (const { element, id, cover, tiles } of sections) {
         const section = element.getBoundingClientRect();
         const visibleTiles = tiles.map((tile) => ({ tile, box: tile.getBoundingClientRect() }))
           .filter(({ box }) => box.width && box.height);
@@ -210,13 +213,15 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         const inset = Math.min(sectionEdgeInset, section.width / 2);
         const startLimit = Math.round(section.left - bounds.left - spriteWidth / 2 + inset);
         const finishX = Math.round(section.right - bounds.left - spriteWidth / 2 - inset);
-        const lowerTile = id === 'project-preview' ? surfaces.find(({ tile }) => tile.classList.contains('tile-preview')) : undefined;
-        const finishSurface = lowerTile ?? rightmost;
+        const centeredTile = surfaces.find(({ tile }) => narrowLayout
+          ? tile === cover
+          : id === 'project-preview' && tile.classList.contains('tile-preview'));
+        const finishSurface = centeredTile ?? rightmost;
         const finish: Stop = {
           surface: finishSurface,
           edge: 'finish',
           point: {
-            x: lowerTile ? Math.round((lowerTile.left + lowerTile.right) / 2) : onSurface(finishX, finishSurface),
+            x: centeredTile ? Math.round((centeredTile.left + centeredTile.right) / 2) : onSurface(finishX, finishSurface),
             y: finishSurface.y,
           },
         };
@@ -234,11 +239,11 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
           stops.push(leftFinish);
         }
         if (!routes.length) {
-          const surface = surfaces.find(({ tile }) => tile.classList.contains('tile-copy')) ?? surfaces[0];
+          const surface = avatar && avatarBox?.width ? readSurface(avatar, bounds, avatarBox, minDashDistance)
+            : surfaces.find(({ tile }) => tile.classList.contains('tile-copy')) ?? surfaces[0];
           const center = Math.round((surface.left + surface.right) / 2);
-          const startX = Math.max(startLimit, Math.min(finishX, center));
           stops.push({
-            surface, edge: 'start', point: { x: onSurface(startX, surface), y: surface.y },
+            surface, edge: 'start', point: { x: center, y: surface.y },
           });
         }
         stops.push(...landings, finish);
@@ -261,7 +266,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         if (atBottom) caseIndex = 2;
         else if (routes[1].top <= scrollThreshold) caseIndex = 1;
       }
-      const target = Math.min(caseIndex + 1, routes.length - 1);
+      const target = Math.min(caseIndex + Number(!narrowLayout), routes.length - 1);
       const targetRoute = routes[target];
       const targetFinish = caseIndex === 1 ? targetRoute.leftFinish ?? targetRoute.finish : targetRoute.finish;
 
@@ -283,6 +288,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
           queueUpdate();
         };
         movement.appear(start.point, introduction ? 'right' : 'left', reveal);
+        start.surface.tile.dispatchEvent(new Event(mascotAppearanceEvent));
         return;
       }
 
@@ -315,7 +321,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (returnScroll === window.scrollY && !resumedAtTop) return;
       returnScroll = undefined;
 
-      const origin = routes.findIndex(({ landings }) => landings.some(({ surface }) => surface.tile === current.surface.tile));
+      const origin = Math.max(0, routes.findIndex(({ landings }) =>
+        landings.some(({ surface }) => surface.tile === current.surface.tile)));
       if (!sameStop(plannedTarget, targetFinish)) {
         pending = [];
         plannedTarget = targetFinish;
@@ -323,8 +330,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
       if (!pending.length) {
         if (introduction && origin === 0 && current.edge === 'start') {
-          const preview = routes[0].landings.find(({ surface }) => surface.tile.classList.contains('tile-preview'));
-          if (preview) pending.push(preview);
+          pending.push(...routes[0].landings.filter(({ surface }) => surface.tile.matches('.case-cover, .tile-preview')));
         }
         if (origin < target) {
           const below = routes[origin + 1];
@@ -352,6 +358,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
           if (introduction) {
             introduction = false;
             introScroll = window.scrollY;
+            narrowTarget = { ...current.point, sectionId: routes[caseIndex].id, surface: current.surface };
           }
           showSpeech(current.point, bounds, routes[caseIndex].id);
           return;
@@ -375,7 +382,9 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (current.surface.tile === updated.surface.tile) {
         moveOnSurface(current.point, updated.point.x, current.surface, finish);
       } else {
-        travel(current, updated, forward, finish);
+        const fromAvatar = current.surface.tile === avatar;
+        travel(current, updated, forward, finish, fromAvatar,
+          fromAvatar ? () => current.surface.tile.dispatchEvent(new Event(mascotTakeoffEvent)) : undefined);
       }
     }
 

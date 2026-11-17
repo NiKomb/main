@@ -233,7 +233,8 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     moveHorizontally(start, endX, () => done(false));
   }
 
-  function travel(current: Stop, next: Stop, forward: boolean, finish: () => void, diagonal = false) {
+  function travel(current: Stop, next: Stop, forward: boolean, finish: () => void, diagonal = false,
+    onTakeoff?: () => void) {
     const { point: start, surface: from } = current;
     const into = next.surface;
     const fixedLanding = next.edge !== 'landing';
@@ -258,6 +259,7 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     moveOnSurface(start, takeoff.x, from, (dashed) => {
       activeSurface = into;
       const gap = Math.abs(landing.x - takeoff.x);
+      onTakeoff?.();
       leap(takeoff, landing, arrive, {
         carriedByDash: dashed && takeoff.y === landing.y && gap > 0 && gap <= shortGapDistance,
         arcAcrossWideGap: diagonal,

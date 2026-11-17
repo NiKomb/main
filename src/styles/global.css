@@ -116,10 +116,6 @@ h3, .tile-copy strong { font: var(--type-subheading) var(--font-accent); }
 .portfolio-experience p { color: var(--color-muted); font: var(--type-small) var(--font-body); }
 .portfolio-socials { display: flex; gap: 8px; }
 .portfolio-socials span { color: var(--color-muted); }
-.portfolio-avatar {
-  border-radius: var(--radius-card);
-  display: block;
-}
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
 .page:has(.projects[data-case-open]) > .portfolio-profile { display: none; }
@@ -1168,7 +1164,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   }
   .portfolio-profile { position: static; gap: 16px; }
   .portfolio-profile-header { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
-  .portfolio-avatar { width: 56px; height: 56px; }
   .site-footer { width: calc(100% - 40px); }
   .page:has(.projects[data-case-open]) { width: calc(100% - 40px); }
   .case-covers {

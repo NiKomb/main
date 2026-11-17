@@ -1,5 +1,5 @@
-import pixelAvatar from '../data/pixel-avatar.webp';
 import { site } from '../data/site';
+import { ProfileAvatar } from '../effects/profile-avatar/ProfileAvatar';
 import { iconTilePress } from './icon-tile-press';
 
 // Brand marks from Simple Icons.
@@ -14,7 +14,7 @@ export function PortfolioProfile() {
   return (
     <div className="portfolio-profile">
       <header className="portfolio-profile-header">
-        <img className="portfolio-avatar" src={pixelAvatar} width={88} height={88} alt="" />
+        <ProfileAvatar />
         <div className="portfolio-profile-identity">
           <h1>{name}</h1>
           <p>{role}</p>
