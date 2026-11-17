@@ -198,20 +198,31 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
                   {research.frames.map((figure) => renderFigure(figure))}
                 </InterviewGallery>
               </section>
-              {research.findings.map(({ title, passages }) => (
-                <section className="dns-case-block" key={title}>
-                  <h4>{title}</h4>
-                  {passages.map((passage) => passage.text !== undefined
-                    ? <p key={passage.text}>{passage.text}</p>
-                    : <blockquote key={passage.quote} data-mascot-comment="interview-quotes"><p>{passage.quote}</p></blockquote>)}
-                </section>
-              ))}
               <section className="dns-case-block" aria-labelledby="dns-interview-results">
-                <h4 id="dns-interview-results">{research.interviewResultsTitle}</h4>
-                <ul className="dns-case-stages dns-case-results">
-                  {research.interviewResults.map(renderFact)}
-                </ul>
+                <h4 id="dns-interview-results">{research.interviewFindingsTitle}</h4>
+                <div className="dns-case-group">
+                  {research.interviewFindings.map(({ title, detail, quote }) => (
+                    <div className="dns-case-block" key={title}>
+                      <h5>{title}</h5>
+                      <p>{detail}</p>
+                      {quote && <blockquote data-mascot-comment="interview-quotes"><p>{quote}</p></blockquote>}
+                    </div>
+                  ))}
+                </div>
                 <p>{research.interviewResultsLimit}</p>
+                <details className="dns-interview-details">
+                  <summary>{research.interviewDetailsTitle}</summary>
+                  <div className="dns-case-group">
+                    {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
+                      <div className="dns-case-block" key={title}>
+                        <h5>{title}</h5>
+                        <p>{detail}</p>
+                        <blockquote data-mascot-comment="interview-quotes"><p>{quote}</p></blockquote>
+                        {followUp && <p>{followUp}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </details>
               </section>
             </section>
             <section className="dns-case-block" aria-labelledby="dns-competitors">

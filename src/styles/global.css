@@ -984,8 +984,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-divider::before,
 .dns-case-divider::after { content: ""; }
-.dns-case-section :is(h2, h3, h4) { text-wrap: balance; }
-.dns-case-section h4 {
+.dns-case-section :is(h2, h3, h4, h5) { text-wrap: balance; }
+.dns-case-section :is(h4, h5) {
   margin: 0;
   font: var(--type-subheading) var(--font-accent);
   text-transform: var(--type-accent-transform);
@@ -998,6 +998,19 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   background: var(--color-surface);
 }
 .dns-case-section blockquote p { color: var(--color-text); }
+.dns-interview-details > summary {
+  inline-size: fit-content;
+  min-block-size: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+.dns-interview-details > summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: var(--space-4);
+}
+.dns-interview-details > .dns-case-group { margin-block-start: var(--space-12); }
+/* Firefox still reports layout bounds for quotes inside closed details. */
+.dns-interview-details:not([open]) > .dns-case-group { display: none; }
 .dns-case-labeled-heading {
   display: flex;
   align-items: baseline;
