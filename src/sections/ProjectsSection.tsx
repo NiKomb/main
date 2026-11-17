@@ -8,6 +8,7 @@ import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { site } from '../data/site';
 import { viCase, viContents, viMascotComments } from '../data/vseinstrumentiCase';
+import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
@@ -15,6 +16,7 @@ import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges
 import { DnsCase } from './DnsCase';
 import { VseinstrumentiCase } from './VseinstrumentiCase';
 import '../effects/case-pixels/case-pixels.css';
+import '../effects/gallery-slide/transition.css';
 
 const cases: readonly Project[] = [
   ...projects,
@@ -131,7 +133,7 @@ function CaseScreenshot({ image, onOpen }: {
   );
 }
 
-function showMedia(content: HTMLElement, source: HTMLElement) {
+function createMedia(source: HTMLElement) {
   const media = source.cloneNode(true) as HTMLElement;
   media.removeAttribute('data-cover');
   if (media.hasAttribute('data-preview-crop') || media.querySelector('.case-cover-strip')) media.dataset.expanded = '';
@@ -139,7 +141,6 @@ function showMedia(content: HTMLElement, source: HTMLElement) {
   media.querySelector('img')?.removeAttribute('loading');
   const video = media.querySelector('video');
   if (video) video.muted = true;
-  content.replaceChildren(media);
   return media;
 }
 
@@ -174,7 +175,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const mediaSwipe = useRef<{ pointer: number; x: number; y: number } | null>(null);
   const suppressMediaClick = useRef(false);
   const coverFlight = useRef<(() => void) | undefined>(undefined);
-  const mediaFlight = useRef<(() => void) | undefined>(undefined);
+  const mediaTransition = useRef<(() => void) | undefined>(undefined);
   const coverDrag = useRef<{ pointer: number; x: number; scroll: number } | null>(null);
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
@@ -207,7 +208,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     if (!element || selected === next) return;
     coverDrag.current = null;
     coverFlight.current?.();
-    mediaFlight.current?.();
+    mediaTransition.current?.();
     if (dialog.current?.open) dismissMedia();
     const id = next ?? selected;
     const origin = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
@@ -256,7 +257,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
 
   useEffect(() => () => {
     coverFlight.current?.();
-    mediaFlight.current?.();
+    mediaTransition.current?.();
   }, []);
 
   useEffect(() => {
@@ -332,15 +333,16 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     const slides = slidesInGallery(trigger);
     const index = slides.indexOf(trigger);
     if (index < 0) return;
-    mediaFlight.current?.();
+    mediaTransition.current?.();
     const flight = createFlight(source, source.matches(resizeScreensOnZoom));
-    const media = showMedia(content, source);
+    const media = createMedia(source);
+    content.replaceChildren(media);
     const video = media.querySelector('video');
     setGallery({ slides, index, origin: trigger, video });
     viewer.showModal();
     content.focus({ preventScroll: true });
     const playVideo = () => void video?.play().catch(() => {});
-    mediaFlight.current = flight?.to(media, playVideo, viewer);
+    mediaTransition.current = flight?.to(media, playVideo, viewer);
     if (!flight) playVideo();
   }
 
@@ -350,8 +352,10 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     const index = adjacentSlide(gallery.index, gallery.slides.length, direction);
     const source = gallery.slides[index].firstElementChild;
     if (!(source instanceof HTMLElement)) return;
-    mediaFlight.current?.();
-    const media = showMedia(content, source);
+    mediaTransition.current?.();
+    const media = createMedia(source);
+    const slideDirection = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? undefined : direction;
+    mediaTransition.current = replaceGallerySlide(content, media, slideDirection);
     const video = media.querySelector('video');
     if (document.activeElement === originalTrigger.current) content.focus({ preventScroll: true });
     setOriginalView('preview');
@@ -371,19 +375,23 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   function closeMedia() {
     const content = dialogContent.current;
     if (!dialog.current?.open || !gallery || !content) return;
-    mediaFlight.current?.();
+    mediaTransition.current?.();
     const target = gallery.origin.firstElementChild;
     if (!(target instanceof HTMLElement)) {
       dismissMedia();
       return;
     }
-    const source = gallery.slides[gallery.index] === gallery.origin ? content.firstElementChild : showMedia(content, target);
+    let source = content.firstElementChild;
+    if (gallery.slides[gallery.index] !== gallery.origin) {
+      source = createMedia(target);
+      content.replaceChildren(source);
+    }
     const video = source?.querySelector('video');
     if (video) video.controls = false;
     const flight = source instanceof HTMLElement && createFlight(source, source.matches(resizeScreensOnZoom));
     dismissMedia();
     gallery.origin.focus({ preventScroll: true });
-    mediaFlight.current = flight ? flight.to(target) : undefined;
+    mediaTransition.current = flight ? flight.to(target) : undefined;
   }
 
   function startMediaSwipe(event: PointerEvent<HTMLElement>) {
@@ -667,7 +675,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               aria-disabled={originalView === 'loading'}
               onClick={() => {
                 if (originalView === 'loading') return;
-                mediaFlight.current?.();
+                mediaTransition.current?.();
                 setOriginalView('loading');
               }} />
           )}

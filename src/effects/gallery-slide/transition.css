@@ -1,0 +1,11 @@
+.gallery-media-full:has(> [data-gallery-outgoing]) {
+  position: relative;
+  overflow: clip;
+  border-radius: var(--radius-card);
+  background: var(--color-cover-matte);
+}
+
+.gallery-media-full > [data-gallery-outgoing] {
+  position: absolute;
+  inset: 0;
+}
