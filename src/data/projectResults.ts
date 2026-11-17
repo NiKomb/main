@@ -1,4 +1,5 @@
 import { dnsCase } from './dnsCase';
+import { viCase } from './vseinstrumentiCase';
 
 const { comparison, counts: { started, saved } } = dnsCase.test;
 
@@ -8,6 +9,6 @@ function metric(count: number, total: number) {
 
 export const projectResults: Readonly<Partial<Record<string, string>>> = {
   'project-dns': `${metric(saved, started)} сохранили сборку\n${metric(comparison.opened, comparison.withCatalog)} открыли сравнение`,
-  'project-vseinstrumenti': `${metric(4, 7)} успешных оформлений\n${metric(2, 7)} — курьер без подъёма`,
+  'project-vseinstrumenti': `${metric(viCase.test.success, viCase.test.runs)} успешных прохождений\n${metric(viCase.test.critical, viCase.test.runs)} — курьер без нужного подъёма`,
   'project-preview': '...',
 };

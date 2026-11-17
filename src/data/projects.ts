@@ -3,11 +3,12 @@ import dnsShowreel from './screens/dns-configurator-showreel.mp4';
 import dnsShowreelPoster from './screens/dns-configurator-showreel.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
 import dnsComparison from './screens/portfolio-dns-comparison.webp';
-import viCoverPickup from './screens/vi-cover-pickup.png';
-import viCoverCourier from './screens/vi-cover-courier.png';
-import viCoverCarrier from './screens/vi-cover-carrier.png';
 import dnsMotherboard from './screens/dns-motherboard.webp';
 import viHeavyDelivery from './screens/vi-heavy-delivery.webp';
+import {
+  viCarrierNextStepScreen, viCarrierScreen, viCourierLiftScreen, viCourierScreen, viLiftingUnavailableScreen,
+  viPickupScreen, viRequestScreen,
+} from './vseinstrumentiScreens';
 
 export type ProjectLink = {
   id: string;
@@ -23,6 +24,7 @@ export type ProjectImage = {
   height: number;
   roundedCorners?: boolean | number;
   cropInset?: number;
+  previewCrop?: { top: number; height: number };
   showFull?: boolean;
   original?: { src: string; alt: string };
 };
@@ -42,23 +44,9 @@ export type Project = {
     title: string;
     description: string;
     image: ProjectImage;
+    additionalImages?: readonly ProjectImage[];
   }[];
   links: readonly ProjectLink[];
-};
-
-const viPickupScreen: ProjectImage = {
-  src: viCoverPickup,
-  alt: 'Экран оформления заказа с ограничением самовывоза по весу',
-  width: 800,
-  height: 1778,
-  roundedCorners: true,
-};
-const viCourierScreen: ProjectImage = {
-  src: viCoverCourier,
-  alt: 'Экран оформления заказа с выбранной доставкой курьером',
-  width: 800,
-  height: 1778,
-  roundedCorners: true,
 };
 
 export const projects = [
@@ -102,7 +90,10 @@ export const projects = [
     summary: 'Мобильный прототип выбора доставки тяжелых товаров',
     tileSummary: 'Выбор доставки тяжёлых товаров',
     tileIllustration: viHeavyDelivery,
-    coverImages: [viPickupScreen, viCourierScreen],
+    coverImages: [viPickupScreen, viCourierScreen].map((image) => ({
+      ...image,
+      previewCrop: { top: 278, height: 864 },
+    })),
     screens: [
       {
         id: 'vi-courier',
@@ -111,16 +102,18 @@ export const projects = [
         image: viCourierScreen,
       },
       {
-        id: 'vi-pickup',
-        title: 'Ограничение самовывоза',
-        description: 'Если товар превышает допустимый вес для самовывоза, интерфейс объясняет причину и предлагает курьера или транспортную компанию',
-        image: viPickupScreen,
+        id: 'vi-lifting',
+        title: 'Стоимость и доступность подъёма',
+        description: 'Для лёгкого товара видна доплата за подъём, для тяжёлого — причина ограничения и следующий шаг',
+        image: viCourierLiftScreen,
+        additionalImages: [viLiftingUnavailableScreen],
       },
       {
         id: 'vi-carrier',
-        title: 'Доставка транспортной компанией',
-        description: 'При выборе транспортной компании покупатель видит, как согласуют стоимость и срок доставки',
-        image: { src: viCoverCarrier, alt: 'Панель расчёта доставки транспортной компанией', width: 800, height: 1778, roundedCorners: true },
+        title: 'Запрос расчёта доставки через ТК',
+        description: 'Покупатель видит цену товаров, отправляет запрос и узнаёт, какие условия предстоит согласовать',
+        image: { ...viCarrierNextStepScreen, previewCrop: viCarrierScreen.previewCrop },
+        additionalImages: [viRequestScreen],
       },
     ],
     links: [

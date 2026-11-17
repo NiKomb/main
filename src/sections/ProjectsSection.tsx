@@ -7,18 +7,20 @@ import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { site } from '../data/site';
+import { viCase, viContents, viMascotComments } from '../data/vseinstrumentiCase';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
+import { VseinstrumentiCase } from './VseinstrumentiCase';
 import '../effects/case-pixels/case-pixels.css';
 
 const cases: readonly Project[] = [
   ...projects,
   { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
-const resizeScreensOnZoom = '[data-portrait-preview], :has(> .case-cover-strip)';
+const resizeScreensOnZoom = '[data-portrait-preview], [data-preview-crop], :has(> .case-cover-strip)';
 
 function readCase() {
   const id = window.location.hash.slice(6);
@@ -33,8 +35,24 @@ function headingAlignment(heading: HTMLElement) {
   };
 }
 
-function screenshotSize(image: ProjectImage): CSSProperties {
-  return { '--screenshot-ratio': image.width / image.height } as CSSProperties;
+function previewCropStyle(image: ProjectImage): CSSProperties | undefined {
+  const crop = image.previewCrop;
+  if (!crop) return;
+  return {
+    '--preview-crop-ratio': image.width / crop.height,
+    '--preview-crop-translate': `${-(crop.top + crop.height / 2) / image.height * 100}%`,
+  } as CSSProperties;
+}
+
+function screenshotAttributes(image: ProjectImage) {
+  return {
+    'data-preview-crop': image.previewCrop ? '' : undefined,
+    'data-fit': image.showFull ? '' : undefined,
+    style: {
+      '--screenshot-ratio': image.width / image.height,
+      ...previewCropStyle(image),
+    } as CSSProperties,
+  };
 }
 
 type CaseScreenshotProps = {
@@ -43,7 +61,7 @@ type CaseScreenshotProps = {
   loading?: 'lazy';
 };
 
-function CaseScreenshotImage({ image, decorative, loading }: CaseScreenshotProps) {
+function CaseScreenshotImage({ image, decorative, loading, cropPreview }: CaseScreenshotProps & { cropPreview?: boolean }) {
   const { src, width, height, alt, roundedCorners, cropInset } = image;
   const fixedRadius = typeof roundedCorners === 'number';
   return <img src={src} width={width} height={height} alt={decorative ? '' : alt} loading={loading} draggable={false}
@@ -51,6 +69,7 @@ function CaseScreenshotImage({ image, decorative, loading }: CaseScreenshotProps
     style={{
       borderRadius: fixedRadius ? roundedCorners : undefined,
       clipPath: cropInset ? `inset(${cropInset}px round ${fixedRadius ? roundedCorners : 0}px)` : undefined,
+      ...(cropPreview ? previewCropStyle(image) : undefined),
     }} />;
 }
 
@@ -59,6 +78,19 @@ function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps
     <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}
       data-portrait={image.height > image.width ? '' : undefined}>
       <CaseScreenshotImage image={image} decorative={decorative} loading={loading} />
+    </span>
+  );
+}
+
+function CaseCoverStrip({ images, decorative = false }: { images: readonly ProjectImage[]; decorative?: boolean }) {
+  const previewRatio = Math.min(...images.map((image) => image.width / (image.previewCrop?.height ?? image.height)));
+  return (
+    <span className="case-cover-frame case-cover-strip"
+      data-cover-crops={images.some((image) => image.previewCrop) ? '' : undefined}
+      style={{ '--cover-screen-count': images.length, '--cover-preview-ratio': previewRatio } as CSSProperties}>
+      {images.map((image) => (
+        <CaseScreenshotImage key={image.src} image={image} decorative={decorative} cropPreview />
+      ))}
     </span>
   );
 }
@@ -77,13 +109,7 @@ function CaseCoverArtwork({ project, decorative = false, videoRef }: {
     );
   }
   if (project.coverImages?.length) {
-    return (
-      <span className="case-cover-frame case-cover-strip">
-        {project.coverImages.map((image) => (
-          <CaseScreenshotImage key={image.src} image={image} decorative={decorative} />
-        ))}
-      </span>
-    );
+    return <CaseCoverStrip images={project.coverImages} decorative={decorative} />;
   }
   const image = project.screens?.[0]?.image;
   return image ? <CaseScreenshotFrame image={image} decorative={decorative} /> : null;
@@ -97,8 +123,8 @@ function CaseScreenshot({ image, onOpen }: {
     <button type="button" className="case-zoom-trigger case-screenshot" aria-label={`Увеличить: ${image.alt}`}
       data-original-src={image.original?.src} data-original-alt={image.original?.alt}
       onClick={(event) => onOpen(event.currentTarget)}>
-      <span className="case-cover case-screenshot-media" style={screenshotSize(image)}
-        data-portrait-preview={image.height > image.width ? '' : undefined} data-fit={image.showFull ? '' : undefined}>
+      <span className="case-cover case-screenshot-media" {...screenshotAttributes(image)}
+        data-portrait-preview={!image.previewCrop && image.height > image.width ? '' : undefined}>
         <CaseScreenshotFrame image={image} loading="lazy" />
       </span>
     </button>
@@ -108,6 +134,7 @@ function CaseScreenshot({ image, onOpen }: {
 function showMedia(content: HTMLElement, source: HTMLElement) {
   const media = source.cloneNode(true) as HTMLElement;
   media.removeAttribute('data-cover');
+  if (media.hasAttribute('data-preview-crop') || media.querySelector('.case-cover-strip')) media.dataset.expanded = '';
   media.style.removeProperty('visibility');
   media.querySelector('img')?.removeAttribute('loading');
   const video = media.querySelector('video');
@@ -128,7 +155,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
   const [returnedFromCase, setReturnedFromCase] = useState(false);
-  const [activeHeading, setActiveHeading] = useState(dnsContents[0].id);
+  const [activeHeading, setActiveHeading] = useState('projects-heading');
   const [contentsVisible, setContentsVisible] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [originalView, setOriginalView] = useState<'preview' | 'loading' | 'original' | 'error'>('preview');
@@ -152,6 +179,10 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
   const isDns = item?.id === 'dns';
+  const isVseinstrumenti = item?.id === 'vseinstrumenti';
+  const detailedContents = isDns ? dnsContents : isVseinstrumenti ? viContents : undefined;
+  const mascotComments = isDns ? dnsMascotComments : isVseinstrumenti ? viMascotComments : undefined;
+  const caseYear = isDns ? dnsCase.year : viCase.year;
   const viewingMedia = gallery !== null;
   const original = gallery?.slides[gallery.index].dataset;
   const showingOriginal = originalView === 'original';
@@ -181,12 +212,13 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     const id = next ?? selected;
     const origin = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
     const videoTime = origin?.querySelector('video')?.currentTime;
-    const flight = origin && createFlight(origin);
+    const flight = origin && createFlight(origin, origin.matches(resizeScreensOnZoom));
     if (next) scrollPoint.current = window.scrollY;
     flushSync(() => {
       setSelected(next);
       setArrived(!flight);
       setContentsVisible(false);
+      setActiveHeading('projects-heading');
       if (!next) setReturnedFromCase(true);
     });
     const target = element.querySelector<HTMLElement>(`[data-cover="${id}"]`);
@@ -228,11 +260,12 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   }, []);
 
   useEffect(() => {
-    if (!isDns || !arrived) return;
+    if (!detailedContents || !arrived) return;
     const overview = section.current?.querySelector('.dns-case-overview');
-    const overviewHeading = document.getElementById(dnsContents[0].id);
+    const firstHeading = detailedContents[0].id;
+    const overviewHeading = document.getElementById(firstHeading);
     if (!overview || !overviewHeading) return;
-    const headings = [...dnsContents].reverse().map(({ id }) => document.getElementById(id));
+    const headings = [...detailedContents].reverse().map(({ id }) => document.getElementById(id));
     let alignment = headingAlignment(overviewHeading);
     const update = () => {
       setContentsVisible(overview.getBoundingClientRect().bottom <= 0);
@@ -242,7 +275,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
         const { top, height } = heading.getBoundingClientRect();
         return top + height * alignment.anchor <= alignment.offset + 1;
       });
-      setActiveHeading(current?.id ?? dnsContents[0].id);
+      setActiveHeading(current?.id ?? firstHeading);
     };
     const resize = () => {
       alignment = headingAlignment(overviewHeading);
@@ -255,12 +288,12 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', resize);
     };
-  }, [isDns, arrived]);
+  }, [detailedContents, arrived]);
 
   useEffect(() => {
     const list = caseContents.current;
     const active = list?.querySelector('button[aria-current="location"]');
-    if (!isDns || !contentsVisible || !list || !active) return;
+    if (!detailedContents || !contentsVisible || !list || !active) return;
 
     const reveal = () => {
       if (!list.clientWidth) return;
@@ -275,14 +308,14 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     reveal();
     window.addEventListener('resize', reveal);
     return () => window.removeEventListener('resize', reveal);
-  }, [isDns, contentsVisible, activeHeading]);
+  }, [detailedContents, contentsVisible, activeHeading]);
 
   function jumpToHeading(id: string) {
     const heading = document.getElementById(id);
     if (!heading) return;
     const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
     heading.focus({ preventScroll: true });
-    if (isDns) {
+    if (detailedContents) {
       const { offset, anchor } = headingAlignment(heading);
       const { top, height } = heading.getBoundingClientRect();
       window.scrollBy({ top: top + height * anchor - offset, behavior });
@@ -388,7 +421,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
     delete event.currentTarget.dataset.dragging;
   }
 
-  const contents: readonly { id: string; label: string; note?: string }[] = isDns ? dnsContents : [
+  const contents: readonly { id: string; label: string; note?: string }[] = detailedContents ?? [
     { id: 'projects-heading', label: 'Обзор' },
     ...(item?.screens?.map((screen) => ({ id: screen.id, label: screen.title })) ??
       [{ id: 'case-gallery-heading', label: 'Интерфейсы' }]),
@@ -397,7 +430,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const contentsList = (
     <ul ref={caseContents}>
       {contents.map(({ id, label, note }) => {
-        const current = isDns && activeHeading === id;
+        const current = detailedContents && activeHeading === id;
         return (
           <li key={id}>
             <button type="button" onClick={() => jumpToHeading(id)}
@@ -422,7 +455,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
       aria-labelledby={item ? 'projects-heading' : undefined}
       aria-label={item ? undefined : 'Кейсы'} tabIndex={-1}>
       {item ? (
-        <article key={item.id} className={isDns ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
+        <article key={item.id} className={detailedContents ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
           <div className="case-covers" data-media-gallery role="region" aria-label="Обложки кейса" tabIndex={0}
             onPointerDown={(event) => {
               if (event.pointerType !== 'mouse' || event.button !== 0) return;
@@ -451,22 +484,23 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopCoverDrag(event);
             }}
             onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
-            {item.screens ? item.screens.map(({ id, image }, index) => {
+            {item.screens ? item.screens.map(({ id, title, image, additionalImages }, index) => {
               const primary = index === 0;
               const coverVideo = primary ? item.coverVideo : undefined;
               const coverArtwork = primary && Boolean(coverVideo || item.coverImages?.length);
+              const images = additionalImages?.length ? [image, ...additionalImages] : undefined;
               const label = coverVideo ? `Смотреть: ${coverVideo.title}`
-                : coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${image.alt}`;
+                : coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
               const trigger = (
                 <button key={id} type="button"
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
                   aria-label={label}
                   onClick={(event) => openMedia(event.currentTarget)}>
-                  <span className="case-cover case-screenshot-media"
+                  <span className="case-cover case-screenshot-media" data-cover-gallery=""
                     data-cover={primary ? item.id : undefined}
-                    style={coverArtwork ? undefined : screenshotSize(image)}>
+                    {...(coverArtwork || images ? undefined : screenshotAttributes(image))}>
                     {coverArtwork ? <CaseCoverArtwork project={item} videoRef={coverVideo ? setActiveCoverVideo : undefined} />
-                      : <CaseScreenshotFrame image={image} />}
+                      : images ? <CaseCoverStrip images={images} /> : <CaseScreenshotFrame image={image} />}
                   </span>
                 </button>
               );
@@ -490,7 +524,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             )}
           </div>
           <div className="case-layout">
-            <nav className="case-nav" data-dns-contents={isDns ? '' : undefined} aria-label="Навигация по кейсу">
+            <nav className="case-nav" data-dns-contents={detailedContents ? '' : undefined} aria-label="Навигация по кейсу">
               <a ref={caseBack} className="icon-tile case-back" {...iconTilePress} href="#projects" aria-label="К кейсам" onClick={(event) => {
                 if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault();
@@ -502,15 +536,18 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               }}>
                 <span className="pixel-chevron" aria-hidden="true" />
               </a>
-              {!isDns && <p>Содержание</p>}
-              {(!isDns || contentsVisible) && contentsList}
+              {!detailedContents && <p>Содержание</p>}
+              {(!detailedContents || contentsVisible) && contentsList}
             </nav>
-            {isDns ? arrived && <CaseMascot actorRef={viewportMascot} comments={dnsMascotComments}
-              shotComment={dnsCase.comparison.iteration.shotComment} paused={viewingMedia} />
+            {mascotComments ? arrived && <CaseMascot actorRef={viewportMascot} comments={mascotComments}
+              shotComment={isDns ? dnsCase.comparison.iteration.shotComment : undefined} paused={viewingMedia} />
               : <ViewportMascot actorRef={viewportMascot} />}
-            <div className={isDns ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
+            <div className={detailedContents ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
+                  renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
+              ) : isVseinstrumenti ? (
+                <VseinstrumentiCase jumpToHeading={jumpToHeading} links={item.links}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : (
                 <>
@@ -552,19 +589,19 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               )}
             </div>
           </div>
-          {isDns && arrived && (
+          {detailedContents && arrived && (
             <footer className="dns-case-footer">
-              <div className="dns-case-footer-actions" data-mascot-route-end>
+              {isDns && <div className="dns-case-footer-actions" data-mascot-route-end>
                 <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 1" />
                 <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 2" />
-              </div>
+              </div>}
               <div className="dns-case-footer-signature">
                 <span>{site.profile.name}</span>
-                <time dateTime={String(dnsCase.year)}>{dnsCase.year}</time>
+                <time dateTime={String(caseYear)}>{caseYear}</time>
               </div>
             </footer>
           )}
-          {isDns && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
+          {detailedContents && arrived && <PixelViewportEdges root={section} targetSelector=".case-covers, .dns-case-body > *" />}
         </article>
       ) : (
         <>

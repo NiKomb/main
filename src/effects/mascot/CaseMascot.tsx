@@ -26,7 +26,7 @@ function stop(surface: CaseSurfaceGeometry, edge: Stop['edge'], x: number): Case
 export function CaseMascot({ actorRef, comments, shotComment, paused }: {
   actorRef: RefObject<HTMLSpanElement | null>;
   comments: Readonly<Record<string, string>>;
-  shotComment: string;
+  shotComment?: string;
   paused: boolean;
 }) {
   const route = useRef<HTMLDivElement>(null);
@@ -435,7 +435,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     control.addEventListener('click', activate);
     control.addEventListener('animationend', endAttack);
     control.addEventListener('animationcancel', endAttack);
-    actor.addEventListener(rocketCaptionHitEvent, onCaptionHit);
+    if (shotComment) actor.addEventListener(rocketCaptionHitEvent, onCaptionHit);
     setPaused.current = (value) => {
       suspended = value;
       queue();
@@ -459,7 +459,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       control.removeEventListener('click', activate);
       control.removeEventListener('animationend', endAttack);
       control.removeEventListener('animationcancel', endAttack);
-      actor.removeEventListener(rocketCaptionHitEvent, onCaptionHit);
+      if (shotComment) actor.removeEventListener(rocketCaptionHitEvent, onCaptionHit);
       image.removeEventListener('load', queue);
       image.removeEventListener('error', queue);
       motion.removeEventListener('change', queue);

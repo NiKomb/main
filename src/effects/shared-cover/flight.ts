@@ -14,6 +14,13 @@ function captureVideoFrame(video: HTMLVideoElement) {
   }
 }
 
+function screenKeyframe(screen: HTMLImageElement): Keyframe {
+  const { width, height, transform } = getComputedStyle(screen);
+  if (screen.closest('[data-preview-crop]')) return { width, transform };
+  if (screen.parentElement?.classList.contains('case-cover-strip')) return { width, height, transform };
+  return { width };
+}
+
 export function createFlight(source: HTMLElement, resizeImages = false) {
   if (typeof source.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -32,8 +39,8 @@ export function createFlight(source: HTMLElement, resizeImages = false) {
   image.inert = true;
   image.style.removeProperty('visibility');
   const { borderRadius, filter } = getComputedStyle(source);
-  const startImageWidths = resizeImages
-    ? Array.from(source.querySelectorAll('img'), (screen) => getComputedStyle(screen).width)
+  const startScreens = resizeImages
+    ? Array.from(source.querySelectorAll('img'), screenKeyframe)
     : [];
   Object.assign(image.style, {
     position: 'fixed',
@@ -78,13 +85,10 @@ export function createFlight(source: HTMLElement, resizeImages = false) {
         },
       ], timing);
 
-      const clonedImages = startImageWidths.length ? image.querySelectorAll('img') : [];
-      const imageResizes = startImageWidths.length
-        ? Array.from(target.querySelectorAll('img')).slice(0, startImageWidths.length)
-          .map((screen, index) => clonedImages[index]?.animate([
-            { width: startImageWidths[index] },
-            { width: getComputedStyle(screen).width },
-          ], timing))
+      const clonedImages = startScreens.length ? image.querySelectorAll('img') : [];
+      const imageResizes = startScreens.length
+        ? Array.from(target.querySelectorAll('img')).slice(0, startScreens.length)
+          .map((screen, index) => clonedImages[index]?.animate([startScreens[index], screenKeyframe(screen)], timing))
         : [];
 
       function cleanup() {
