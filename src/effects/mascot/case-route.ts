@@ -8,6 +8,14 @@ export type CaseSurface = {
   hasOwnComment?: boolean;
 };
 
+export function caseRouteViewportLimits(viewportHeight: number, contentsBottom = 0, openingGalleryTop?: number) {
+  const edgeInset = viewportHeight * .05;
+  return {
+    top: Math.max(Math.min(edgeInset, openingGalleryTop ?? edgeInset), contentsBottom),
+    bottom: viewportHeight - edgeInset,
+  };
+}
+
 export function selectCaseSurface<T extends CaseSurface>(surfaces: readonly T[], current: T | undefined,
   viewportHeight: number, movingUp = false): T | undefined {
   const middle = viewportHeight / 2;

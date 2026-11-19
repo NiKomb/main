@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment, metricCommentRightEdge } from '../src/effects/mascot/case-comments.ts';
-import { nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
+import { caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechPosition } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
@@ -49,6 +49,17 @@ test('a case comment follows the current stop and its closest marked group', () 
     [intro, tile(undefined, journal), labelledCard, silent, intro].map(stop => caseRouteComment(stop, comments)),
     ['Intro', 'Journal', 'Details', undefined, 'Intro'],
   );
+});
+
+test('the case route uses five percent of the viewport per edge and leaves room for the contents', () => {
+  assert.deepEqual(caseRouteViewportLimits(900), { top: 45, bottom: 855 });
+  assert.deepEqual(caseRouteViewportLimits(2160), { top: 108, bottom: 2052 });
+  assert.deepEqual(caseRouteViewportLimits(844, 168), { top: 168, bottom: 801.8 });
+});
+
+test('the top gallery can host the mascot when the tall viewport puts it inside the opening margin', () => {
+  assert.deepEqual(caseRouteViewportLimits(2160, 0, 80), { top: 80, bottom: 2052 });
+  assert.deepEqual(caseRouteViewportLimits(900, 0, 80), { top: 45, bottom: 855 });
 });
 
 test('case movement selects a single row above the viewport midpoint', () => {

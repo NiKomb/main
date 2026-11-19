@@ -5,7 +5,7 @@ import impact from './heavy-landing.png';
 import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment, metricCommentRightEdge } from './case-comments';
-import { caseFooterRoute, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
+import { caseFooterRoute, caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
@@ -47,6 +47,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const image = new Image();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const movement = createMascotMovement(actor, canvas.current, lift.current, image);
+    const openingGallery = article.querySelector('.case-covers');
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const textColumn = article.querySelector('.dns-case-body > .case-text');
     const tiles = Array.from(article.querySelectorAll<HTMLElement>([
@@ -271,13 +272,17 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       if (delta !== 0) direction = Math.sign(delta);
       lastScroll = scrollY;
 
-      const routeEnd = direction < 0 ? undefined : readRouteEnd(bounds);
+      const contents = innerWidth < 1200 ? article.querySelector('.case-nav[data-dns-contents] ul') : null;
+      const openingGalleryTop = scrollY <= 0 ? openingGallery?.getBoundingClientRect().top : undefined;
+      const limits = caseRouteViewportLimits(innerHeight, contents?.getBoundingClientRect().bottom, openingGalleryTop);
+      const target = (destination ?? current)?.surface;
+      const onFooterButton = target?.routeEnd && target.tile !== footerActions;
+      const footerButtonIsSafe = onFooterButton && target.tile.getBoundingClientRect().top < limits.bottom;
+      const routeEnd = direction < 0 && !footerButtonIsSafe ? undefined : readRouteEnd(bounds);
       control.inert = !!routeEnd;
-      const contents = article.querySelector('.case-nav[data-dns-contents] ul');
-      const topLimit = innerWidth < 1200 && contents ? Math.max(48, contents.getBoundingClientRect().bottom) : 48;
       const surfaces: RouteSurface[] = routeEnd ? [] : tiles.flatMap(({ tile, kind, group, clip }) => {
         const box = tile.getBoundingClientRect();
-        if (!box.height || box.top < 0 || box.top > innerHeight - 48) return [];
+        if (!box.height || box.top < 0 || box.top > limits.bottom) return [];
         const clipBox = clip?.getBoundingClientRect();
         const left = Math.max(box.left, clipBox?.left ?? 0, 0);
         const right = Math.min(box.right, clipBox?.right ?? innerWidth, innerWidth);
@@ -288,7 +293,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         surface.right = Math.min(surface.right, Math.floor(innerWidth - bounds.left - spriteWidth));
         return [{ tile, group, kind, top: box.top, left, right, surface, hasOwnComment: tile.hasAttribute('data-mascot-comment') }];
       });
-      const upperSurfaces = surfaces.filter(({ top }) => top >= topLimit);
+      const upperSurfaces = surfaces.filter(({ top }) => top >= limits.top);
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const selected = selectCaseSurface(upperSurfaces, upperSurfaces.find(({ tile }) => tile === current?.surface.tile),
         innerHeight, direction < 0);
@@ -300,7 +305,6 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       routeFinish = routeEnd?.rightFinish ?? (rightmost && stop(rightmost.surface, 'finish', rightmost.surface.right));
       if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
 
-      const target = (destination ?? current)?.surface;
       const crossingRouteEnd = !!target?.routeEnd !== !!routeEnd;
       const blinkFrom = crossingRouteEnd ? renderedPosition(bounds) : undefined;
       let interrupted = false;
