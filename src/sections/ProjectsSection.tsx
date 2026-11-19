@@ -208,7 +208,7 @@ type Gallery = {
   controlsVisible?: boolean;
 };
 
-export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> }) {
+export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTMLElement | null>; startupComplete: boolean }) {
   const [selected, setSelected] = useState(readCase);
   const [arrived, setArrived] = useState(true);
   const [returnedFromCase, setReturnedFromCase] = useState(false);
@@ -701,7 +701,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               </div>
               <span className="tile-status">скоро будет</span>
             </article>
-            <Mascot resumeRoute={returnedFromCase} results={projectResults} />
+            {startupComplete && <Mascot resumeRoute={returnedFromCase} results={projectResults} />}
           </div>
           <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
         </>

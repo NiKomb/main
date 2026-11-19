@@ -1,0 +1,146 @@
+@import '../../styles/tokens.css';
+
+@property --site-preloader-progress {
+  syntax: '<integer>';
+  initial-value: 0;
+  inherits: true;
+}
+
+.site-preloader {
+  --preloader-inset: clamp(var(--space-16), 4vw, 48px);
+  --preloader-sprite-size: 72px;
+  --preloader-delay: 200ms;
+  --preloader-wait: 2400ms;
+  --preloader-run-cycle: 480ms;
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  align-content: end;
+  row-gap: var(--space-4);
+  padding-bottom: max(var(--preloader-inset), env(safe-area-inset-bottom));
+  padding-left: max(var(--preloader-inset), env(safe-area-inset-left));
+  padding-right: max(var(--preloader-inset), env(safe-area-inset-right));
+  overflow: clip;
+  overscroll-behavior: contain;
+  touch-action: none;
+  background: var(--color-background);
+  color: var(--color-text);
+  visibility: hidden;
+  animation: site-preloader-wait var(--preloader-wait) ease-out var(--preloader-delay) forwards;
+}
+
+html:has(.site-preloader) {
+  overflow: hidden;
+}
+
+.site-preloader[data-phase] {
+  visibility: visible;
+  animation: none;
+}
+
+.site-preloader__percent {
+  margin: 0;
+  font: var(--type-section-heading) var(--font-accent);
+  text-align: right;
+  counter-reset: site-preloader var(--site-preloader-progress);
+}
+
+.site-preloader__percent::before {
+  content: counter(site-preloader) '%';
+}
+
+.site-preloader[data-phase="blink"] .site-preloader__percent {
+  color: #ffc41a;
+}
+
+.site-preloader__track::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 4px;
+  height: var(--pixel-step);
+  background: var(--color-border);
+}
+
+.site-preloader__track {
+  position: relative;
+}
+
+.site-preloader__mascot {
+  position: relative;
+  left: calc((100% - var(--preloader-sprite-size)) * var(--site-preloader-progress) / 100);
+  display: block;
+  width: var(--preloader-sprite-size);
+  height: var(--preloader-sprite-size);
+  background: url('../mascot/rider.png') no-repeat 0 0 / 576px 288px;
+  image-rendering: pixelated;
+  animation:
+    site-preloader-run var(--preloader-run-cycle) steps(8, end) var(--preloader-delay) 5,
+    site-preloader-look 1800ms steps(1, end) calc(var(--preloader-delay) + var(--preloader-wait)) infinite;
+}
+
+.site-preloader__mascot::after {
+  content: '';
+  position: absolute;
+  right: 50%;
+  bottom: 0;
+  width: 100px;
+  height: 48px;
+  background: url('../mascot/haste.png') no-repeat 0 0 / 800px 48px;
+  opacity: 0;
+  animation: site-preloader-trail var(--preloader-run-cycle) steps(8, end) var(--preloader-delay) 5;
+}
+
+.site-preloader[data-phase="finish"] .site-preloader__mascot {
+  animation: site-preloader-run 280ms steps(8, end) infinite;
+}
+
+.site-preloader[data-phase="finish"] .site-preloader__mascot::after {
+  animation: site-preloader-trail 280ms steps(8, end) infinite;
+}
+
+.site-preloader[data-phase="blink"] .site-preloader__mascot,
+.site-preloader[data-phase="blink"] .site-preloader__mascot::after {
+  animation: none;
+}
+
+.site-preloader__blink {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+@keyframes site-preloader-wait {
+  from { visibility: visible; }
+  to { visibility: visible; --site-preloader-progress: 90; }
+}
+
+@keyframes site-preloader-run {
+  from { background-position: 0 -72px; }
+  to { background-position: -576px -72px; }
+}
+
+@keyframes site-preloader-look {
+  0%, 55%, 100% { background-position: 0 0; }
+  60% { background-position: -288px 0; }
+  70% { background-position: -360px 0; }
+  88% { background-position: -288px 0; }
+}
+
+@keyframes site-preloader-trail {
+  from { background-position-x: 0; opacity: .55; }
+  to { background-position-x: -800px; opacity: .2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-preloader .site-preloader__mascot {
+    left: 50%;
+    translate: -50% 0;
+    background-position: 0 0;
+    animation: none;
+  }
+
+  .site-preloader__mascot::after {
+    display: none;
+  }
+}

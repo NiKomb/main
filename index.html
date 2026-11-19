@@ -6,11 +6,22 @@
     <meta name="robots" content="noindex" />
     <meta name="description" content="Проекты: презентации, интерактивные прототипы и материалы исследований." />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="preload" as="image" href="/src/effects/mascot/rider.png" />
+    <link rel="stylesheet" href="/src/effects/preloader/preloader.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;display=swap" />
+    <noscript><style>#site-preloader { display: none; }</style></noscript>
     <title>Портфолио — проекты</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="site-preloader" class="site-preloader" role="status">
+      <div class="site-preloader__track" aria-hidden="true">
+        <span class="site-preloader__mascot"></span>
+      </div>
+      <h2 class="site-preloader__percent" aria-label="Загрузка портфолио"></h2>
+      <canvas class="site-preloader__blink" aria-hidden="true" hidden></canvas>
+    </div>
+    <div id="root" inert></div>
+    <noscript><p>Для просмотра портфолио включите JavaScript.</p></noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
