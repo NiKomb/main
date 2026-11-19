@@ -7,12 +7,14 @@ import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/me
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
+import financePreview from '../data/screens/portfolio-finance-preview.png';
 import { site } from '../data/site';
 import { viContents, viMascotComments } from '../data/vseinstrumentiCase';
 import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
+import { Motherboard } from '../effects/motherboard/Motherboard';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
 import { VseinstrumentiCase } from './VseinstrumentiCase';
@@ -649,29 +651,34 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
           <div className="case-grid">
             {projects.map((entry: Project) => (
               <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  event.preventDefault();
-                  history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
-                  transition(entry.id);
-                }}>
-                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
-                    <CaseCoverArtwork project={entry} decorative videoRef={entry.coverVideo ? setActiveCoverVideo : undefined} />
-                  </span>
-                  <span className="tile-side">
-                    <span className="tile-copy">
-                      <span className="tile-meta">
-                        {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
-                        <span className="pixel-chevron tile-chevron" aria-hidden="true" />
+                <div className="tile-layout-shell">
+                  <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
+                    transition(entry.id);
+                  }}>
+                    <span className="case-cover" data-cover={entry.id} aria-hidden="true">
+                      <CaseCoverArtwork project={entry} decorative videoRef={entry.coverVideo ? setActiveCoverVideo : undefined} />
+                    </span>
+                    <span className="tile-side">
+                      <span className="tile-copy">
+                        <span className="tile-meta">
+                          {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
+                          <span className="pixel-chevron tile-chevron" aria-hidden="true" />
+                        </span>
+                        <strong>{entry.title}</strong>
+                        <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
                       </span>
-                      <strong>{entry.title}</strong>
-                      <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
+                      <span className="tile-preview" aria-hidden="true">
+                        {entry.id !== 'dns' && entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
+                      </span>
                     </span>
-                    <span className="tile-preview" aria-hidden="true">
-                      {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
-                    </span>
-                  </span>
-                </a>
+                  </a>
+                  {entry.id === 'dns' && entry.tileIllustration && (
+                    <div className="tile-model-preview"><Motherboard fallback={entry.tileIllustration} /></div>
+                  )}
+                </div>
                 {projectResults[`project-${entry.id}`] && (
                   <p className="mascot-speech__transcript">{projectResults[`project-${entry.id}`]}</p>
                 )}
@@ -679,7 +686,11 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             ))}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
               <div className="tile-layout" aria-hidden="true">
-                <span className="case-cover" data-cover="preview" />
+                <span className="case-cover" data-cover="preview">
+                  <span className="case-cover-frame" data-cropped="">
+                    <img src={financePreview} width={960} height={732} alt="" loading="lazy" />
+                  </span>
+                </span>
                 <span className="tile-side">
                   <span className="tile-copy">
                     <span className="tile-skeleton-line" />
