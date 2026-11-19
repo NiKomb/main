@@ -6,6 +6,8 @@ import type { ProjectImage } from '../data/projects';
 import { ComparisonParticles } from '../effects/case-pixels/ComparisonParticles';
 import { comparisonSwapClips } from '../effects/case-pixels/pixel-swap';
 import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
+import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
+import { MetricGradientPaint } from '../effects/metric-gradient-paint/MetricGradientPaint';
 import { RocketShot } from '../effects/rocket-shot/RocketShot';
 import { paintDnsButtonGradient } from './dns-button-gradient';
 
@@ -20,9 +22,11 @@ function renderFact({ title, detail, comment }: CaseFact) {
   return <li className="dns-case-fact" key={title} data-mascot-comment={comment}><p className="dns-case-fact-title">{title}</p><p>{detail}</p></li>;
 }
 
-function renderMetric({ value, label, detail, comment }: CaseMetric) {
+function renderMetric({ value, label, detail, comment, paintGradient }: CaseMetric & { paintGradient?: boolean }) {
   return (
-    <li className="dns-case-fact dns-case-metric" key={label} data-mascot-comment={comment}>
+    <li className="dns-case-fact dns-case-metric" key={label} data-mascot-comment={comment}
+      data-mascot-paint-gradient={paintGradient ? '' : undefined}>
+      {paintGradient && <MetricGradientPaint />}
       <h3>{value}</h3>
       <div className="dns-case-metric-copy">
         <p className="dns-case-fact-title">{label}</p>
@@ -52,10 +56,11 @@ function renderDecisionCheck({ checkTitle, checkMethod, metrics }: (typeof dnsDe
   );
 }
 
-function DnsComparison({ frames, headingId, sliderLabel = 'Разделитель «Было / Стало»',
+function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = 'Разделитель «Было / Стало»',
   renderScreenshot }: Pick<Props, 'renderScreenshot'> & {
   frames: readonly [CaseFigure, CaseFigure];
   headingId: string;
+  paintFrame?: boolean;
   sliderLabel?: string;
 }) {
   const [position, setPosition] = useState(50);
@@ -88,7 +93,8 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
-      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-pixel-swap={clips ? '' : undefined} style={style}>
+      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-pixel-swap={clips ? '' : undefined}
+        data-mascot-paint-frame={paintFrame ? '' : undefined} style={style}>
         <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
           aria-valuetext={`Было — ${position}%, стало — ${100 - position}%`}
@@ -106,6 +112,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
           <span className="pixel-chevron" />
         </span>
       </div>
+      {paintFrame && <ComparisonFramePaint tile={tile} {...size} />}
       <figcaption className="dns-case-frames">
         <span><strong>{before.label}</strong>{before.caption}</span>
         <span><strong>{after.label}</strong>{after.caption}</span>
@@ -117,21 +124,22 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { sectionLabels, research, summary, comparison, scenario, quickChoice, test, reflection } = dnsCase;
   const toggleCaption = useRef<HTMLElement>(null);
-  const gradientButton = useRef<HTMLButtonElement>(null);
+  const summaryActions = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    const button = gradientButton.current;
-    if (!button) return;
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    const styles = getComputedStyle(button);
+    const actions = summaryActions.current;
+    if (!actions) return;
+    const styles = getComputedStyle(actions);
     const step = parseFloat(styles.getPropertyValue('--pixel-step'));
     if (!(step > 0)) return;
     const dark = styles.getPropertyValue('--color-dns-button-shadow').trim();
     const light = styles.getPropertyValue('--color-dns-button-face').trim();
-    canvas.width = canvas.height = 0;
-    const paint = () => {
+    const canvases = new Map<HTMLButtonElement, CanvasRenderingContext2D>();
+    const paint = (button: Element) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const context = canvases.get(button);
+      if (!context) return;
+      const { canvas } = context;
       const width = Math.ceil(button.clientWidth / step);
       const height = Math.ceil(button.clientHeight / step);
       if (!width || !height || (width === canvas.width && height === canvas.height)) return;
@@ -140,12 +148,19 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
       paintDnsButtonGradient(context, dark, light);
       button.style.setProperty('--dns-summary-gradient', `url("${canvas.toDataURL()}") 0 0 / ${width * step}px ${height * step}px no-repeat`);
     };
-    paint();
-    const observer = new ResizeObserver(paint);
-    observer.observe(button);
+    const observer = new ResizeObserver((entries) => entries.forEach(({ target }) => paint(target)));
+    actions.querySelectorAll<HTMLButtonElement>('.dns-summary-jump--gradient').forEach((button) => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      canvas.width = canvas.height = 0;
+      canvases.set(button, context);
+      paint(button);
+      observer.observe(button);
+    });
     return () => {
       observer.disconnect();
-      button.style.removeProperty('--dns-summary-gradient');
+      for (const button of canvases.keys()) button.style.removeProperty('--dns-summary-gradient');
     };
   }, []);
 
@@ -183,12 +198,16 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <dd>{summary.next}</dd>
             </div>
           </dl>
-          <div className="project-links dns-summary-actions">
+          <div ref={summaryActions} className="project-links dns-summary-actions">
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading(dnsDecisions[0].id)}>
               <span className="dns-summary-jump-label">К решениям</span>
             </button>
-            <button ref={gradientButton} className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
+            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
               <span className="dns-summary-jump-label">К результатам UX-теста</span>
+            </button>
+            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient dns-summary-jump--chevron" {...iconTilePress}
+              type="button" onClick={() => jumpToHeading('dns-research')}>
+              <span className="dns-summary-jump-label">К исследованию</span>
             </button>
           </div>
         </section>
@@ -203,7 +222,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <h3>{research.discussionsTitle}</h3>
               {research.discussions.map((text) => <p key={text}>{text}</p>)}
               <ul className="dns-case-stages dns-case-results" aria-label="Цифры исследования обсуждений сборок" data-mascot-comment="external-review">
-                {research.deskMetrics.map(renderMetric)}
+                {research.deskMetrics.map((metric) => renderMetric({ ...metric, paintGradient: metric.value === '323' }))}
               </ul>
             </section>
             <section className="dns-case-block">
@@ -302,7 +321,8 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               </div>
               <section className="dns-case-block" data-mascot-comment={decision.observation?.comment}>
                 <h4 id={`${decision.id}-changes`}>{decision.comparison.title}</h4>
-                <DnsComparison frames={decision.comparison.frames} headingId={`${decision.id}-changes`} renderScreenshot={renderScreenshot} />
+                <DnsComparison frames={decision.comparison.frames} headingId={`${decision.id}-changes`}
+                  paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
                 {decision.id === 'dns-comparison' && (
                   <div className="dns-case-frames" data-media-gallery>
                     {comparison.detailFrames.map((figure) => renderFigure(figure))}

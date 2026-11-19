@@ -13,6 +13,7 @@ button { font: inherit; color: inherit; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 .icon-tile {
   --icon-tile-face: var(--icon-tile-rest-face, var(--color-surface));
+  --icon-tile-face-radius: calc(var(--radius-card) / 2 - 2px);
   --icon-tile-leading: 3px;
   --icon-tile-trailing: 6px;
   --icon-tile-icon-offset: -1px;
@@ -33,7 +34,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   position: absolute;
   z-index: -1;
   inset: var(--icon-tile-leading) var(--icon-tile-trailing) var(--icon-tile-trailing) var(--icon-tile-leading);
-  border-radius: calc(var(--radius-card) / 2 - 2px);
+  border-radius: var(--icon-tile-face-radius);
   background: var(--icon-tile-face);
   pointer-events: none;
   content: "";
@@ -984,25 +985,20 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   max-width: 100%;
   padding: var(--space-8) var(--space-16);
   border: 0;
-  border-radius: 0;
   background: none;
   color: var(--color-background);
   font: var(--type-small) var(--font-accent);
   text-align: start;
   text-transform: var(--type-accent-transform);
 }
+.dns-summary-jump:where(:not(.dns-summary-jump--chevron)) { border-radius: 0; }
 .dns-summary-jump::before {
   --step: var(--pixel-step);
-  --double-step: calc(2 * var(--step));
   --corner: calc(3 * var(--step));
+  --double-step: min(calc(2 * var(--step)), calc(var(--corner) - var(--step)));
   --far-step: calc(100% - var(--step));
   --far-double-step: calc(100% - var(--double-step));
   --far-corner: calc(100% - var(--corner));
-  --shadow-offset: calc(-2 * var(--step));
-  inset: 0;
-  border-radius: 0;
-  background: var(--color-dns-button-face);
-  box-shadow: inset var(--shadow-offset) var(--shadow-offset) 0 var(--color-dns-button-shadow);
   clip-path: polygon(
     var(--corner) 0, var(--far-corner) 0,
     var(--far-corner) var(--step), var(--far-double-step) var(--step), var(--far-double-step) var(--double-step),
@@ -1016,9 +1012,30 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     var(--double-step) var(--double-step), var(--double-step) var(--step), var(--corner) var(--step)
   );
 }
+.dns-summary-jump:where(:not(.dns-summary-jump--chevron))::before {
+  --shadow-offset: calc(-2 * var(--step));
+  inset: 0;
+  border-radius: 0;
+  background: var(--color-dns-button-face);
+  box-shadow: inset var(--shadow-offset) var(--shadow-offset) 0 var(--color-dns-button-shadow);
+}
 .dns-summary-jump--gradient::before {
   background: var(--dns-summary-gradient, none) var(--color-dns-button-face);
   image-rendering: pixelated;
+}
+.dns-summary-jump--chevron { background: var(--color-dns-button-shadow); }
+.dns-summary-jump--chevron::before {
+  --corner: var(--icon-tile-face-radius);
+  background-size: 100% 100%;
+}
+.dns-summary-jump--chevron::after {
+  position: absolute;
+  z-index: -2;
+  inset: var(--icon-tile-leading) 0 0 var(--icon-tile-leading);
+  border-radius: inherit;
+  background: var(--color-dns-button-depth);
+  pointer-events: none;
+  content: "";
 }
 @media (hover: hover) {
   .dns-summary-jump:hover::before { --shadow-offset: calc(-3 * var(--step)); }
@@ -1028,6 +1045,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
+  -webkit-text-stroke: .2px currentColor;
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
 }
 @media (forced-colors: active) {
@@ -1035,6 +1053,10 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     forced-color-adjust: none;
     background: ButtonFace;
     box-shadow: inset var(--shadow-offset) var(--shadow-offset) 0 ButtonText;
+  }
+  .dns-summary-jump--chevron::after {
+    forced-color-adjust: none;
+    background: ButtonText;
   }
 }
 .dns-case-section,

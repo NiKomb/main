@@ -1,0 +1,29 @@
+.dns-case-figure:has(> .comparison-frame-paint) {
+  position: relative;
+}
+
+.mascot-case > [data-paint-speech] .mascot-speech {
+  background: var(--color-dns-button-face);
+  box-shadow: inset 0 calc(-2 * var(--pixel-step)) var(--color-dns-button-shadow);
+}
+
+.comparison-frame-paint {
+  --paint-color: var(--color-dns-button-face);
+  --paint-light: color-mix(in srgb, var(--paint-color) 58%, white);
+  position: absolute;
+  z-index: 1;
+  inset: 0 auto auto 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.comparison-frame-paint rect {
+  rx: calc(var(--radius-card) - 1px);
+  fill: none;
+}
+
+.comparison-frame-paint__base { stroke: #454545; }
+.comparison-frame-paint__stroke { stroke: var(--paint-color); visibility: hidden; }
+.comparison-frame-paint[data-painted] .comparison-frame-paint__stroke { visibility: visible; }
+.comparison-frame-paint [data-paint-tail] { stroke: var(--paint-light); opacity: 0; }
+.comparison-frame-paint circle { fill: var(--paint-light); opacity: 0; }

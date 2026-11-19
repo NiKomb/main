@@ -3,6 +3,7 @@ import rider from './rider.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
+import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment, metricCommentRightEdge } from './case-comments';
 import { caseFooterRoute, caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
@@ -15,7 +16,7 @@ import './mascot.css';
 const gallerySelector = '.case-covers, .interview-gallery-scroll, .dns-case-frames';
 const cardSelector = '.dns-case-fact, .dns-case-summary, .dns-case-block > blockquote';
 type RouteSurface = CaseSurface & { surface: Surface };
-type Speech = SpeechPosition & { message: string; hidden?: boolean };
+type Speech = SpeechPosition & { message: string; hidden?: boolean; paintTile?: Element };
 type CaseSurfaceGeometry = Surface & { routeEnd?: true };
 type CaseStop = Stop & { surface: CaseSurfaceGeometry };
 
@@ -36,6 +37,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
   const setPaused = useRef<(paused: boolean) => void>(undefined);
   const [speech, setSpeech] = useState<Speech>();
   const [speechReplay, setSpeechReplay] = useState(0);
+  const paintSpeech = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const layer = route.current;
@@ -105,10 +107,20 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       rememberActor();
     }
 
+    const paintMetric = (stop: CaseStop, bounds?: DOMRect) => {
+      const { tile } = stop.surface;
+      if (!tile.matches('[data-mascot-paint-gradient]:not([data-paint-started])')) return;
+      const layerBounds = bounds ?? layer.getBoundingClientRect();
+      tile.dispatchEvent(new CustomEvent<PaintPoint>(mascotPaintEvent, {
+        detail: { x: layerBounds.left + stop.point.x + spriteWidth / 2, y: layerBounds.top + stop.point.y + footOffset - 24 },
+      }));
+    };
+
     function finish(next: CaseStop) {
       destination = undefined;
       current = next;
       settle(next.point);
+      paintMetric(next);
       queue();
     }
 
@@ -157,6 +169,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         hideSpeech();
         return;
       }
+      paintMetric(stop, bounds);
       const reaction = gestureTile === stop.surface.tile ? mascotAttackMessage : shotCaption ? shotComment : undefined;
       if (!reaction && routeFinish && (stop.surface.tile !== routeFinish.surface.tile || stop.point.x !== routeFinish.point.x)) {
         hideSpeech();
@@ -197,10 +210,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           position.y = y + footOffset - 4;
         }
       }
-      const next = { ...position, message };
+      const paintTile = !reaction && stop.surface.tile.hasAttribute('data-mascot-paint-frame')
+        ? stop.surface.tile : undefined;
+      const next = { ...position, message, paintTile };
       setSpeech((previous) => previous?.message === next.message && !previous.hidden && previous.y === next.y &&
         previous.above === next.above && previous.alignment === next.alignment && previous.left === next.left &&
-        previous.maxWidth === next.maxWidth ? previous : next);
+        previous.maxWidth === next.maxWidth && previous.paintTile === next.paintTile ? previous : next);
     };
 
     const replaySpeech = () => setSpeechReplay((replay) => replay + 1);
@@ -472,6 +487,16 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
   useEffect(() => setPaused.current?.(paused), [paused]);
 
+  const paintTile = !speech?.hidden ? speech?.paintTile : undefined;
+  useEffect(() => {
+    const bubble = paintSpeech.current?.firstElementChild;
+    if (!paintTile || !bubble || paused) return;
+    const bounds = bubble.getBoundingClientRect();
+    paintTile.dispatchEvent(new CustomEvent<PaintPoint>(mascotPaintEvent, {
+      detail: { x: bounds.right - 8, y: bounds.bottom },
+    }));
+  }, [paintTile, paused]);
+
   return (
     <div className="mascot-case" ref={route}>
       <canvas className="mascot__movement" ref={canvas} aria-hidden="true" hidden />
@@ -487,7 +512,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           </span>
         </button>
       </span>
-      {speech && <span hidden={speech.hidden}>
+      {speech && <span ref={paintSpeech} hidden={speech.hidden} data-paint-speech={speech.paintTile ? '' : undefined}>
         <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech} duration="persistent" />
       </span>}
       <p className="mascot-speech__transcript" role="status">{!speech?.hidden && speech?.message}</p>
