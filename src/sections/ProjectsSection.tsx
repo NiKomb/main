@@ -98,24 +98,74 @@ function CaseCoverStrip({ images, decorative = false }: { images: readonly Proje
   );
 }
 
+type CaseVideo = NonNullable<Project['coverVideo']>;
+
+function CaseVideoArtwork({ video: { src, poster, title }, videoRef }: { video: CaseVideo; videoRef?: Ref<HTMLVideoElement> }) {
+  return (
+    <span className="case-cover-frame case-cover-video">
+      <video ref={videoRef} src={src} poster={poster} preload="none" muted loop playsInline aria-label={title} />
+    </span>
+  );
+}
+
 function CaseCoverArtwork({ project, decorative = false, videoRef }: {
   project: Project;
   decorative?: boolean;
   videoRef?: Ref<HTMLVideoElement>;
 }) {
   if (project.coverVideo) {
-    const { src, poster, title } = project.coverVideo;
-    return (
-      <span className="case-cover-frame case-cover-video">
-        <video ref={videoRef} src={src} poster={poster} preload="none" muted loop playsInline aria-label={title} />
-      </span>
-    );
+    return <CaseVideoArtwork video={project.coverVideo} videoRef={videoRef} />;
   }
   if (project.coverImages?.length) {
     return <CaseCoverStrip images={project.coverImages} decorative={decorative} />;
   }
   const image = project.screens?.[0]?.image;
   return image ? <CaseScreenshotFrame image={image} decorative={decorative} /> : null;
+}
+
+function useCoverPlayback(video: HTMLVideoElement | null, enabled: boolean) {
+  const [playing, setPlaying] = useState(false);
+  const controller = useRef<ReturnType<typeof connectCoverPlayback>>(undefined);
+  const preference = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (!video || !enabled) return;
+    const playback = connectCoverPlayback(video, preference, setPlaying);
+    controller.current = playback;
+    return () => {
+      playback?.disconnect();
+      controller.current = undefined;
+      setPlaying(false);
+    };
+  }, [video, enabled]);
+
+  return { playing, toggle: () => controller.current?.toggle() };
+}
+
+function CaseVideoTile({ video, videoRef, coverId, playback, playbackLabel, onOpen }: {
+  video: CaseVideo;
+  videoRef: Ref<HTMLVideoElement>;
+  coverId?: string;
+  playback: ReturnType<typeof useCoverPlayback>;
+  playbackLabel: string;
+  onOpen: (trigger: HTMLButtonElement) => void;
+}) {
+  return (
+    <div className="case-cover-slide">
+      <button type="button" className={coverId ? 'case-zoom-trigger' : 'case-zoom-trigger case-screenshot'}
+        aria-label={`Смотреть: ${video.title}`} onClick={(event) => onOpen(event.currentTarget)}>
+        <span className="case-cover case-screenshot-media" data-cover={coverId} data-cover-gallery={coverId ? '' : undefined}>
+          <CaseVideoArtwork video={video} videoRef={videoRef} />
+        </span>
+      </button>
+      <button type="button" className="icon-tile case-cover-playback" {...iconTilePress}
+        aria-label={`${playback.playing ? 'Приостановить' : 'Воспроизвести'} ${playbackLabel}`} onClick={playback.toggle}>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d={playback.playing ? 'M5 4h3.5v12H5zM11.5 4H15v12h-3.5z' : 'M6 3.5 16 10 6 16.5Z'} />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
 function CaseScreenshot({ image, onOpen }: {
@@ -162,9 +212,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [originalView, setOriginalView] = useState<'preview' | 'loading' | 'original' | 'error'>('preview');
   const [activeCoverVideo, setActiveCoverVideo] = useState<HTMLVideoElement | null>(null);
-  const [coverPlaying, setCoverPlaying] = useState(false);
-  const coverPlayback = useRef<ReturnType<typeof connectCoverPlayback>>(undefined);
-  const coverPlaybackPreference = useRef<boolean | null>(null);
+  const [scenarioVideo, setScenarioVideo] = useState<HTMLVideoElement | null>(null);
   const viewportMascot = useRef<HTMLSpanElement>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
@@ -186,23 +234,14 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const mascotComments = isDns ? dnsMascotComments : isVseinstrumenti ? viMascotComments : undefined;
   const caseYear = isDns ? dnsCase.year : viCase.year;
   const viewingMedia = gallery !== null;
+  const coverPlayback = useCoverPlayback(activeCoverVideo, arrived && !viewingMedia);
+  const scenarioPlayback = useCoverPlayback(scenarioVideo, arrived && !viewingMedia);
   const original = gallery?.slides[gallery.index].dataset;
   const showingOriginal = originalView === 'original';
 
   useEffect(() => {
     if (showingOriginal) originalViewport.current?.focus({ preventScroll: true });
   }, [showingOriginal]);
-
-  useEffect(() => {
-    if (!activeCoverVideo || !arrived || viewingMedia) return;
-    const playback = connectCoverPlayback(activeCoverVideo, coverPlaybackPreference, setCoverPlaying);
-    coverPlayback.current = playback;
-    return () => {
-      playback?.disconnect();
-      coverPlayback.current = undefined;
-      setCoverPlaying(false);
-    };
-  }, [activeCoverVideo, arrived, viewingMedia]);
 
   function transition(next: string | null) {
     const element = section.current;
@@ -495,12 +534,14 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
             {item.screens ? item.screens.map(({ id, title, image, additionalImages }, index) => {
               const primary = index === 0;
-              const coverVideo = primary ? item.coverVideo : undefined;
-              const coverArtwork = primary && Boolean(coverVideo || item.coverImages?.length);
+              if (primary && item.coverVideo) {
+                return <CaseVideoTile key={id} video={item.coverVideo} videoRef={setActiveCoverVideo} coverId={item.id}
+                  playback={coverPlayback} playbackLabel="шоурил DNS" onOpen={openMedia} />;
+              }
+              const coverArtwork = primary && Boolean(item.coverImages?.length);
               const images = additionalImages?.length ? [image, ...additionalImages] : undefined;
-              const label = coverVideo ? `Смотреть: ${coverVideo.title}`
-                : coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
-              const trigger = (
+              const label = coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
+              return (
                 <button key={id} type="button"
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
                   aria-label={label}
@@ -508,23 +549,11 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                   <span className="case-cover case-screenshot-media" data-cover-gallery=""
                     data-cover={primary ? item.id : undefined}
                     {...(coverArtwork || images ? undefined : screenshotAttributes(image))}>
-                    {coverArtwork ? <CaseCoverArtwork project={item} videoRef={coverVideo ? setActiveCoverVideo : undefined} />
+                    {coverArtwork ? <CaseCoverArtwork project={item} />
                       : images ? <CaseCoverStrip images={images} /> : <CaseScreenshotFrame image={image} />}
                   </span>
                 </button>
               );
-              return coverVideo ? (
-                <div className="case-cover-slide" key={id}>
-                  {trigger}
-                  <button type="button" className="icon-tile case-cover-playback" {...iconTilePress}
-                    aria-label={coverPlaying ? 'Приостановить шоурил DNS' : 'Воспроизвести шоурил DNS'}
-                    onClick={() => coverPlayback.current?.toggle()}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path d={coverPlaying ? 'M5 4h3.5v12H5zM11.5 4H15v12h-3.5z' : 'M6 3.5 16 10 6 16.5Z'} />
-                    </svg>
-                  </button>
-                </div>
-              ) : trigger;
             }) : (
               <>
                 <div className="case-cover" data-cover={item.id} aria-hidden="true" />
@@ -554,6 +583,8 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
             <div className={detailedContents ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
+                  scenarioMedia={<CaseVideoTile video={dnsCase.scenario.video} videoRef={setScenarioVideo}
+                    playback={scenarioPlayback} playbackLabel="сценарий выбора процессора" onOpen={openMedia} />}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : isVseinstrumenti ? (
                 <VseinstrumentiCase jumpToHeading={jumpToHeading}

@@ -50,8 +50,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const textColumn = article.querySelector('.dns-case-body > .case-text');
     const tiles = Array.from(article.querySelectorAll<HTMLElement>([
-      '.case-covers .case-cover', '.dns-comparison-tile', '.dns-scenario-frames',
-      '.case-screenshot:not(.dns-comparison-tile *, .dns-scenario-frames *)', cardSelector,
+      '.case-covers .case-cover', '.dns-comparison-tile',
+      '.case-screenshot:not(.dns-comparison-tile *)', cardSelector,
     ].join(', ')), (tile) => {
       const kind = tile.matches(cardSelector) ? 'card' as const : 'screen' as const;
       const gallery = tile.closest(gallerySelector);

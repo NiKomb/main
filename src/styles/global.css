@@ -1088,25 +1088,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   .dns-decision-check .dns-case-block:has(> :is(.dns-decision-tile, .dns-decision-metrics) > [data-mascot-comment])
     > :is(.dns-decision-tile, .dns-decision-metrics) { margin-block-start: 68px; }
 }
-.dns-scenario { position: relative; }
-.dns-scenario-frames { display: grid; }
-.dns-scenario-slide {
-  grid-area: 1 / 1;
-  opacity: 0;
-  visibility: hidden;
-}
-.dns-scenario-slide .case-cover-frame { --case-frame-inset: 0px; }
-.dns-scenario-slide[data-current] { opacity: 1; visibility: visible; z-index: 1; }
-.dns-scenario-playback {
-  position: absolute;
-  z-index: 2;
-  inset-block-start: 8px;
-  inset-inline-end: 8px;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .dns-scenario-slide { transition: opacity 220ms ease, visibility 0s 220ms; }
-  .dns-scenario-slide[data-current] { transition-delay: 0s; }
-}
 .dns-case-points {
   display: grid;
   gap: var(--space-8);

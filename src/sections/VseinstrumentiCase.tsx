@@ -68,17 +68,19 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
               </li>
             ))}
           </ul>
-          <div className="dns-case-block vi-case-subtopic">
+          <section className="dns-case-block vi-case-subtopic" aria-labelledby="vi-competitors">
             <h3 id="vi-competitors" tabIndex={-1}>Как показывают условия в других сервисах</h3>
+            <p>{audit.competitors.introduction}</p>
             <ul className="dns-case-stages dns-case-results">
-              {audit.competitors.map(({ title, detail }) => (
+              {audit.competitors.findings.map(({ title, detail }) => (
                 <li className="dns-case-fact" key={title}>
                   <h4 className="dns-case-fact-title">{title}</h4>
                   <p>{detail}</p>
                 </li>
               ))}
             </ul>
-          </div>
+            <p>{audit.competitors.takeaway}</p>
+          </section>
         </div>
       </section>
 

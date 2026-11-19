@@ -24,18 +24,14 @@ import articlePanelAfter from './screens/dns-article-panel-after.webp';
 import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
 import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
 import hoverToggleStates from './screens/dns-hover-toggle-states.png';
-import flowAdd from './screens/dns-article-flow-add.webp';
-import flowCatalog from './screens/dns-article-flow-catalog.webp';
-import flowReview from './screens/dns-article-flow-review.webp';
-import flowReturn from './screens/dns-article-flow-return.webp';
-import flowSelected from './screens/dns-article-flow-selected.webp';
+import processorScenario from './screens/dns-processor-scenario.mp4';
+import processorScenarioPoster from './screens/dns-processor-scenario.webp';
 import quickChoice from './screens/dns-quick-choice.webp';
 import buildRecommendedArticles from './screens/dns-build-recommended-articles.webp';
 
 export type CaseFigure = ProjectImage & { caption: string; label?: string; comment?: string };
 export type CaseFact = { title: string; detail: string; comment?: string };
 export type CaseMetric = { value: string; label: string; detail?: string; comment?: string };
-export type ScenarioStep = CaseFigure & { label: string };
 
 type Decision = {
   id: string;
@@ -387,34 +383,12 @@ export const dnsCase = {
   },
   scenario: {
     title: 'Как это работает на примере процессора',
-    intro: 'Покупатель нажимает «Добавить» в строке процессора и открывает каталог. Над товарами он находит обзор Ryzen 7 7800X3D и смотрит результаты Cyberpunk 2077. Из статьи он возвращается в каталог, добавляет процессор и переходит к выбору материнской платы',
-    steps: [
-      {
-        src: flowAdd, label: 'Открыть подбор процессора',
-        alt: 'В пустой сборке рядом со строкой «Процессор» доступна кнопка «Добавить»',
-        caption: 'Кнопка «Добавить» в строке процессора открывает каталог',
-      },
-      {
-        src: flowCatalog, label: 'Найти обзор в каталоге',
-        alt: 'В каталоге процессоров над карточками товаров показан блок со статьями Клуба DNS',
-        caption: 'В блоке над товарами можно открыть обзор с тестами Ryzen 7 7800X3D',
-      },
-      {
-        src: flowReview, label: 'Посмотреть тесты в статье',
-        alt: 'В статье видны тест Cyberpunk 2077 и строка сборки с карточкой «Процессор»',
-        caption: 'Карточка «Процессор» над статьёй возвращает к каталогу',
-      },
-      {
-        src: flowReturn, label: 'Продолжить выбор в каталоге',
-        alt: 'После возврата снова открыт каталог. У Ryzen 7 7800X3D выделена кнопка «Добавить»',
-        caption: 'После возврата можно нажать «Добавить» у выбранной модели',
-      },
-      {
-        src: flowSelected, label: 'Добавить процессор в сборку',
-        alt: 'В сборке выбран Ryzen 7 7800X3D. Рядом с материнской платой доступна кнопка «Добавить»',
-        caption: 'Ryzen 7 7800X3D появляется в сборке. Можно перейти к следующей детали',
-      },
-    ].map((step): ScenarioStep => ({ ...step, width: 1600, height: 900, showFull: true })),
+    intro: 'Покупатель нажимает «Добавить» в строке процессора. Над товарами в каталоге он открывает статью со сравнением Ryzen 5 5600X и Core i5‑12400. Затем возвращается в каталог, добавляет Ryzen 7 7800X3D в сборку и переходит к выбору материнской платы',
+    video: {
+      src: processorScenario,
+      poster: processorScenarioPoster,
+      title: 'Сценарий выбора процессора в конфигураторе DNS',
+    },
   },
   quickChoice: {
     title: 'Быстрый выбор на экране сборки',
@@ -530,7 +504,7 @@ export const dnsMascotComments: Readonly<Record<string, string>> = {
   'hover-mode-unused': 'Ноль из пяти включили. Удобный был режим? Вот и я не знаю',
   'article-skipped': 'Я за FPS в своей игре. До графика сколько листать?',
   'return-caption': 'Я вернулся. Тот самый процессор теперь искать заново?',
-  'ryzen-review': 'Этому Ryzen повезло с обзором. А если для моей модели его нет?',
+  'ryzen-review': 'А если среди статей нет обзора на мою модель?',
   'builds-saved': `${testCounts.saved} из ${testCounts.started} сохранили сборку. А сколько сохранили бы в обычном DNS?`,
   'article-data-view': 'Открыл график и ушёл за чаем. Через пять секунд я уже «посмотрел данные»',
 };

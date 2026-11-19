@@ -1,5 +1,4 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { DnsScenario } from '../components/DnsScenario';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsDecisions, type CaseFact, type CaseFigure, type CaseMetric } from '../data/dnsCase';
@@ -12,6 +11,7 @@ import { RocketShot } from '../effects/rocket-shot/RocketShot';
 type Props = {
   jumpToHeading: (id: string) => void;
   renderScreenshot: (image: ProjectImage) => ReactNode;
+  scenarioMedia: ReactNode;
   rocketActor?: RefObject<HTMLSpanElement | null>;
 };
 
@@ -113,7 +113,7 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
   );
 }
 
-export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props) {
+export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { sectionLabels, research, summary, comparison, scenario, quickChoice, test, reflection } = dnsCase;
   const toggleCaption = useRef<HTMLElement>(null);
 
@@ -307,7 +307,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
           <div className="dns-case-block" data-mascot-comment="ryzen-review">
             <h2 id="dns-scenario" tabIndex={-1}>{scenario.title}</h2>
             <p>{scenario.intro}</p>
-            <DnsScenario steps={scenario.steps} renderScreenshot={renderScreenshot} />
+            {scenarioMedia}
           </div>
           <section className="dns-case-block">
             <h3 className="dns-case-labeled-heading">
