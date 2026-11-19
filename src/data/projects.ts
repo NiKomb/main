@@ -34,6 +34,7 @@ export type Project = {
   id: string;
   title: string;
   summary: string;
+  year?: number;
   tileSummary?: string;
   role?: string;
   cover?: { src: string; alt: string };
@@ -54,6 +55,7 @@ export const projects = [
   {
     id: 'dns',
     title: 'DNS',
+    year: 2026,
     summary: 'Конфигуратор ПК: выбор комплектующих и материалы исследования',
     tileSummary: 'Сравнение деталей для сборки ПК',
     tileIllustration: dnsMotherboard,
@@ -101,6 +103,7 @@ export const projects = [
   {
     id: 'vseinstrumenti',
     title: 'ВсеИнструменты',
+    year: 2026,
     summary: 'Мобильный прототип выбора доставки тяжелых товаров',
     tileSummary: 'Выбор доставки тяжёлых товаров',
     tileIllustration: viHeavyDelivery,

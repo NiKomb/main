@@ -8,7 +8,7 @@ import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import { site } from '../data/site';
-import { viCase, viContents, viMascotComments } from '../data/vseinstrumentiCase';
+import { viContents, viMascotComments } from '../data/vseinstrumentiCase';
 import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
@@ -235,7 +235,6 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
   const isVseinstrumenti = item?.id === 'vseinstrumenti';
   const detailedContents = isDns ? dnsContents : isVseinstrumenti ? viContents : undefined;
   const mascotComments = isDns ? dnsMascotComments : isVseinstrumenti ? viMascotComments : undefined;
-  const caseYear = isDns ? dnsCase.year : viCase.year;
   const viewingMedia = gallery !== null;
   const coverPlayback = useCoverPlayback(activeCoverVideo, arrived && !viewingMedia);
   const scenarioPlayback = useCoverPlayback(scenarioVideo, arrived && !viewingMedia);
@@ -639,7 +638,7 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
               </div>
               <div className="dns-case-footer-signature">
                 <span>{site.profile.name}</span>
-                <time dateTime={String(caseYear)}>{caseYear}</time>
+                {item.year && <time dateTime={String(item.year)}>{item.year}</time>}
               </div>
             </footer>
           )}
@@ -661,9 +660,12 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
                   </span>
                   <span className="tile-side">
                     <span className="tile-copy">
+                      <span className="tile-meta">
+                        {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
+                        <span className="pixel-chevron tile-chevron" aria-hidden="true" />
+                      </span>
                       <strong>{entry.title}</strong>
                       <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
-                      <span className="pixel-chevron tile-chevron" aria-hidden="true" />
                     </span>
                     <span className="tile-preview" aria-hidden="true">
                       {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
