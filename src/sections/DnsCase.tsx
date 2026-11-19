@@ -262,7 +262,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
                   <span>{decision.title}</span>
                   <span className="dns-case-heading-label">Гипотеза {decision.hypothesis}</span>
                 </h3>
-                <blockquote cite={test.journal.source.href}>
+                <blockquote cite={test.journalSource.href}>
                   <p>{decision.hypothesisText}</p>
                 </blockquote>
                 {decision.observation && <p>{decision.observation.text}</p>}
@@ -330,14 +330,13 @@ export function DnsCase({ jumpToHeading, renderScreenshot, rocketActor }: Props)
             <h2 id="dns-results" tabIndex={-1}>{test.title}</h2>
             <p>{test.intro}</p>
             <p>{test.accounting}</p>
-            <ul className="dns-case-stages dns-case-results" aria-label="От начала теста до сохранения сборки">
+            <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
               {test.overview.map(renderMetric)}
             </ul>
           </div>
           <section className="dns-case-group" aria-labelledby="dns-hypotheses">
             <div className="dns-case-block">
               <h3 id="dns-hypotheses">{test.journalTitle}</h3>
-              {renderFigure(test.journal)}
             </div>
             {test.groups.map(({ title, hypothesis, metrics }) => (
               <section className="dns-case-block" aria-label={title} key={title}>

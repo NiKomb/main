@@ -7,7 +7,8 @@ export const site = {
     experience: 'В самостоятельных проектах прорабатывал пользовательские сценарии и состояния интерфейса, собирал интерактивные прототипы и дорабатывал решения после тестов',
     socialLinks: [
       { id: 'telegram', label: 'Telegram', href: null },
-      { id: 'github', label: 'Репозиторий портфолио на GitHub', href: 'https://github.com/NiKomb/main' },
+      { id: 'email', label: 'Электронная почта', href: null },
+      { id: 'cv', label: 'Резюме (CV)', href: null },
     ] as const,
   },
 };

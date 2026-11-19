@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { CaseFigure } from '../data/dnsCase';
 import type { ProjectImage } from '../data/projects';
-import { viCase, viDecisions, viFollowupFigures, viJournalFigure, viScenario } from '../data/vseinstrumentiCase';
+import { viCase, viDecisions, viFollowupFigures, viScenario } from '../data/vseinstrumentiCase';
 
 type Props = {
   jumpToHeading: (id: string) => void;
@@ -135,7 +135,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
               <p>Оставил одну единицу товара без оформления</p>
             </li>
           </ul>
-          {renderFigure(viJournalFigure)}
           <div className="dns-case-block">
             <p>{test.limitations}</p>
           </div>

@@ -8,7 +8,6 @@ import courierBefore from './screens/vi-case-courier-before.webp';
 import carrierBefore from './screens/vi-case-carrier-before.webp';
 import carrierAfter from './screens/vi-case-carrier-after.webp';
 import cart from './screens/vi-case-cart.webp';
-import journal from './screens/vi-case-journal.webp';
 
 export const viCase = {
   title: 'Как выбрать доставку тяжёлых товаров',
@@ -149,13 +148,6 @@ export const viScenario: readonly CaseFigure[] = [
     comment: 'scenario-request',
   },
 ];
-
-export const viJournalFigure: CaseFigure = {
-  ...viMobileScreen, src: journal,
-  previewCrop: { top: 852, height: 410 },
-  alt: 'Сводка журнала: 4 успешных прохождения, 2 ошибки оформления и 1 прохождение с товарами без оформления',
-  caption: 'Сводка журнала UX-теста за 7 ноября 2026',
-};
 
 export const viFollowupFigures: readonly CaseFigure[] = [
   { ...viScenario[2], label: 'Подсказка при недоступном подъёме' },

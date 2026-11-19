@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
+import { ContactButtons } from '../components/ContactButtons';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
@@ -599,10 +600,9 @@ export function ProjectsSection({ page }: { page: RefObject<HTMLElement | null> 
           </div>
           {detailedContents && arrived && (
             <footer className="dns-case-footer">
-              {isDns && <div className="dns-case-footer-actions" data-mascot-route-end>
-                <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 1" />
-                <button type="button" className="icon-tile" {...iconTilePress} aria-label="Кнопка-заглушка 2" />
-              </div>}
+              <div className="dns-case-footer-actions" data-mascot-route-end>
+                <ContactButtons />
+              </div>
               <div className="dns-case-footer-signature">
                 <span>{site.profile.name}</span>
                 <time dateTime={String(caseYear)}>{caseYear}</time>

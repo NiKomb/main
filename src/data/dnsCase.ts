@@ -24,7 +24,6 @@ import articlePanelAfter from './screens/dns-article-panel-after.webp';
 import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
 import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
 import hoverToggleStates from './screens/dns-hover-toggle-states.png';
-import journalMetrics from './screens/dns-journal-metrics.webp';
 import flowAdd from './screens/dns-article-flow-add.webp';
 import flowCatalog from './screens/dns-article-flow-catalog.webp';
 import flowReview from './screens/dns-article-flow-review.webp';
@@ -273,11 +272,8 @@ export const dnsCase = {
     counts: testCounts,
     accounting: 'Журнал учитывает прохождение один раз в каждом показателе. В срезе задания на 16 ноября 2026 года — 26 исследовательских прохождений. 12 технических проверок исключены. Для метрик сравнения и статей журнал проверяет, достаточно ли записанных событий для подсчёта',
     overview: [
-      { value: String(testCounts.started), label: 'Начали тест', detail: 'Журнал зарегистрировал начало выполнения задания' },
-      { value: ratio(testCounts.selected, testCounts.started), label: 'Выбрали хотя бы одну деталь', detail: 'Учитывал добавление или замену комплектующего либо сохранённое в журнале состояние сборки с деталью' },
       { value: ratio(testCounts.assembled, testCounts.started), label: 'Подобрали пять деталей', detail: 'Засчитывал прохождение, если хотя бы раз журнал зафиксировал полный состав из пяти деталей' },
       { value: ratio(testCounts.saved, testCounts.started), label: 'Сохранили полную сборку', comment: 'builds-saved', detail: 'Засчитывал нажатие «Сохранить» при наличии всех пяти деталей в сборке' },
-      { value: String(testCounts.assembled - testCounts.saved), label: 'Подобрали пять деталей без сохранения', detail: 'Из числа прохождений с полным составом вычел те, где журнал зафиксировал сохранение полной сборки' },
       { value: '4 с', label: 'Медиана от открытия каталога до выбора', detail: 'Первый замер в прохождении — от открытия каталога до ручного добавления или замены детали в той же категории. Медиана по 24 замерам' },
     ],
     journalTitle: 'Что видно по журналу',
@@ -312,12 +308,7 @@ export const dnsCase = {
     ],
     timing: 'Медиана — центральное значение после сортировки замеров по длительности. Если центральных значений два, журнал берёт среднее из них. Время показано с тем же округлением до секунд, что и в журнале',
     journalLimit: 'Журнал показывает порядок действий. Чтобы понять, что помогло определиться, нужно попросить участника объяснить свой выбор. Влияние на заказы в этом тесте я не измерял',
-    journal: {
-      src: journalMetrics, width: 1834, height: 928, showFull: true,
-      alt: 'Обзор журнала DNS с результатами сборки и девятью показателями по сравнению, данным и рекомендованным статьям',
-      caption: 'Сводка задания из журнала DNS. Вверху — сохранение, полный состав и время до выбора. Ниже — показатели трёх гипотез',
-      source: { href: 'https://nikomb.github.io/dns-prototype/journal/?task=task-3', label: 'Открыть журнал DNS' },
-    },
+    journalSource: { href: 'https://nikomb.github.io/dns-prototype/journal/?task=task-3', label: 'Открыть журнал DNS' },
   },
   reflection: {
     title: 'Рефлексия',

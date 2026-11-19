@@ -187,8 +187,8 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
   transform: scaleX(-1);
 }
 .tile-copy > .tile-chevron::before {
-  top: calc(50% - 1.5px);
-  left: calc(50% - 4.5px);
+  top: calc(50% - var(--pixel-step) / 2);
+  left: calc(50% - var(--pixel-step) * 2);
 }
 .tile-preview {
   position: relative;
@@ -392,7 +392,16 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
 .case-nav button { min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
 .case-nav :is(a, button):hover { color: var(--color-text); }
 .case-back { justify-content: center; }
-.pixel-chevron { position: relative; width: 9px; height: 15px; }
+.pixel-icon {
+  width: calc(var(--pixel-step) * 10);
+  height: calc(var(--pixel-step) * 10);
+}
+.pixel-chevron {
+  position: relative;
+  flex: none;
+  width: calc(var(--pixel-step) * 4);
+  height: calc(var(--pixel-step) * 7);
+}
 :is(.project-links a, .dns-case-jump) {
   display: inline-flex;
   align-items: center;
@@ -401,12 +410,18 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
 }
 .pixel-chevron::before {
   position: absolute;
-  top: 6px;
+  top: calc(var(--pixel-step) * 3);
   left: 0;
-  width: 3px;
-  height: 3px;
+  width: var(--pixel-step);
+  height: var(--pixel-step);
   background: currentColor;
-  box-shadow: 3px -3px, 6px -6px, 3px 3px, 6px 6px;
+  box-shadow:
+    var(--pixel-step) calc(var(--pixel-step) * -1),
+    calc(var(--pixel-step) * 2) calc(var(--pixel-step) * -2),
+    calc(var(--pixel-step) * 3) calc(var(--pixel-step) * -3),
+    var(--pixel-step) var(--pixel-step),
+    calc(var(--pixel-step) * 2) calc(var(--pixel-step) * 2),
+    calc(var(--pixel-step) * 3) calc(var(--pixel-step) * 3);
   content: "";
 }
 :is(.project-links a, .dns-case-jump)::after {
