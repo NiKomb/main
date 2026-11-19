@@ -1,6 +1,5 @@
-import { particleFrame, particleSeed } from '../case-pixels/particles';
-
-export const fragmentDuration = 520;
+import { particleSeed } from '../case-pixels/particles';
+import { fragmentDuration, type Fragment } from './fragment-motion';
 
 function sampleFragments(bounds: Pick<DOMRectReadOnly, 'width' | 'height'>, scale: number,
   draw: (context: CanvasRenderingContext2D, width: number, height: number) => void) {
@@ -9,7 +8,7 @@ function sampleFragments(bounds: Pick<DOMRectReadOnly, 'width' | 'height'>, scal
   canvas.height = Math.ceil(bounds.height / scale);
   const { width, height } = canvas;
   const context = canvas.getContext('2d');
-  const pixels: { x: number; y: number; color: string; lifetime: number; drift: number }[] = [];
+  const pixels: Fragment[] = [];
   if (!context || !width || !height) return pixels;
 
   draw(context, width, height);
@@ -20,12 +19,16 @@ function sampleFragments(bounds: Pick<DOMRectReadOnly, 'width' | 'height'>, scal
     const column = pixel % width;
     const row = Math.floor(pixel / width);
     const seed = particleSeed(column, row);
+    const x = column - width / 2;
+    const y = row - height / 2;
     pixels.push({
-      x: column - width / 2,
-      y: row - height / 2,
+      x,
+      y,
       color: `rgb(${data[index]} ${data[index + 1]} ${data[index + 2]})`,
-      lifetime: 300 + seed % 220,
-      drift: seed % 23 - 11,
+      size: seed % 3 === 0 ? 2 : 1,
+      lifetime: fragmentDuration - seed % 201,
+      travelX: (x / width * 156 + seed % 49 - 24) / scale,
+      travelY: (y / height * 72 - 56 + seed % 41 - 20) / scale,
     });
   }
   return pixels;
@@ -53,18 +56,4 @@ export function sampleText(element: HTMLElement, bounds: DOMRectReadOnly, scale:
       }
     }
   });
-}
-
-export function drawFragments(context: CanvasRenderingContext2D, fragments: ReturnType<typeof sampleFragments>,
-  center: { x: number; y: number }, elapsed: number) {
-  for (const { x, y, color, lifetime, drift } of fragments) {
-    const { size, opacity, offset } = particleFrame(elapsed, 0, lifetime, 1, 1);
-    if (!size) continue;
-    context.fillStyle = color;
-    context.globalAlpha = opacity;
-    const left = center.x + x + (x * .7 + drift) * offset;
-    const top = center.y + y + (y * 2 - 9 + drift) * offset;
-    context.fillRect(Math.round(left), Math.round(top), 1, 1);
-  }
-  context.globalAlpha = 1;
 }

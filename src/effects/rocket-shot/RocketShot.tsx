@@ -2,7 +2,8 @@ import { useEffect, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { aimLauncher, flightFrame, gripPoint } from './launcher-geometry';
 import { rocketCaptionHitEvent, shotCaptionVisible, shotDeadline } from './scroll-trigger';
-import { drawFragments, fragmentDuration, sampleText } from './fragments';
+import { drawFragments, fragmentDuration } from './fragment-motion';
+import { sampleText } from './fragments';
 import launcher from './launcher.png';
 import flight from './flight.png';
 import blast from './blast.png';
@@ -132,11 +133,12 @@ export function RocketShot({ target, actor }: Props) {
         const impactElapsed = time - impactTime;
         const blastFrame = Math.floor(impactElapsed * fps / 1000);
         if (blastFrame >= blastFrames) return stop();
-        const blastSize = Math.max(64, Math.min(128, bounds.width)) / scale;
+        const maxBlastSize = scale === 2 ? 160 : 216;
+        const blastSize = Math.max(64, Math.min(maxBlastSize, bounds.width)) / scale;
         drawFrame(context, explosion, blastFrame, 184, 184,
           Math.round(aim.x - blastSize / 2), Math.round(aim.y - blastSize / 2), blastSize / 184);
         if (impactElapsed < fragmentDuration) {
-          drawFragments(context, shot.caption, aim, impactElapsed);
+          drawFragments(context, shot.caption, aim, impactElapsed, scale);
         }
       }
       frame = requestAnimationFrame(paint);

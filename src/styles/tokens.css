@@ -15,6 +15,9 @@
   --color-border: #303030;
   --color-skeleton: #242424;
   --color-accent: #bdbdbd;
+  --color-dns-accent: #ff9b49;
+  --color-dns-button-face: #ffa218;
+  --color-dns-button-shadow: #fc8507;
   --color-cover-matte: #f2f2f2;
   --font-body: Geist, system-ui, sans-serif;
   --font-accent: "Departure Mono", ui-monospace, monospace;

@@ -7,6 +7,7 @@ import { ComparisonParticles } from '../effects/case-pixels/ComparisonParticles'
 import { comparisonSwapClips } from '../effects/case-pixels/pixel-swap';
 import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
 import { RocketShot } from '../effects/rocket-shot/RocketShot';
+import { paintDnsButtonGradient } from './dns-button-gradient';
 
 type Props = {
   jumpToHeading: (id: string) => void;
@@ -116,6 +117,37 @@ function DnsComparison({ frames, headingId, sliderLabel = 'Разделител�
 export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { sectionLabels, research, summary, comparison, scenario, quickChoice, test, reflection } = dnsCase;
   const toggleCaption = useRef<HTMLElement>(null);
+  const gradientButton = useRef<HTMLButtonElement>(null);
+
+  useLayoutEffect(() => {
+    const button = gradientButton.current;
+    if (!button) return;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const styles = getComputedStyle(button);
+    const step = parseFloat(styles.getPropertyValue('--pixel-step'));
+    if (!(step > 0)) return;
+    const dark = styles.getPropertyValue('--color-dns-button-shadow').trim();
+    const light = styles.getPropertyValue('--color-dns-button-face').trim();
+    canvas.width = canvas.height = 0;
+    const paint = () => {
+      const width = Math.ceil(button.clientWidth / step);
+      const height = Math.ceil(button.clientHeight / step);
+      if (!width || !height || (width === canvas.width && height === canvas.height)) return;
+      canvas.width = width;
+      canvas.height = height;
+      paintDnsButtonGradient(context, dark, light);
+      button.style.setProperty('--dns-summary-gradient', `url("${canvas.toDataURL()}") 0 0 / ${width * step}px ${height * step}px no-repeat`);
+    };
+    paint();
+    const observer = new ResizeObserver(paint);
+    observer.observe(button);
+    return () => {
+      observer.disconnect();
+      button.style.removeProperty('--dns-summary-gradient');
+    };
+  }, []);
 
   function renderFigure(figure: CaseFigure, captionTarget?: RefObject<HTMLElement | null>) {
     return (
@@ -151,12 +183,12 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <dd>{summary.next}</dd>
             </div>
           </dl>
-          <div className="project-links">
-            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading(dnsDecisions[0].id)}>
-              К решениям
+          <div className="project-links dns-summary-actions">
+            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading(dnsDecisions[0].id)}>
+              <span className="dns-summary-jump-label">К решениям</span>
             </button>
-            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading('dns-results')}>
-              К результатам UX-теста
+            <button ref={gradientButton} className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
+              <span className="dns-summary-jump-label">К результатам UX-теста</span>
             </button>
           </div>
         </section>
