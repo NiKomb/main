@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { pixelSize, swapDepth, viewportExitCell, viewportSwapClip, type ViewportEdge } from '../case-pixels/pixel-swap';
 import { clearParticles, createParticle, drawParticles, particleSeed, releasedScrollCell, type Particle } from '../case-pixels/particles';
+import './viewport-edges.css';
 
 type Props = {
   root: RefObject<HTMLElement | null>;

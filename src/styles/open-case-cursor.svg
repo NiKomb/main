@@ -1,4 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="20" viewBox="0 0 60 20">
+  <title>ОТКРЫТЬ</title>
   <rect width="60" height="20" rx="4" fill="#171717" />
-  <text x="30" y="14" fill="#f2f2f2" font-family="monospace" font-size="11" text-anchor="middle">ОТКРЫТЬ</text>
+  <!-- Letter outlines from the bundled Departure Mono font. -->
+  <g fill="#f2f2f2">
+    <path d="M7 7V13H8V7ZM8 13V14H11V13ZM11 7V13H12V7ZM8 6V7H11V6Z" />
+    <path d="M14 6V7H16V14H17V7H19V6Z" />
+    <path d="M21 6V14H22V10H24V9H22V6ZM25 6V7H26V6ZM24 7V9H25V7ZM25 12V10H24V12ZM25 12V14H26V12Z" />
+    <path d="M28 6V14H29V11H32V10H29V7H32V6ZM32 7V10H33V7Z" />
+    <path d="M35 6V14H37V13H36V10H37V9H36V6ZM37 10V13H38V10ZM39 6V14H40V6Z" />
+    <path d="M42 6V7H44V14H45V7H47V6Z" />
+    <path d="M49 6V14H53V13H50V10H53V9H50V6ZM53 10V13H54V10Z" />
+  </g>
 </svg>
