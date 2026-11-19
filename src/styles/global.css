@@ -620,11 +620,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   --screen-fit-ratio: var(--screenshot-ratio);
   --screen-half-height: calc(50cqh - 3cqw);
   --screen-fit-width: min(94cqw, 2 * var(--screen-half-height) * var(--screen-fit-ratio));
+  --screen-width-fraction: 1;
+  --screen-translate-x: -50%;
   --screen-translate: -50%;
   inset: 0;
 }
 .case-screenshot-media[data-preview-crop]:not([data-expanded]) > .case-cover-frame {
   --screen-fit-ratio: var(--preview-crop-ratio);
+  --screen-width-fraction: var(--preview-crop-width-fraction);
+  --screen-translate-x: var(--preview-crop-translate-x);
   --screen-translate: clamp(
     min(-50%, -100% + var(--screen-half-height)),
     var(--preview-crop-translate),
@@ -641,8 +645,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, var(--screen-translate));
-  width: var(--screen-fit-width);
+  transform: translate(var(--screen-translate-x), var(--screen-translate));
+  width: calc(var(--screen-fit-width) / var(--screen-width-fraction));
   height: auto;
 }
 .page:has(.dns-case-body) {

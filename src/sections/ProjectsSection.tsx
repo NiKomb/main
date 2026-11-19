@@ -41,8 +41,11 @@ function headingAlignment(heading: HTMLElement) {
 function previewCropStyle(image: ProjectImage): CSSProperties | undefined {
   const crop = image.previewCrop;
   if (!crop) return;
+  const { left = 0, width = image.width } = crop.horizontal ?? {};
   return {
-    '--preview-crop-ratio': image.width / crop.height,
+    '--preview-crop-ratio': width / crop.height,
+    '--preview-crop-width-fraction': width / image.width,
+    '--preview-crop-translate-x': `${-(left + width / 2) / image.width * 100}%`,
     '--preview-crop-translate': `${-(crop.top + crop.height / 2) / image.height * 100}%`,
   } as CSSProperties;
 }

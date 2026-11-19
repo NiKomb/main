@@ -3,6 +3,7 @@ import dnsShowreel from './screens/dns-configurator-showreel.mp4';
 import dnsShowreelPoster from './screens/dns-configurator-showreel.webp';
 import dnsSelection from './screens/portfolio-dns-selection.webp';
 import dnsComparison from './screens/portfolio-dns-comparison.webp';
+import dnsArticleReturnCompact from './screens/dns-article-return-compact.webp';
 import dnsMotherboard from './screens/dns-motherboard.webp';
 import viHeavyDelivery from './screens/vi-heavy-delivery.webp';
 import {
@@ -24,7 +25,7 @@ export type ProjectImage = {
   height: number;
   roundedCorners?: boolean | number;
   cropInset?: number;
-  previewCrop?: { top: number; height: number };
+  previewCrop?: { top: number; height: number; horizontal?: { left: number; width: number } };
   showFull?: boolean;
   original?: { src: string; alt: string };
 };
@@ -69,6 +70,19 @@ export const projects = [
         title: 'Выбор процессора',
         description: 'В каталоге можно отфильтровать совместимые процессоры, посмотреть цены и открыть обзоры',
         image: { src: dnsSelection, alt: 'Модальное окно каталога процессоров с фильтрами, обзорами и карточками моделей', width: 4140, height: 2430 },
+      },
+      {
+        id: 'dns-gallery-article-return',
+        title: 'Панель возврата из статьи',
+        description: 'После прокрутки панель с деталями и стоимостью сборки сужается. Кнопка «В конфигуратор» возвращает к сборке',
+        image: {
+          src: dnsArticleReturnCompact,
+          alt: 'Компактная панель сборки с кнопкой «В конфигуратор» закреплена над разделом статьи с результатами тестирования',
+          width: 2880,
+          height: 1620,
+          roundedCorners: 6,
+          previewCrop: { top: 180, height: 963, horizontal: { left: 832, width: 1712 } },
+        },
       },
       {
         id: 'dns-gallery-comparison',
