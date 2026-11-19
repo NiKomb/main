@@ -95,7 +95,7 @@ h3, .tile-copy strong, .portfolio-profile-section > h2 {
   padding-block: 48px 64px;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  gap: 56px;
+  gap: 40px;
 }
 .page:not(:has(.projects[data-case-open])),
 .page:not(:has(.projects[data-case-open])) + .site-footer {

@@ -1,11 +1,9 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import breathedgePortrait from '../../data/pixel-portrait-breathedge.webp';
 import defaultPortrait from '../../data/pixel-portrait-default.webp';
-import falloutPortrait from '../../data/pixel-portrait-fallout.webp';
 import phantomBladePortrait from '../../data/pixel-portrait-phantom-blade-zero.webp';
 import stardewPortrait from '../../data/pixel-portrait-stardew.webp';
 import subnauticaPortrait from '../../data/pixel-portrait-subnautica.webp';
-import zeldaPortrait from '../../data/pixel-portrait-zelda.webp';
 import { revealAvatar } from './reveal';
 import { connectAvatarRotation, mascotAppearanceEvent, mascotTakeoffEvent } from './rotation';
 import './profile-avatar.css';
@@ -13,8 +11,6 @@ import './profile-avatar.css';
 const portraits = [
   { id: 'default', src: defaultPortrait },
   { id: 'astro', src: breathedgePortrait },
-  { id: 'zelda', src: zeldaPortrait },
-  { id: 'fallout', src: falloutPortrait },
   { id: 'stardew', src: stardewPortrait },
   { id: 'phantom-blade-zero', src: phantomBladePortrait },
   { id: 'subnautica', src: subnauticaPortrait },
