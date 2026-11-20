@@ -6,6 +6,8 @@ import dnsComparison from './screens/portfolio-dns-comparison.webp';
 import dnsArticleReturnCompact from './screens/dns-article-return-compact.webp';
 import dnsMotherboard from './screens/dns-motherboard.webp';
 import viHeavyDelivery from './screens/vi-heavy-delivery.webp';
+import viShowreel from './screens/vi-checkout-showreel.mp4';
+import viShowreelPoster from './screens/vi-checkout-showreel.webp';
 import {
   viCarrierNextStepScreen, viCarrierScreen, viCourierLiftScreen, viCourierScreen, viLiftingUnavailableScreen,
   viPickupScreen, viRequestScreen,
@@ -107,6 +109,7 @@ export const projects = [
     summary: 'Мобильный прототип выбора доставки тяжелых товаров',
     tileSummary: 'Выбор доставки тяжёлых товаров',
     tileIllustration: viHeavyDelivery,
+    coverVideo: { src: viShowreel, poster: viShowreelPoster, title: 'Выбор доставки в мобильном оформлении заказа' },
     coverImages: [viPickupScreen, viCourierScreen].map((image) => ({
       ...image,
       previewCrop: { top: 278, height: 864 },
