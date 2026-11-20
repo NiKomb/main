@@ -11,6 +11,7 @@ import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
 import { speechPosition, type SpeechPosition } from './speech-position';
+import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
 
 const gallerySelector = '.case-covers, .interview-gallery-scroll, .dns-case-frames';
@@ -38,6 +39,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
   const [speech, setSpeech] = useState<Speech>();
   const [speechReplay, setSpeechReplay] = useState(0);
   const paintSpeech = useRef<HTMLSpanElement>(null);
+  const { bubbleRef, interrupt, interruption } = useSpeechInterruption();
 
   useEffect(() => {
     const layer = route.current;
@@ -72,6 +74,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let appeared = false;
     let suspended = false;
     let lastScroll = scrollY;
+    let scrollPending = false;
     let direction = 0;
     let point: Point | undefined;
     let visibleActor: (Point & { facing: 'left' | 'right' }) | undefined;
@@ -159,31 +162,33 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       };
     };
 
-    const hideSpeech = () => {
+    const hideSpeech = (fromScroll = false) => {
+      if (fromScroll) interrupt();
       setSpeech((previous) => previous && !previous.hidden ? { ...previous, hidden: true } : previous);
     };
 
-    const drawSpeech = (bounds: DOMRect) => {
+    const drawSpeech = (bounds: DOMRect, fromScroll = false) => {
       const stop = current;
       if (!stop || control.inert || actor.hidden || movement.phase !== 'idle') {
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
       paintMetric(stop, bounds);
       const reaction = gestureTile === stop.surface.tile ? mascotAttackMessage : shotCaption ? shotComment : undefined;
       if (!reaction && routeFinish && (stop.surface.tile !== routeFinish.surface.tile || stop.point.x !== routeFinish.point.x)) {
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
       const message = reaction ?? caseRouteComment(stop.surface.tile, comments);
       if (!message) {
+        if (fromScroll) interrupt();
         setSpeech(undefined);
         return;
       }
       const { x, y } = stop.point;
       const position = speechPosition({ x: x + spriteWidth / 2, top: y, bottom: y + footOffset }, bounds, innerHeight);
       if (!position) {
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
       const metricBlock = metricCheck ?? metricGrid;
@@ -201,7 +206,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         } else {
           const firstCard = metricGrid?.firstElementChild;
           if (firstCard && Math.abs(firstCard.getBoundingClientRect().top - (bounds.top + y + footOffset)) >= 1) {
-            hideSpeech();
+            hideSpeech(fromScroll);
             return;
           }
           const column = metricGrid ?? (metricCheck && stop.surface.tile.closest('.dns-case-block'));
@@ -213,6 +218,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const paintTile = !reaction && stop.surface.tile.hasAttribute('data-mascot-paint-frame')
         ? stop.surface.tile : undefined;
       const next = { ...position, message, paintTile };
+      if (fromScroll) interrupt(message);
       setSpeech((previous) => previous?.message === next.message && !previous.hidden && previous.y === next.y &&
         previous.above === next.above && previous.alignment === next.alignment && previous.left === next.left &&
         previous.maxWidth === next.maxWidth && previous.paintTile === next.paintTile ? previous : next);
@@ -257,6 +263,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     const update = () => {
       frame = 0;
+      const fromScroll = scrollPending;
+      scrollPending = false;
       const enabled = !suspended && !document.hidden;
       actor.dataset.visible = String(enabled);
       if (!enabled || motion.matches) departure?.cancel();
@@ -331,7 +339,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
             candidate.top <= innerHeight / 2 && sameCaseRow(candidate, selected) &&
             (!selected.hasOwnComment || candidate.tile === selected.tile))?.surface;
         if (!motion.matches && target && live && live.left === target.left && live.right === target.right && live.y === target.y) {
-          drawSpeech(bounds);
+          drawSpeech(bounds, fromScroll);
           return;
         }
         if (!motion.matches && !crossingRouteEnd && !routeEnd && movement.phase !== 'blink') {
@@ -351,7 +359,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           movement.cancel();
         }
         actor.hidden = true;
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
 
@@ -362,7 +370,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         current = routeFinish;
         settle(routeFinish.point);
         appeared = true;
-        drawSpeech(bounds);
+        drawSpeech(bounds, fromScroll);
         return;
       }
 
@@ -370,7 +378,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         const landing = stop(surface, 'landing', current?.surface.tile === surface.tile ? current.point.x : resumeFrom.x);
         destination = landing;
         movement.leap(resumeFrom, landing.point, () => finish(landing), { arcAcrossWideGap: true });
-        drawSpeech(bounds);
+        drawSpeech(bounds, fromScroll);
         return;
       }
 
@@ -403,7 +411,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           appeared = true;
           queue();
         }
-        drawSpeech(bounds);
+        drawSpeech(bounds, fromScroll);
         return;
       }
 
@@ -420,12 +428,17 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         current = routeFinish;
         settle(routeFinish.point);
       }
-      drawSpeech(bounds);
+      drawSpeech(bounds, fromScroll);
     };
 
     function queue() {
       if (!frame) frame = requestAnimationFrame(update);
     }
+
+    const onScroll = () => {
+      scrollPending = true;
+      queue();
+    };
 
     function updateVisibility() {
       if (!document.hidden) {
@@ -447,7 +460,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       });
     }
     const scrollOptions = { passive: true, capture: true };
-    window.addEventListener('scroll', queue, scrollOptions);
+    window.addEventListener('scroll', onScroll, scrollOptions);
     window.addEventListener('resize', queue);
     document.addEventListener('visibilitychange', updateVisibility);
     motion.addEventListener('change', queue);
@@ -472,7 +485,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       movement.cancel();
       resize.disconnect();
       footerChanges.disconnect();
-      window.removeEventListener('scroll', queue, true);
+      window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', queue);
       document.removeEventListener('visibilitychange', updateVisibility);
       control.removeEventListener('click', activate);
@@ -483,11 +496,11 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       image.removeEventListener('error', queue);
       motion.removeEventListener('change', queue);
     };
-  }, [actorRef, comments, shotComment]);
+  }, [actorRef, comments, shotComment, interrupt]);
 
   useEffect(() => setPaused.current?.(paused), [paused]);
 
-  const paintTile = !speech?.hidden ? speech?.paintTile : undefined;
+  const paintTile = !interruption && !speech?.hidden ? speech?.paintTile : undefined;
   useEffect(() => {
     const bubble = paintSpeech.current?.firstElementChild;
     if (!paintTile || !bubble || paused) return;
@@ -511,11 +524,13 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
             <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
           </span>
         </button>
+        {interruption}
       </span>
-      {speech && <span ref={paintSpeech} hidden={speech.hidden} data-paint-speech={speech.paintTile ? '' : undefined}>
-        <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech} duration="persistent" />
+      {!interruption && speech && <span ref={paintSpeech} hidden={speech.hidden} data-paint-speech={speech.paintTile ? '' : undefined}>
+        <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech}
+          duration="persistent" bubbleRef={bubbleRef} mascotRef={actorRef} />
       </span>}
-      <p className="mascot-speech__transcript" role="status">{!speech?.hidden && speech?.message}</p>
+      <p className="mascot-speech__transcript" role="status">{interruption ? mascotAttackMessage : !speech?.hidden && speech?.message}</p>
     </div>
   );
 }

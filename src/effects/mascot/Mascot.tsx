@@ -9,6 +9,7 @@ import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessa
 import { MascotSpeech } from './MascotSpeech';
 import { selectNarrowCover } from './narrow-cover';
 import { speechPosition, type SpeechPosition } from './speech-position';
+import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
 
 const scrollThreshold = 96;
@@ -20,6 +21,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
   const takeoffRef = useRef<HTMLSpanElement>(null);
   const [speech, setSpeech] = useState<(SpeechPosition & { message: string }) | null>(null);
   const [speechReplay, setSpeechReplay] = useState(0);
+  const { bubbleRef, interrupt, interruption } = useSpeechInterruption();
 
   useEffect(() => {
     const layer = root.current;
@@ -51,17 +53,20 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let plannedTarget: Stop | undefined;
     let pending: Stop[] = [];
     let censored = false;
+    let scrollPending = false;
 
-    function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null) {
+    function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null, fromScroll = false) {
       const anchor = { x: point.x + spriteWidth / 2, top: point.y, bottom: point.y + footOffset };
       const position = speechPosition(anchor, bounds, innerHeight, narrowLayout);
       const message = censored ? mascotAttackMessage : sectionId ? results[sectionId] : undefined;
       const next = message && position ? { ...position, message } : null;
+      if (fromScroll) interrupt(next?.message);
       setSpeech((current) => current && next && current.message === next.message && current.y === next.y &&
         current.alignment === next.alignment && current.above === next.above ? current : next);
     }
 
-    const hideSpeech = () => {
+    const hideSpeech = (fromScroll = false) => {
+      if (fromScroll) interrupt();
       censored = false;
       delete layer.dataset.attacking;
       setSpeech(null);
@@ -127,7 +132,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (event.animationName === 'mascot-attack') delete layer.dataset.attacking;
     };
 
-    function updateNarrow(bounds: DOMRect, visible: boolean) {
+    function updateNarrow(bounds: DOMRect, visible: boolean, fromScroll: boolean) {
       if (!layer) return;
       const covers = sections.flatMap(({ cover, id }) => {
         const box = cover?.getBoundingClientRect();
@@ -140,7 +145,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         cancelMotion();
         layer.hidden = true;
         narrowTarget = undefined;
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
 
@@ -150,14 +155,14 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       };
       if (narrowTarget?.x === point.x && narrowTarget.y === point.y && narrowTarget.sectionId === next.id &&
         (!reducedMotion.matches || movement.phase === 'idle')) {
-        if (movement.phase === 'idle') showSpeech(point, bounds, next.id);
+        if (movement.phase === 'idle') showSpeech(point, bounds, next.id, fromScroll);
         return;
       }
 
       const start = layer.hidden || reducedMotion.matches || !image.naturalWidth ? undefined : layer.getBoundingClientRect();
       cancelMotion();
       narrowTarget = { ...point, sectionId: next.id, surface: readSurface(next.cover, bounds, next.box, minDashDistance) };
-      hideSpeech();
+      hideSpeech(fromScroll);
       if (start) {
         leap({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => {
           settle(point);
@@ -171,12 +176,14 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
     function update() {
       if (!layer || !grid) return;
+      const fromScroll = scrollPending && !document.hidden;
+      scrollPending = false;
       const bounds = grid.getBoundingClientRect();
       const avatarBox = introduction ? avatar?.getBoundingClientRect() : undefined;
       const top = Math.min(bounds.top, avatarBox?.top ?? bounds.top);
       const visible = bounds.bottom > 0 && top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
-      if (!visible) hideSpeech();
+      if (!visible) hideSpeech(fromScroll);
 
       if (narrowLayout !== narrow.matches) {
         cancelMotion();
@@ -192,7 +199,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         hideSpeech();
       }
       if (narrowLayout && !introduction) {
-        updateNarrow(bounds, visible);
+        updateNarrow(bounds, visible, fromScroll);
         return;
       }
 
@@ -253,7 +260,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         cancelMotion();
         currentStop = undefined;
         layer.hidden = true;
-        hideSpeech();
+        hideSpeech(fromScroll);
         return;
       }
 
@@ -360,7 +367,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
             introScroll = window.scrollY;
             narrowTarget = { ...current.point, sectionId: routes[caseIndex].id, surface: current.surface };
           }
-          showSpeech(current.point, bounds, routes[caseIndex].id);
+          showSpeech(current.point, bounds, routes[caseIndex].id, fromScroll);
           return;
         }
       }
@@ -374,7 +381,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       }
       const forward = origin <= target;
       currentStop = updated;
-      hideSpeech();
+      hideSpeech(fromScroll);
       const finish = () => {
         settle(updated.point);
         queueUpdate();
@@ -393,6 +400,11 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       frame = requestAnimationFrame(update);
     }
 
+    const onScroll = () => {
+      scrollPending = true;
+      queueUpdate();
+    };
+
     const resize = new ResizeObserver(queueUpdate);
     const layoutChanges = new MutationObserver(queueUpdate);
     resize.observe(grid);
@@ -405,7 +417,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         subtree: true,
       });
     }
-    window.addEventListener('scroll', queueUpdate, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('wheel', handleWheel, { passive: true });
     window.addEventListener('keydown', handleScrollKey);
     window.addEventListener('resize', queueUpdate);
@@ -424,7 +436,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       cancelAnimationFrame(frame);
       resize.disconnect();
       layoutChanges.disconnect();
-      window.removeEventListener('scroll', queueUpdate);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleScrollKey);
       window.removeEventListener('resize', queueUpdate);
@@ -436,7 +448,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       image.removeEventListener('load', queueUpdate);
       image.removeEventListener('error', queueUpdate);
     };
-  }, [resumeRoute, results]);
+  }, [resumeRoute, results, interrupt]);
 
   return (
     <>
@@ -449,8 +461,10 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
             <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
           </span>
         </button>
+        {interruption}
       </div>
-      {speech && <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech} />}
+      {!interruption && speech && <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message}
+        position={speech} bubbleRef={bubbleRef} mascotRef={root} />}
     </>
   );
 }

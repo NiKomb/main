@@ -85,31 +85,53 @@
 }
 
 .mascot-speech {
+  --speech-corner: calc(2 * var(--pixel-step));
+  --speech-far-step: calc(100% - var(--pixel-step));
+  --speech-far-corner: calc(100% - var(--speech-corner));
   position: absolute;
   z-index: 2;
   left: var(--speech-alignment);
   inline-size: max-content;
   max-inline-size: min(100%, 680px);
   padding: 7px 10px;
-  border-radius: 8px;
-  background: #171717;
-  color: var(--color-text);
-  font: 11px/16px var(--font-accent);
+  clip-path: polygon(
+    var(--speech-corner) 0, var(--speech-far-corner) 0,
+    var(--speech-far-corner) var(--pixel-step), var(--speech-far-step) var(--pixel-step),
+    var(--speech-far-step) var(--speech-corner), 100% var(--speech-corner),
+    100% var(--speech-far-corner), var(--speech-far-step) var(--speech-far-corner),
+    var(--speech-far-step) var(--speech-far-step), var(--speech-far-corner) var(--speech-far-step),
+    var(--speech-far-corner) 100%, var(--speech-corner) 100%,
+    var(--speech-corner) var(--speech-far-step), var(--pixel-step) var(--speech-far-step),
+    var(--pixel-step) var(--speech-far-corner), 0 var(--speech-far-corner),
+    0 var(--speech-corner), var(--pixel-step) var(--speech-corner),
+    var(--pixel-step) var(--pixel-step), var(--speech-corner) var(--pixel-step)
+  );
+  background: var(--speech-face, #ffc41a);
+  box-shadow: inset 0 calc(-2 * var(--pixel-step)) var(--speech-shadow, #d78c12);
+  color: #2e2720;
+  font: 700 11px/16px var(--font-accent);
   text-align: start;
   text-transform: var(--type-accent-transform);
   white-space: pre-line;
   text-wrap: pretty;
   overflow-wrap: anywhere;
-  translate: calc(0% - var(--speech-alignment)) var(--speech-offset, 0%);
+  translate: calc(0% - var(--speech-alignment)) calc(var(--speech-offset, 0%) + var(--speech-avoid-y, 0px));
   pointer-events: none;
 }
 .mascot-speech[data-above="true"] { --speech-offset: -100%; }
 
+.mascot-speech--interrupted {
+  top: -8px;
+  left: 50%;
+  max-inline-size: none;
+  translate: -50% -100%;
+}
+
 .mascot-speech__caret {
   display: inline-block;
-  inline-size: 5px;
-  block-size: 8px;
-  margin-inline-start: 2px;
+  inline-size: calc(2 * var(--pixel-step));
+  block-size: calc(4 * var(--pixel-step));
+  margin-inline-start: var(--pixel-step);
   background: currentColor;
 }
 
@@ -148,7 +170,7 @@
   pointer-events: none;
 }
 
-.mascot-case .mascot-speech { max-inline-size: min(244px, 100% - 24px); }
+.mascot-case .mascot-speech:not(.mascot-speech--interrupted) { max-inline-size: min(244px, 100% - 24px); }
 
 .mascot-case__departure {
   position: absolute;

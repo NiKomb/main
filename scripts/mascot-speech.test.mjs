@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment, metricCommentRightEdge } from '../src/effects/mascot/case-comments.ts';
 import { caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
-import { speechPosition } from '../src/effects/mascot/speech-position.ts';
+import { speechAvoidanceOffset, speechPosition, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
 test('speech grows toward the grid from a mascot near the right edge', () => {
@@ -28,6 +28,24 @@ test('a narrow layout puts speech over the cover when it fits below the mascot',
   const anchor = { x: 175, top: -68, bottom: 0 };
   assert.equal(speechPosition(anchor, { top: 500, width: 350 }, 844, true).above, false);
   assert.equal(speechPosition(anchor, { top: 500, width: 350 }, 600, true).above, true);
+});
+
+test('scroll censors replaced or hidden speech only while it is typing', () => {
+  assert.equal(speechWasInterrupted(undefined, 'Next reply'), false);
+  assert.equal(speechWasInterrupted('Reply', 'Reply'), false);
+  assert.equal(speechWasInterrupted('Reply', 'Next reply'), true);
+  assert.equal(speechWasInterrupted('Reply', undefined), true);
+});
+
+test('speech flips to the opposite side only when that clears a control and fits the viewport', () => {
+  const mascot = { top: 200, bottom: 272 };
+  const above = { left: 20, right: 120, top: 162, bottom: 192 };
+  const below = { ...above, top: 280, bottom: 310 };
+  assert.equal(speechAvoidanceOffset(above, above, mascot, true, 500), 118);
+  assert.equal(speechAvoidanceOffset(below, below, mascot, false, 500), -118);
+  assert.equal(speechAvoidanceOffset(above, { ...above, left: 125 }, mascot, true, 500), 0);
+  assert.equal(speechAvoidanceOffset(above, { ...above, bottom: 295 }, mascot, true, 500), 0);
+  assert.equal(speechAvoidanceOffset(above, above, mascot, true, 300), 0);
 });
 
 test('a case comment follows the current stop and its closest marked group', () => {

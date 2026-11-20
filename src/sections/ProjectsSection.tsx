@@ -14,7 +14,6 @@ import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
 import { createFlight } from '../effects/shared-cover/flight';
-import { Motherboard } from '../effects/motherboard/Motherboard';
 import { PixelViewportEdges } from '../effects/viewport-edges/PixelViewportEdges';
 import { DnsCase } from './DnsCase';
 import { VseinstrumentiCase } from './VseinstrumentiCase';
@@ -147,6 +146,12 @@ function useCoverPlayback(video: HTMLVideoElement | null, enabled: boolean) {
   }, [video, enabled]);
 
   return () => controller.current?.toggle();
+}
+
+function CaseListCoverArtwork({ project, enabled }: { project: Project; enabled: boolean }) {
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  useCoverPlayback(video, enabled);
+  return <CaseCoverArtwork project={project} decorative videoRef={setVideo} />;
 }
 
 function PlaybackIcon({ playing }: { playing: boolean }) {
@@ -596,15 +601,16 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
               if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopCoverDrag(event);
             }}
             onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
+            {item.coverVideo && (
+              <CaseVideoTile video={item.coverVideo} videoRef={setActiveCoverVideo} videoElement={activeCoverVideo} coverId={item.id}
+                togglePlayback={toggleCoverPlayback} playbackLabel={`видео «${item.title}»`} onOpen={openMedia} />
+            )}
             {item.screens ? item.screens.map(({ id, title, image, additionalImages }, index) => {
-              const primary = index === 0;
-              if (primary && item.coverVideo) {
-                return <CaseVideoTile key={id} video={item.coverVideo} videoRef={setActiveCoverVideo} videoElement={activeCoverVideo}
-                  coverId={item.id} togglePlayback={toggleCoverPlayback} playbackLabel="шоурил DNS" onOpen={openMedia} />;
-              }
-              const coverArtwork = primary && Boolean(item.coverImages?.length);
+              const coverImages = index === 0 ? item.coverImages : undefined;
+              if (index === 0 && item.coverVideo && !coverImages?.length) return null;
+              const primary = index === 0 && !item.coverVideo;
               const images = additionalImages?.length ? [image, ...additionalImages] : undefined;
-              const label = coverArtwork ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
+              const label = coverImages?.length ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
               return (
                 <button key={id} type="button"
                   className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
@@ -612,8 +618,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   onClick={(event) => openMedia(event.currentTarget)}>
                   <span className="case-cover case-screenshot-media" data-cover-gallery=""
                     data-cover={primary ? item.id : undefined}
-                    {...(coverArtwork || images ? undefined : screenshotAttributes(image))}>
-                    {coverArtwork ? <CaseCoverArtwork project={item} />
+                    {...(coverImages?.length || images ? undefined : screenshotAttributes(image))}>
+                    {coverImages?.length ? <CaseCoverStrip images={coverImages} />
                       : images ? <CaseCoverStrip images={images} /> : <CaseScreenshotFrame image={image} />}
                   </span>
                 </button>
@@ -711,34 +717,29 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
           <div className="case-grid">
             {projects.map((entry: Project) => (
               <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <div className="tile-layout-shell">
-                  <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
-                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                    event.preventDefault();
-                    history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
-                    transition(entry.id);
-                  }}>
-                    <span className="case-cover" data-cover={entry.id} aria-hidden="true">
-                      <CaseCoverArtwork project={entry} decorative videoRef={entry.coverVideo ? setActiveCoverVideo : undefined} />
-                    </span>
-                    <span className="tile-side">
-                      <span className="tile-copy">
-                        <span className="tile-meta">
-                          {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
-                          <span className="pixel-chevron tile-chevron" aria-hidden="true" />
-                        </span>
-                        <strong>{entry.title}</strong>
-                        <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
+                <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
+                  transition(entry.id);
+                }}>
+                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
+                    <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />
+                  </span>
+                  <span className="tile-side">
+                    <span className="tile-copy">
+                      <span className="tile-meta">
+                        {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
+                        <span className="pixel-chevron tile-chevron" aria-hidden="true" />
                       </span>
-                      <span className="tile-preview" aria-hidden="true">
-                        {entry.id !== 'dns' && entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
-                      </span>
+                      <strong>{entry.title}</strong>
+                      <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
                     </span>
-                  </a>
-                  {entry.id === 'dns' && entry.tileIllustration && (
-                    <div className="tile-model-preview"><Motherboard fallback={entry.tileIllustration} /></div>
-                  )}
-                </div>
+                    <span className="tile-preview" aria-hidden="true">
+                      {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
+                    </span>
+                  </span>
+                </a>
                 {projectResults[`project-${entry.id}`] && (
                   <p className="mascot-speech__transcript">{projectResults[`project-${entry.id}`]}</p>
                 )}

@@ -61,7 +61,7 @@ export const projects = [
     summary: 'Конфигуратор ПК: выбор комплектующих и материалы исследования',
     tileSummary: 'Сравнение деталей для сборки ПК',
     tileIllustration: dnsMotherboard,
-    coverVideo: { src: dnsShowreel, poster: dnsShowreelPoster, title: 'Шоурил конфигуратора DNS' },
+    coverVideo: { src: dnsShowreel, poster: dnsShowreelPoster, title: 'Добавление детали в сборку DNS' },
     screens: [
       {
         id: 'dns-build',
