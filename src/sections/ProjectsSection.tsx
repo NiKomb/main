@@ -105,10 +105,14 @@ function CaseCoverStrip({ images, decorative = false }: { images: readonly Proje
 
 type CaseVideo = NonNullable<Project['coverVideo']>;
 
-function CaseVideoArtwork({ video: { src, poster, title }, videoRef }: { video: CaseVideo; videoRef?: Ref<HTMLVideoElement> }) {
+function CaseVideoArtwork({ video: { src, poster, title }, videoRef, preload = 'none' }: {
+  video: CaseVideo;
+  videoRef?: Ref<HTMLVideoElement>;
+  preload?: 'none' | 'metadata';
+}) {
   return (
     <span className="case-cover-frame case-cover-video">
-      <video ref={videoRef} src={src} poster={poster} preload="none" muted loop playsInline aria-label={title} />
+      <video ref={videoRef} src={src} poster={poster} preload={preload} muted loop playsInline aria-label={title} />
     </span>
   );
 }
@@ -129,29 +133,38 @@ function CaseCoverArtwork({ project, decorative = false, videoRef }: {
 }
 
 function useCoverPlayback(video: HTMLVideoElement | null, enabled: boolean) {
-  const [playing, setPlaying] = useState(false);
   const controller = useRef<ReturnType<typeof connectCoverPlayback>>(undefined);
   const preference = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (!video || !enabled) return;
-    const playback = connectCoverPlayback(video, preference, setPlaying);
+    const playback = connectCoverPlayback(video, preference);
     controller.current = playback;
     return () => {
       playback?.disconnect();
       controller.current = undefined;
-      setPlaying(false);
     };
   }, [video, enabled]);
 
-  return { playing, toggle: () => controller.current?.toggle() };
+  return () => controller.current?.toggle();
 }
 
-function CaseVideoTile({ video, videoRef, coverId, playback, playbackLabel, onOpen }: {
+function PlaybackIcon({ playing }: { playing: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <path d={playing
+        ? 'M4 3h4v12H4zM10 3h4v12h-4z'
+        : 'M5 3h2v2h3v2h3v2h2v2h-3v2H9v2H5z'} />
+    </svg>
+  );
+}
+
+function CaseVideoTile({ video, videoRef, videoElement, coverId, togglePlayback, playbackLabel, onOpen }: {
   video: CaseVideo;
   videoRef: Ref<HTMLVideoElement>;
+  videoElement: HTMLVideoElement | null;
   coverId?: string;
-  playback: ReturnType<typeof useCoverPlayback>;
+  togglePlayback: () => void;
   playbackLabel: string;
   onOpen: (trigger: HTMLButtonElement) => void;
 }) {
@@ -160,15 +173,64 @@ function CaseVideoTile({ video, videoRef, coverId, playback, playbackLabel, onOp
       <button type="button" className={coverId ? 'case-zoom-trigger' : 'case-zoom-trigger case-screenshot'}
         aria-label={`Смотреть: ${video.title}`} onClick={(event) => onOpen(event.currentTarget)}>
         <span className="case-cover case-screenshot-media" data-cover={coverId} data-cover-gallery={coverId ? '' : undefined}>
-          <CaseVideoArtwork video={video} videoRef={videoRef} />
+          <CaseVideoArtwork video={video} videoRef={videoRef} preload="metadata" />
         </span>
       </button>
-      <button type="button" className="icon-tile case-cover-playback" {...iconTilePress}
-        aria-label={`${playback.playing ? 'Приостановить' : 'Воспроизвести'} ${playbackLabel}`} onClick={playback.toggle}>
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path d={playback.playing ? 'M5 4h3.5v12H5zM11.5 4H15v12h-3.5z' : 'M6 3.5 16 10 6 16.5Z'} />
-        </svg>
+      {videoElement && <VideoControls video={videoElement} placement="cover" playbackLabel={playbackLabel} onToggle={togglePlayback} />}
+    </div>
+  );
+}
+
+function formatVideoTime(seconds: number) {
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function VideoControls({ video, placement, playbackLabel = 'видео', onToggle }: {
+  video: HTMLVideoElement;
+  placement: 'cover' | 'gallery';
+  playbackLabel?: string;
+  onToggle?: () => void;
+}) {
+  const [playback, setPlayback] = useState({ video, playing: false, time: 0, duration: 0 });
+  useEffect(() => {
+    const sync = () => setPlayback({
+      video,
+      playing: !video.paused && !video.ended,
+      time: video.currentTime,
+      duration: Number.isFinite(video.duration) ? video.duration : 0,
+    });
+    const events = ['play', 'pause', 'ended', 'timeupdate', 'seeking', 'durationchange', 'emptied'];
+    for (const event of events) video.addEventListener(event, sync);
+    sync();
+    return () => {
+      for (const event of events) video.removeEventListener(event, sync);
+    };
+  }, [video]);
+
+  const { playing, time, duration } = playback.video === video ? playback : { playing: false, time: 0, duration: 0 };
+  const timestamp = formatVideoTime(time);
+  const total = duration ? formatVideoTime(duration) : '–:––';
+  return (
+    <div className={`video-controls video-controls--${placement}`} role="group" aria-label="Управление видео"
+      onPointerDown={(event) => event.stopPropagation()}>
+      <button type="button" className="icon-tile" {...iconTilePress}
+        aria-label={`${playing ? 'Приостановить' : 'Воспроизвести'} ${playbackLabel}`} onClick={() => {
+          if (onToggle) onToggle();
+          else if (video.paused || video.ended) void video.play().catch(() => {});
+          else video.pause();
+        }}>
+        <PlaybackIcon playing={playing} />
       </button>
+      <input type="range" className="video-seek" min={0} max={duration || 1} step="any"
+        value={Math.min(time, duration)} disabled={!duration}
+        style={{ '--video-progress': `${duration ? Math.min(time / duration, 1) * 100 : 0}%` } as CSSProperties}
+        aria-label="Перемотать видео" aria-valuetext={`${timestamp} из ${total}`}
+        onChange={(event) => {
+          video.currentTime = event.currentTarget.valueAsNumber;
+          setPlayback({ ...playback, time: video.currentTime });
+        }} />
+      <span className="video-time">{timestamp} / {total}</span>
     </div>
   );
 }
@@ -205,7 +267,6 @@ type Gallery = {
   index: number;
   origin: HTMLButtonElement;
   video: HTMLVideoElement | null;
-  controlsVisible?: boolean;
 };
 
 export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTMLElement | null>; startupComplete: boolean }) {
@@ -238,8 +299,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
   const detailedContents = isDns ? dnsContents : isVseinstrumenti ? viContents : undefined;
   const mascotComments = isDns ? dnsMascotComments : isVseinstrumenti ? viMascotComments : undefined;
   const viewingMedia = gallery !== null;
-  const coverPlayback = useCoverPlayback(activeCoverVideo, arrived && !viewingMedia);
-  const scenarioPlayback = useCoverPlayback(scenarioVideo, arrived && !viewingMedia);
+  const toggleCoverPlayback = useCoverPlayback(activeCoverVideo, arrived && !viewingMedia);
+  const toggleScenarioPlayback = useCoverPlayback(scenarioVideo, arrived && !viewingMedia);
   const original = gallery?.slides[gallery.index].dataset;
   const showingOriginal = originalView === 'original';
 
@@ -401,9 +462,10 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     const slideDirection = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? undefined : direction;
     mediaTransition.current = replaceGallerySlide(content, media, slideDirection);
     const video = media.querySelector('video');
-    if (document.activeElement === originalTrigger.current) content.focus({ preventScroll: true });
+    if (document.activeElement === originalTrigger.current ||
+      (!video && document.activeElement?.closest('.video-controls--gallery'))) content.focus({ preventScroll: true });
     setOriginalView('preview');
-    setGallery({ ...gallery, index, video, controlsVisible: false });
+    setGallery({ ...gallery, index, video });
     void video?.play().catch(() => {});
   }
 
@@ -430,8 +492,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       source = createMedia(target);
       content.replaceChildren(source);
     }
-    const video = source?.querySelector('video');
-    if (video) video.controls = false;
     const flight = source instanceof HTMLElement && createFlight(source, source.matches(resizeScreensOnZoom));
     dismissMedia();
     gallery.origin.focus({ preventScroll: true });
@@ -539,8 +599,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
             {item.screens ? item.screens.map(({ id, title, image, additionalImages }, index) => {
               const primary = index === 0;
               if (primary && item.coverVideo) {
-                return <CaseVideoTile key={id} video={item.coverVideo} videoRef={setActiveCoverVideo} coverId={item.id}
-                  playback={coverPlayback} playbackLabel="шоурил DNS" onOpen={openMedia} />;
+                return <CaseVideoTile key={id} video={item.coverVideo} videoRef={setActiveCoverVideo} videoElement={activeCoverVideo}
+                  coverId={item.id} togglePlayback={toggleCoverPlayback} playbackLabel="шоурил DNS" onOpen={openMedia} />;
               }
               const coverArtwork = primary && Boolean(item.coverImages?.length);
               const images = additionalImages?.length ? [image, ...additionalImages] : undefined;
@@ -587,8 +647,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
             <div className={detailedContents ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
-                  scenarioMedia={<CaseVideoTile video={dnsCase.scenario.video} videoRef={setScenarioVideo}
-                    playback={scenarioPlayback} playbackLabel="сценарий выбора процессора" onOpen={openMedia} />}
+                  scenarioMedia={<CaseVideoTile video={dnsCase.scenario.video} videoRef={setScenarioVideo} videoElement={scenarioVideo}
+                    togglePlayback={toggleScenarioPlayback} playbackLabel="сценарий выбора процессора" onOpen={openMedia} />}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : isVseinstrumenti ? (
                 <VseinstrumentiCase jumpToHeading={jumpToHeading}
@@ -709,13 +769,14 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       <dialog ref={dialog} className="case-dialog" aria-label="Просмотр материалов"
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onKeyDown={(event) => {
-          if (showingOriginal || event.target instanceof HTMLVideoElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+          if (showingOriginal || event.target instanceof HTMLInputElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
           event.preventDefault();
           moveMedia(event.key === 'ArrowLeft' ? -1 : 1);
         }}
         onClick={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
         <div className="gallery-preview" inert={showingOriginal}>
           <div ref={dialogContent} className="gallery-media-full" tabIndex={-1} />
+          {gallery?.video && <VideoControls video={gallery.video} placement="gallery" />}
           {original?.originalSrc && !showingOriginal && (
             <button ref={originalTrigger} type="button" className="case-zoom-trigger gallery-original-trigger"
               {...mediaSwipeHandlers} aria-label="Показать оригинал в масштабе 100%"
@@ -756,19 +817,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <circle cx="8.5" cy="8.5" r="5.5" />
                 <path d="m12.5 12.5 4.5 4.5M5.5 8.5h6" />
-              </svg>
-            </button>
-          )}
-          {gallery?.video && (
-            <button type="button" className="icon-tile" {...iconTilePress} aria-label="Управление видео" aria-pressed={gallery.controlsVisible ?? false} onClick={() => {
-              const controlsVisible = !gallery.controlsVisible;
-              if (gallery.video) gallery.video.controls = controlsVisible;
-              setGallery({ ...gallery, controlsVisible });
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <path d="M3 6h5m4 0h5M3 14h9m4 0h1" />
-                <circle cx="10" cy="6" r="2" />
-                <circle cx="14" cy="14" r="2" />
               </svg>
             </button>
           )}

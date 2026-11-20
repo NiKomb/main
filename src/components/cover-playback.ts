@@ -1,7 +1,7 @@
 export function connectCoverPlayback(
   video: HTMLVideoElement,
   preference: { current: boolean | null },
-  onPlayingChange: (playing: boolean) => void,
+  onPlayingChange?: (playing: boolean) => void,
 ) {
   const document = video.ownerDocument;
   const window = document.defaultView;
@@ -10,7 +10,7 @@ export function connectCoverPlayback(
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const minimumVisible = 0.35;
   let inView = false;
-  const updateIndicator = () => onPlayingChange(!video.paused && !video.ended);
+  const updateIndicator = () => onPlayingChange?.(!video.paused && !video.ended);
   const play = () => void video.play().catch(updateIndicator);
   const updatePlayback = () => {
     if (inView && !document.hidden && (preference.current ?? !motion.matches)) {
