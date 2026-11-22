@@ -155,13 +155,9 @@ function CaseListCoverArtwork({ project, enabled }: { project: Project; enabled:
 }
 
 function PlaybackIcon({ playing }: { playing: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
-      <path d={playing
-        ? 'M4 3h4v12H4zM10 3h4v12h-4z'
-        : 'M5 3h2v2h3v2h3v2h2v2h-3v2H9v2H5z'} />
-    </svg>
-  );
+  return playing
+    ? <span className="pixel-pause-icon" aria-hidden="true" />
+    : <span className="pixel-chevron pixel-chevron--filled" aria-hidden="true" />;
 }
 
 function CaseVideoTile({ video, videoRef, videoElement, coverId, togglePlayback, playbackLabel, onOpen }: {

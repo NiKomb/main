@@ -39,7 +39,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   pointer-events: none;
   content: "";
 }
-.icon-tile > :is(svg, .pixel-chevron) {
+.icon-tile > :is(svg, .pixel-chevron, .pixel-pause-icon) {
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
   pointer-events: none;
 }
@@ -392,6 +392,14 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
   height: calc(var(--pixel-step) * 10);
 }
 .pixel-chevron {
+  --chevron-column: var(--pixel-step);
+  --chevron-outline:
+    var(--chevron-column) calc(var(--pixel-step) * -1),
+    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * -2),
+    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -3),
+    var(--chevron-column) var(--pixel-step),
+    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * 2),
+    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * 3);
   position: relative;
   flex: none;
   width: calc(var(--pixel-step) * 4);
@@ -410,14 +418,30 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
   width: var(--pixel-step);
   height: var(--pixel-step);
   background: currentColor;
-  box-shadow:
-    var(--pixel-step) calc(var(--pixel-step) * -1),
-    calc(var(--pixel-step) * 2) calc(var(--pixel-step) * -2),
-    calc(var(--pixel-step) * 3) calc(var(--pixel-step) * -3),
-    var(--pixel-step) var(--pixel-step),
-    calc(var(--pixel-step) * 2) calc(var(--pixel-step) * 2),
-    calc(var(--pixel-step) * 3) calc(var(--pixel-step) * 3);
+  box-shadow: var(--chevron-outline);
   content: "";
+}
+.pixel-chevron--filled { --chevron-column: calc(-1 * var(--pixel-step)); }
+.pixel-chevron--filled::before {
+  left: auto;
+  right: 0;
+  box-shadow:
+    var(--chevron-outline),
+    var(--chevron-column) 0,
+    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * -1),
+    calc(var(--chevron-column) * 2) 0,
+    calc(var(--chevron-column) * 2) var(--pixel-step),
+    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -2),
+    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -1),
+    calc(var(--chevron-column) * 3) 0,
+    calc(var(--chevron-column) * 3) var(--pixel-step),
+    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * 2);
+}
+@media (forced-colors: active) {
+  .pixel-chevron--filled::before {
+    forced-color-adjust: none;
+    color: ButtonText;
+  }
 }
 :is(.project-links a, .dns-case-jump, .dns-summary-jump-label)::after {
   flex: none;
@@ -511,6 +535,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .video-controls--gallery { z-index: 2; }
 .video-controls .icon-tile { flex: none; }
+.pixel-pause-icon {
+  width: calc(var(--pixel-step) * 6);
+  height: calc(var(--pixel-step) * 7);
+  border-inline: calc(var(--pixel-step) * 2) solid currentColor;
+}
+.icon-tile > .pixel-chevron--filled {
+  /* The filled shape carries more weight on its left side. */
+  translate: calc(var(--icon-tile-icon-offset) + var(--pixel-step) / 2) var(--icon-tile-icon-offset);
+}
 .video-seek {
   appearance: none;
   flex: 1;
