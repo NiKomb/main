@@ -1,7 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 
 type Props = {
-  items: readonly { id: string; label: string; note?: string }[];
+  items: readonly { id: string; label: string; note?: string; divider?: string }[];
   activeHeading?: string;
   onJump: (id: string) => void;
 };
@@ -11,7 +11,7 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
 
   useEffect(() => {
     const list = listRef.current;
-    const active = list?.querySelector('button[aria-current="location"]');
+    const active = list?.querySelector('button[aria-current="location"]')?.closest('li');
     if (!list || !active) return;
 
     const reveal = () => {
@@ -32,10 +32,11 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
 
   return (
     <ul ref={listRef}>
-      {items.map(({ id, label, note }) => {
+      {items.map(({ id, label, note, divider }) => {
         const current = activeHeading === id;
         return (
           <li key={id}>
+            {divider && <span className="case-contents-divider">{divider}</span>}
             <button type="button" onClick={() => onJump(id)}
               aria-label={note ? label : undefined}
               aria-describedby={note ? `${id}-contents-note` : undefined}

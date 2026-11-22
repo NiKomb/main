@@ -753,6 +753,13 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-transform: var(--type-accent-transform);
   white-space: nowrap;
 }
+.case-contents-divider {
+  display: block;
+  margin-block: var(--space-8) var(--space-6);
+  color: var(--color-muted);
+  font: var(--type-small) var(--font-body);
+  text-align: end;
+}
 .case-contents-note {
   max-inline-size: 100%;
   overflow: hidden;
@@ -767,12 +774,17 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   overflow: clip;
 }
 .case-nav[data-dns-contents] .case-contents-text { display: block; }
-.dns-case-layout[data-section-id="project-dns"] .case-contents-text {
+.dns-case-layout[data-section-id="project-dns"] .case-contents-note {
+  overflow: visible;
   text-align: end;
+  text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
 }
-@media (1200px <= width < 1280px) {
+@media (1200px <= width < 1344px) {
+  .dns-case-layout[data-section-id="project-dns"] .case-nav[data-dns-contents] {
+    --dns-case-contents-gap: var(--space-40);
+  }
   .dns-case-layout[data-section-id="project-dns"] .case-nav[data-dns-contents] ul {
     inset-inline-start: calc(-1 * var(--space-24));
   }
@@ -1107,7 +1119,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   font: var(--type-small) var(--font-accent);
   text-transform: var(--type-accent-transform);
 }
-.dns-case-block > :is(p, blockquote, .dns-case-points) { max-inline-size: 64ch; }
+.dns-case-block > :is(p, blockquote) { max-inline-size: 64ch; }
 .dns-case-block > blockquote,
 .dns-decision-copy .dns-case-block > p {
   margin: 0;
@@ -1135,25 +1147,20 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-items: baseline;
   gap: var(--space-12);
 }
+.dns-case-labeled-heading > :first-child { min-inline-size: 0; }
 .dns-case-heading-label {
   flex: none;
+  max-inline-size: 50%;
   color: var(--color-muted);
   font: var(--type-small) var(--font-accent);
+  text-align: end;
   text-transform: var(--type-accent-transform);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .dns-case-heading-label:last-child { margin-inline-start: auto; }
 @media (width < 1280px) {
   .dns-decision-check > .dns-case-results:has(> [data-mascot-comment]) { margin-block-start: 68px; }
 }
-.dns-case-points {
-  display: grid;
-  gap: var(--space-8);
-  margin: 0;
-  padding-inline-start: var(--space-20);
-  color: var(--color-muted);
-}
-.dns-case-hypothesis-points { list-style-type: square; }
 .dns-case-section strong { color: var(--color-text); }
 .dns-case-stages {
   display: grid;
