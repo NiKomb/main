@@ -1034,7 +1034,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-8);
   margin-block-start: var(--space-28);
 }
-.dns-summary-jump {
+.dns-brand-button {
   --icon-tile-border-width: 0px;
   --icon-tile-edge: var(--color-dns-button-shadow);
   --icon-tile-depth: var(--color-dns-button-depth);
@@ -1048,15 +1048,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-align: start;
   text-transform: var(--type-accent-transform);
 }
-.dns-summary-jump::before {
+.dns-brand-button::before {
   background: var(--color-dns-button-face);
 }
 @media (hover: hover) and (forced-colors: none) {
-  .dns-summary-jump:is(:any-link, :enabled):hover::before {
+  .dns-brand-button:is(:any-link, :enabled):hover::before {
     filter: brightness(1.1);
   }
 }
-.dns-summary-jump-label {
+.dns-brand-button-label {
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
@@ -1064,11 +1064,11 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
 }
 @media (forced-colors: active) {
-  .dns-summary-jump::before {
+  .dns-brand-button::before {
     forced-color-adjust: none;
     background: ButtonFace;
   }
-  .dns-summary-jump::after {
+  .dns-brand-button::after {
     forced-color-adjust: none;
     background: ButtonText;
   }
@@ -1120,7 +1120,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-transform: var(--type-accent-transform);
 }
 .dns-case-block > :is(p, blockquote) { max-inline-size: 64ch; }
-.dns-case-block > blockquote,
+:is(.dns-case-block, .dns-interview-quote) > blockquote,
 .dns-decision-copy .dns-case-block > p {
   margin: 0;
   padding: var(--space-12);
@@ -1129,19 +1129,78 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-section blockquote p,
 .dns-decision-copy .dns-case-block > p { color: var(--color-text); }
-.dns-interview-details > summary {
-  inline-size: fit-content;
-  min-block-size: 44px;
-  align-content: center;
-  cursor: pointer;
+.dns-interviews {
+  --dns-interview-button-height: 44px;
+  position: relative;
 }
-.dns-interview-details > summary:focus-visible {
+.dns-interview-quotes {
+  position: absolute;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-16);
+}
+.dns-interview-quotes[hidden] { display: none; }
+.dns-interview-quotes:has(.dns-interview-quotes-scroll:focus-visible) {
   outline: 2px solid var(--color-accent);
-  outline-offset: var(--space-4);
+  outline-offset: 4px;
 }
-.dns-interview-details > .dns-case-group { margin-block-start: var(--space-12); }
-/* Firefox still reports layout bounds for quotes inside closed details. */
-.dns-interview-details:not([open]) > .dns-case-group { display: none; }
+.dns-interview-quotes-scroll {
+  display: grid;
+  align-content: start;
+  gap: var(--space-16);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  outline: none;
+  mask-image: linear-gradient(to bottom,
+    var(--quote-fade-start, black), black var(--space-20),
+    black calc(100% - var(--space-20)), var(--quote-fade-end, black));
+}
+.dns-interview-quotes-scroll::-webkit-scrollbar { display: none; }
+.dns-interview-quotes-scroll[data-fade-start] { --quote-fade-start: transparent; }
+.dns-interview-quotes-scroll[data-fade-end] { --quote-fade-end: transparent; }
+.dns-interview-quotes-header h4 { font: var(--type-subheading) var(--font-accent); }
+.dns-interview-close { display: none; }
+.dns-interview-quote { display: grid; gap: var(--space-6); }
+.dns-interview-quotes :is(h4, h5) { text-wrap: pretty; }
+.dns-interview-quotes-scroll > p,
+.dns-interview-quote > p { font: var(--type-small) var(--font-body); }
+/* Leave room for the 800px text column, a 240px panel, and their gap and outer inset. */
+@media (width >= 1368px) {
+  .dns-interview-quotes {
+    grid-area: 2 / 1 / 4;
+    inset-block: 0;
+    inset-inline-start: calc(100% + var(--space-24));
+    inline-size: min(50%, calc((100vw - 100%) / 2 - var(--space-24) - var(--space-20)));
+  }
+}
+@media (width < 1368px) {
+  .dns-interview-quotes {
+    grid-area: 2 / 1 / 3;
+    z-index: 4;
+    inset-inline: 0;
+    inset-block-start: calc(100% + var(--space-8));
+    max-block-size: 70dvh;
+    padding: 0 var(--space-12) var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-background);
+  }
+  .dns-interview-quotes[data-above] {
+    inset-block-start: calc(100% - var(--dns-interview-button-height) - var(--space-8));
+    max-block-size: min(70dvh, var(--interview-quotes-space-above));
+    translate: 0 -100%;
+  }
+  .dns-interview-quotes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    padding-block: var(--space-8);
+  }
+  .dns-interview-close { display: grid; flex: none; }
+  .dns-interview-action .grid-icon,
+  .dns-interview-close .grid-icon { rotate: 90deg; }
+}
 .dns-case-labeled-heading {
   display: flex;
   align-items: baseline;
@@ -1180,6 +1239,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-auto-flow: row;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
 }
+.dns-interviews .dns-case-results {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+}
 .dns-case-results > li { align-content: start; }
 @media (width < 1280px) {
   .dns-case-results[data-mascot-comment] { margin-block-start: var(--space-60); }
@@ -1187,6 +1249,13 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }
 .dns-case-stages > li { display: grid; gap: var(--space-6); }
+.dns-case-stages > li.dns-interview-action {
+  grid-column: -2 / -1;
+  place-self: end;
+  padding: 0;
+  background: none;
+}
+.dns-interview-action > .dns-brand-button { min-block-size: var(--dns-interview-button-height); }
 .dns-case-stages strong { font: var(--type-display) var(--font-accent); font-variant-numeric: tabular-nums; }
 .dns-case-facts > .dns-case-fact { max-inline-size: min(100%, 38ch); align-content: start; }
 .dns-case-fact .dns-case-fact-title {
@@ -1206,7 +1275,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-content: stretch;
   grid-template-rows: auto 1fr;
 }
-.dns-decision-check .dns-case-metric-value { color: var(--color-dns-accent); }
+.dns-decision-check .dns-case-metric-value,
+.dns-interviews .dns-case-metric-value { color: var(--color-dns-accent); }
 .dns-decision-check .dns-case-metric-copy { align-self: end; }
 /* Switch spacing at the midpoint between adjacent values on the scale. */
 @media (width >= 600px) {

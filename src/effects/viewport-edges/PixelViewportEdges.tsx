@@ -10,6 +10,7 @@ type Props = {
 
 const stripHeight = swapDepth + pixelSize;
 const tileSelector = '.case-cover, .tile-copy, .tile-preview, .dns-case-flow > li, .dns-case-hypothesis, .dns-case-stages > li';
+const controlSelector = '.icon-tile:is(button, a[href])';
 
 type Source = { element: Element; text?: Node };
 type Candidate = { x: number; y: number; probeY: number; seed: number };
@@ -78,8 +79,11 @@ export function PixelViewportEdges({ root, targetSelector }: Props) {
       !CSS.supports('clip-path', 'path(evenodd, "M0 0H1V1Z")')) return;
 
     const marker = surface;
-    const targets = [...marker.querySelectorAll<HTMLElement>(targetSelector)]
-      .map((element) => ({ element, sources: paintSources(element) }));
+    const targets = [...marker.querySelectorAll<HTMLElement>(targetSelector)].map((element) => ({
+      element,
+      sources: paintSources(element),
+      controls: [...element.querySelectorAll(controlSelector)],
+    }));
     const trails: Record<ViewportEdge, Trail> = {
       top: { context: topContext, particles: [], exitCells: [] },
       bottom: { context: bottomContext, particles: [], exitCells: [] },
@@ -123,17 +127,22 @@ export function PixelViewportEdges({ root, targetSelector }: Props) {
       previousScroll = scroll;
       const focused = document.activeElement;
       const focusBounds = focused?.matches(':focus-visible') ? focused.getBoundingClientRect() : undefined;
+      const activeEdge = edge;
 
-      for (const { element: target, sources } of targets) {
+      for (const { element: target, sources, controls } of targets) {
         const bounds = target.getBoundingClientRect();
-        const protectedFocus = edge && focusBounds && target.contains(focused) &&
-          nearEdge(focusBounds, edge, height, swapDepth + 5);
-        if (edge && !protectedFocus && nearEdge(bounds, edge, height, swapDepth)) {
-          if (trail && candidates.length) emit(trail, edge, sources, bounds, candidates, time);
-          target.style.setProperty('--viewport-edge-clip', viewportSwapClip(bounds, edge, height));
-        } else {
-          target.style.removeProperty('--viewport-edge-clip');
+        if (activeEdge && nearEdge(bounds, activeEdge, height, swapDepth)) {
+          const protectedFocus = focusBounds && target.contains(focused) &&
+            nearEdge(focusBounds, activeEdge, height, swapDepth + 5);
+          const protectedControl = controls.some((control) =>
+            nearEdge(control.getBoundingClientRect(), activeEdge, height, swapDepth + 5));
+          if (!protectedFocus && !protectedControl) {
+            if (trail && candidates.length) emit(trail, activeEdge, sources, bounds, candidates, time);
+            target.style.setProperty('--viewport-edge-clip', viewportSwapClip(bounds, activeEdge, height));
+            continue;
+          }
         }
+        target.style.removeProperty('--viewport-edge-clip');
       }
     }
 

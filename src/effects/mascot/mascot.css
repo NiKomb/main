@@ -236,6 +236,7 @@
 }
 
 .mascot__actor {
+  --mascot-hit-inset: 15px;
   position: relative;
   display: block;
   border: 0;
@@ -246,10 +247,11 @@
 }
 .mascot__actor:not([inert])::after {
   position: absolute;
-  inset: -15px;
+  inset: calc(-1 * var(--mascot-hit-inset));
   content: '';
 }
 .mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: auto; }
+.mascot-case .mascot[data-over-control] .mascot__actor { pointer-events: none; }
 .mascot[data-pose="idle"][data-attacking] .mascot__sprite {
   animation: mascot-attack 560ms steps(8, end);
 }

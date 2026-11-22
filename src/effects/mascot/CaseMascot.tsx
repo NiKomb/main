@@ -54,10 +54,15 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const openingGallery = article.querySelector('.case-covers');
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const textColumn = article.querySelector('.dns-case-body > .case-text');
-    const tiles = Array.from(article.querySelectorAll<HTMLElement>([
+    const caseControls = [...article.querySelectorAll('.dns-case-body .icon-tile:is(button, a[href])')];
+    const hitInset = Number.parseFloat(getComputedStyle(control).getPropertyValue('--mascot-hit-inset'));
+    const tileSelectors = [
       '.case-covers .case-cover', '.dns-comparison-tile',
       '.case-screenshot:not(.dns-comparison-tile *)', cardSelector,
-    ].join(', ')), (tile) => {
+    ].join(', ');
+    const tiles = Array.from(article.querySelectorAll<HTMLElement>(
+      `:is(${tileSelectors}):not([data-mascot-skip], [data-mascot-skip] *)`,
+    ), (tile) => {
       const kind = tile.matches(cardSelector) ? 'card' as const : 'screen' as const;
       const gallery = tile.closest(gallerySelector);
       const clip = gallery?.matches('.case-covers, .interview-gallery-scroll') ? gallery : null;
@@ -85,6 +90,14 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const rememberActor = (bounds = layer.getBoundingClientRect()) => {
       if (actor.hidden || actor.style.opacity === '0') return;
       const box = actor.getBoundingClientRect();
+      if (movement.phase === 'idle') {
+        actor.toggleAttribute('data-over-control', caseControls.some((element) => {
+          const target = element.getBoundingClientRect();
+          return target.width > 0 && target.height > 0 &&
+            box.left - hitInset < target.right && box.right + hitInset > target.left &&
+            box.top - hitInset < target.bottom && box.bottom + hitInset > target.top;
+        }));
+      }
       if (box.bottom > 24 && box.top < innerHeight - 24 && box.right > 0 && box.left < innerWidth) {
         const facing = actor.dataset.direction === 'left' ? 'left' : 'right';
         visibleActor = { x: box.left - bounds.left, y: box.top - bounds.top, facing };
@@ -451,6 +464,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     const resize = new ResizeObserver(queue);
     resize.observe(article);
+    for (const element of caseControls) resize.observe(element);
     const footerChanges = new MutationObserver(queue);
     if (footerActions) {
       resize.observe(footerActions);
@@ -480,6 +494,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     return () => {
       setPaused.current = undefined;
       control.inert = false;
+      actor.removeAttribute('data-over-control');
       cancelAnimationFrame(frame);
       departure?.cancel();
       movement.cancel();

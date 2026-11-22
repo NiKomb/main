@@ -38,12 +38,11 @@ function DnsHeading({ id, as: Heading = 'h3' }: {
   );
 }
 
-function renderFact({ title, detail, comment, quote }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
+function renderFact({ title, detail, comment }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
   return (
     <li className="dns-case-fact" key={title} data-mascot-comment={comment}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
-      {quote && <p><q>{quote}</q></p>}
     </li>
   );
 }
@@ -60,6 +59,25 @@ function renderMetric({ value, label, detail, comment, paintGradient }: CaseMetr
       </div>
     </li>
   );
+}
+
+function updateInterviewQuoteFades(scroll: HTMLDivElement) {
+  const remaining = scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop;
+  scroll.toggleAttribute('data-fade-start', scroll.scrollTop > 1);
+  scroll.toggleAttribute('data-fade-end', remaining > 1);
+}
+
+function positionInterviewQuotes(panel: HTMLElement, toggle: HTMLButtonElement) {
+  panel.removeAttribute('data-above');
+  const { top, height } = panel.getBoundingClientRect();
+  const button = toggle.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - top;
+  const gap = top - button.bottom;
+  const spaceAbove = button.top - 2 * gap;
+  if (gap <= 0 || spaceBelow >= Math.min(height, 160) || spaceAbove <= spaceBelow) return;
+
+  panel.style.setProperty('--interview-quotes-space-above', `${spaceAbove}px`);
+  panel.setAttribute('data-above', '');
 }
 
 function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = 'Разделитель «Было / Стало»',
@@ -119,11 +137,44 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
 
 export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { decisionsTitle, research, summary, comparison, scenario, test, reflection } = dnsCase;
+  const [interviewQuotesOpen, setInterviewQuotesOpen] = useState(false);
+  const interviewToggle = useRef<HTMLButtonElement>(null);
+  const interviewQuotesScroll = useRef<HTMLDivElement>(null);
   const toggleCaption = useRef<HTMLElement>(null);
 
-  function renderFigure(figure: CaseFigure, captionTarget?: RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    const scroll = interviewQuotesScroll.current;
+    const panel = scroll?.parentElement;
+    const toggle = interviewToggle.current;
+    if (!interviewQuotesOpen || !scroll || !panel || !toggle) return;
+
+    const position = () => positionInterviewQuotes(panel, toggle);
+    position();
+    scroll.scrollTop = 0;
+    scroll.focus({ preventScroll: true });
+    updateInterviewQuoteFades(scroll);
+
+    const observer = new ResizeObserver(() => updateInterviewQuoteFades(scroll));
+    observer.observe(scroll);
+    for (const child of scroll.children) observer.observe(child);
+    window.addEventListener('resize', position);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', position);
+    };
+  }, [interviewQuotesOpen]);
+
+  function closeInterviewQuotes() {
+    setInterviewQuotesOpen(false);
+    interviewToggle.current?.focus({ preventScroll: true });
+  }
+
+  function renderFigure(figure: CaseFigure, { captionTarget, skipMascot }: {
+    captionTarget?: RefObject<HTMLElement | null>;
+    skipMascot?: boolean;
+  } = {}) {
     return (
-      <figure className="dns-case-figure" key={figure.src}>
+      <figure className="dns-case-figure" key={figure.src} data-mascot-skip={skipMascot ? '' : undefined}>
         {renderScreenshot(figure)}
         <figcaption ref={captionTarget} className={captionTarget ? 'rocket-shot-caption' : undefined}>
           {figure.label && <strong>{figure.label}</strong>}
@@ -152,15 +203,15 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
           <div className="dns-summary-actions">
-            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
-              <span className="dns-summary-jump-label">К решениям<GridIcon name="link" /></span>
+            <button className="icon-tile dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
+              <span className="dns-brand-button-label">К решениям<GridIcon name="link" /></span>
             </button>
-            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
-              <span className="dns-summary-jump-label">К результатам UX-теста<GridIcon name="link" /></span>
+            <button className="icon-tile dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
+              <span className="dns-brand-button-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
-            <a className="icon-tile dns-summary-jump" {...iconTilePress}
+            <a className="icon-tile dns-brand-button" {...iconTilePress}
               href={dnsConfiguratorLink.href} target="_blank" rel="noopener" data-track-id={dnsConfiguratorLink.id}>
-              <span className="dns-summary-jump-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
+              <span className="dns-brand-button-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
         </section>
@@ -191,35 +242,56 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               </ul>
             </div>
           </section>
-          <section className="dns-case-group" id="dns-interviews" aria-labelledby="dns-interview-task">
+          <section className="dns-case-group dns-interviews" id="dns-interviews" aria-labelledby="dns-interview-task"
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape' || !interviewQuotesOpen) return;
+              event.stopPropagation();
+              closeInterviewQuotes();
+            }}>
             <div className="dns-case-block">
               <DnsHeading id="dns-interview-task" />
               <p>{research.interviewAction}</p>
+              <p>{research.interviewResultsLimit}</p>
             </div>
             <div className="dns-case-block" id="dns-interview-results">
               <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из сессий">
-                {research.interviewFindings.map(renderFact)}
+                {research.interviewFindings.map(renderMetric)}
+                <li className="dns-interview-action" role="presentation">
+                  <button ref={interviewToggle} className="icon-tile dns-brand-button" {...iconTilePress} type="button"
+                    aria-expanded={interviewQuotesOpen} aria-controls="dns-interview-quotes"
+                    onClick={() => interviewQuotesOpen ? closeInterviewQuotes() : setInterviewQuotesOpen(true)}>
+                    <span className="dns-brand-button-label">Подробнее<GridIcon name={interviewQuotesOpen ? 'left' : 'right'} /></span>
+                  </button>
+                </li>
               </ul>
-              <p>{research.interviewResultsLimit}</p>
             </div>
+            <section className="dns-case-group dns-interview-quotes" id="dns-interview-quotes"
+              aria-labelledby="dns-interview-quotes-heading" hidden={!interviewQuotesOpen}>
+              <header className="dns-interview-quotes-header">
+                <h4 id="dns-interview-quotes-heading">{research.interviewDetailsTitle}</h4>
+                <button className="icon-tile dns-interview-close" type="button" {...iconTilePress}
+                  aria-label="Свернуть цитаты" onClick={closeInterviewQuotes}>
+                  <GridIcon name="left" />
+                </button>
+              </header>
+              <div ref={interviewQuotesScroll} className="dns-interview-quotes-scroll" tabIndex={0}
+                role="group" aria-labelledby="dns-interview-quotes-heading"
+                onScroll={(event) => updateInterviewQuoteFades(event.currentTarget)}>
+                {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
+                  <div className="dns-interview-quote" key={title}>
+                    <h5>{title}</h5>
+                    <blockquote><p>{quote}</p></blockquote>
+                    <p>{detail}</p>
+                    {followUp && <p>{followUp}</p>}
+                  </div>
+                ))}
+                <p>{research.interviewPrompt}</p>
+              </div>
+            </section>
             <div className="dns-case-block" data-mascot-comment="comparison-search">
               <InterviewGallery label={research.framesTitle}>
-                {research.frames.map((figure) => renderFigure(figure))}
+                {research.frames.map((figure, index) => renderFigure(figure, { skipMascot: index >= 2 }))}
               </InterviewGallery>
-              <details className="dns-interview-details">
-                <summary>{research.interviewDetailsTitle}</summary>
-                <div className="dns-case-group">
-                  <p>{research.interviewPrompt}</p>
-                  {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
-                    <div className="dns-case-block" key={title}>
-                      <h5>{title}</h5>
-                      <p>{detail}</p>
-                      <blockquote data-mascot-comment="interview-quotes"><p>{quote}</p></blockquote>
-                      {followUp && <p>{followUp}</p>}
-                    </div>
-                  ))}
-                </div>
-              </details>
             </div>
           </section>
           <section className="dns-case-group" aria-labelledby="dns-competitors">
@@ -296,7 +368,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                     <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
                       sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
                     <div className="dns-case-frames" data-media-gallery>
-                      {renderFigure(comparison.iteration.toggleFigure, toggleCaption)}
+                      {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
                       {renderFigure(comparison.iteration.differencesFigure)}
                     </div>
                     <p>{comparison.iteration.action}</p>
