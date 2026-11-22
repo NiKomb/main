@@ -376,11 +376,12 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       const contentsOffset = isDns ? alignment.offset : 0;
       setContentsVisible(overview.getBoundingClientRect().bottom <= contentsOffset);
       const footerInset = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
-      const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
+      const activeHeadingOffset = isDns ? window.innerHeight / 2 : alignment.offset + 1;
+      const atBottom = !isDns && window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
       const current = atBottom ? headings[0] : headings.find((heading) => {
         if (!heading) return false;
         const { top, height } = heading.getBoundingClientRect();
-        return top + height * alignment.anchor <= alignment.offset + 1;
+        return top + height * alignment.anchor <= activeHeadingOffset;
       });
       setActiveHeading(current?.id ?? firstHeading);
       navigation.style.setProperty('--dns-case-footer-inset', `${footerInset}px`);
