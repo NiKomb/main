@@ -237,6 +237,12 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                 {research.auditFindings.map(renderFact)}
               </ul>
             </div>
+            <div className="dns-case-block">
+              <h4 id="dns-audit-problems">{research.auditProblemsTitle}</h4>
+              <ul className="dns-case-stages dns-case-results" aria-labelledby="dns-audit-problems">
+                {research.auditProblems.map(renderFact)}
+              </ul>
+            </div>
           </section>
           <section className="dns-case-group dns-interviews" id="dns-interviews" aria-labelledby="dns-interview-task"
             onKeyDown={(event) => {
@@ -262,7 +268,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               </ul>
             </div>
             <section className="dns-case-group dns-interview-quotes" id="dns-interview-quotes"
-              aria-labelledby="dns-interview-quotes-heading" hidden={!interviewQuotesOpen}>
+              aria-labelledby="dns-interview-quotes-heading" hidden={!interviewQuotesOpen} data-viewport-edge-overlay>
               <header className="dns-interview-quotes-header">
                 <h4 id="dns-interview-quotes-heading">{research.interviewDetailsTitle}</h4>
                 <button className="icon-tile dns-interview-close" type="button" {...iconTilePress}

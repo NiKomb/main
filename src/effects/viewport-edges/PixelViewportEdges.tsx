@@ -83,6 +83,7 @@ export function PixelViewportEdges({ root, targetSelector }: Props) {
       element,
       sources: paintSources(element),
       controls: [...element.querySelectorAll(controlSelector)],
+      overlays: [...element.querySelectorAll<HTMLElement>('[data-viewport-edge-overlay]')],
     }));
     const trails: Record<ViewportEdge, Trail> = {
       top: { context: topContext, particles: [], exitCells: [] },
@@ -129,14 +130,20 @@ export function PixelViewportEdges({ root, targetSelector }: Props) {
       const focusBounds = focused?.matches(':focus-visible') ? focused.getBoundingClientRect() : undefined;
       const activeEdge = edge;
 
-      for (const { element: target, sources, controls } of targets) {
+      for (const { element: target, sources, controls, overlays } of targets) {
         const bounds = target.getBoundingClientRect();
         if (activeEdge && nearEdge(bounds, activeEdge, height, swapDepth)) {
           const protectedFocus = focusBounds && target.contains(focused) &&
             nearEdge(focusBounds, activeEdge, height, swapDepth + 5);
           const protectedControl = controls.some((control) =>
             nearEdge(control.getBoundingClientRect(), activeEdge, height, swapDepth + 5));
-          if (!protectedFocus && !protectedControl) {
+          // The clip path can hide overlays that extend beyond the target's bounds.
+          const visibleOverlay = overlays.some((overlay) => {
+            if (overlay.hidden) return false;
+            const { top, bottom } = overlay.getBoundingClientRect();
+            return top < height && bottom > 0;
+          });
+          if (!protectedFocus && !protectedControl && !visibleOverlay) {
             if (trail && candidates.length) emit(trail, activeEdge, sources, bounds, candidates, time);
             target.style.setProperty('--viewport-edge-clip', viewportSwapClip(bounds, activeEdge, height));
             continue;
