@@ -75,6 +75,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let suspended = false;
     let lastScroll = scrollY;
     let scrollPending = false;
+    let teleportingFromJump = false;
     let direction = 0;
     let point: Point | undefined;
     let visibleActor: (Point & { facing: 'left' | 'right' }) | undefined;
@@ -120,6 +121,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     };
 
     function finish(next: CaseStop) {
+      teleportingFromJump = false;
       destination = undefined;
       current = next;
       settle(next.point);
@@ -280,6 +282,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         clearGesture();
         actor.hidden = true;
         visibleActor = undefined;
+        teleportingFromJump = false;
         hideSpeech();
         current = destination = undefined;
         control.inert = false;
@@ -301,6 +304,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const canFollow = delta <= innerHeight / 3;
       if (delta !== 0) direction = Math.sign(delta);
       lastScroll = scrollY;
+      if (teleportingFromJump && !motion.matches) return;
+      teleportingFromJump = false;
 
       const contents = innerWidth < 1200 ? article.querySelector('.case-nav[data-dns-contents] ul') : null;
       const openingGalleryTop = scrollY <= 0 ? openingGallery?.getBoundingClientRect().top : undefined;
@@ -336,7 +341,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
 
       const crossingRouteEnd = !!target?.routeEnd !== !!routeEnd;
-      const blinkFrom = crossingRouteEnd ? renderedPosition(bounds) : undefined;
+      const scrolledInJump = fromScroll && movement.phase === 'jump';
+      const blinkFrom = crossingRouteEnd || scrolledInJump ? renderedPosition(bounds) : undefined;
       let interrupted = false;
       let resumeFrom: Point | undefined;
       if (movement.phase !== 'idle' && !actor.hidden) {
@@ -345,11 +351,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           : selected && upperSurfaces.find((candidate) => candidate.tile === target?.tile &&
             candidate.top <= innerHeight / 2 && sameCaseRow(candidate, selected) &&
             (!selected.hasOwnComment || candidate.tile === selected.tile))?.surface;
-        if (!motion.matches && target && live && live.left === target.left && live.right === target.right && live.y === target.y) {
+        if (!scrolledInJump && !motion.matches && target && live &&
+          live.left === target.left && live.right === target.right && live.y === target.y) {
           drawSpeech(bounds, fromScroll);
           return;
         }
-        if (!motion.matches && !crossingRouteEnd && !routeEnd && movement.phase !== 'blink') {
+        if (!scrolledInJump && !motion.matches && !crossingRouteEnd && !routeEnd && movement.phase !== 'blink') {
           resumeFrom = renderedPosition(bounds);
         }
         movement.cancel();
@@ -371,7 +378,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       }
 
       const runUp = surface.canDash ? surface.dashDistance + 12 : sectionEdgeInset - 12;
-      const entry = routeEnd?.leftFinish ?? stop(surface, 'start', surface.right - runUp);
+      const entry = scrolledInJump ? routeFinish : routeEnd?.leftFinish ?? stop(surface, 'start', surface.right - runUp);
 
       if (motion.matches) {
         current = routeFinish;
@@ -389,17 +396,18 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return;
       }
 
-      if (crossingRouteEnd || (routeEnd && interrupted) || current?.surface.tile !== surface.tile || actor.hidden) {
+      if (scrolledInJump || crossingRouteEnd || (routeEnd && interrupted) || current?.surface.tile !== surface.tile || actor.hidden) {
         const landing = previous?.group === selected?.group || surface.tile === routeFinish.surface.tile
           ? routeFinish : stop(surface, 'landing', surface.left);
         const from = previous && current && stop(previous.surface, current.edge, current.point.x);
         const nearby = from && Math.abs(from.point.y - landing.point.y) <= Math.min(400, innerHeight / 2) &&
           Math.max(0, from.surface.left - landing.surface.right, landing.surface.left - from.surface.right) <= shortGapDistance;
-        if (!crossingRouteEnd && !actor.hidden && selected && previous && nearby && canFollow) {
+        if (!scrolledInJump && !crossingRouteEnd && !actor.hidden && selected && previous && nearby && canFollow) {
           destination = landing;
           movement.travel(from, landing, selected.top >= previous.top, () => finish(landing), true);
         } else {
           current = entry;
+          teleportingFromJump = scrolledInJump;
           const foot = point && bounds.top + point.y + footOffset;
           const origin = blinkFrom ?? (appeared && !interrupted && !actor.hidden &&
             foot !== undefined && foot > 0 && foot < innerHeight ? point : undefined);
@@ -408,7 +416,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
             movement.blink(origin, entry.point, () => finish(entry));
           } else {
             const leftWithBlink = playDeparture(bounds);
-            const reveal = crossingRouteEnd || !!routeEnd || leftWithBlink || !appeared || actor.hidden || Math.abs(delta) > innerHeight / 3;
+            const reveal = scrolledInJump || crossingRouteEnd || !!routeEnd || leftWithBlink || !appeared || actor.hidden ||
+              Math.abs(delta) > innerHeight / 3;
             settle(entry.point);
             if (reveal) {
               actor.dataset.direction = 'left';

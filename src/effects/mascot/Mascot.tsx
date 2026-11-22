@@ -153,7 +153,9 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         x: Math.round(next.box.left - bounds.left + (next.box.width - spriteWidth) / 2),
         y: Math.round(next.box.top - bounds.top - footOffset),
       };
-      if (narrowTarget?.x === point.x && narrowTarget.y === point.y && narrowTarget.sectionId === next.id &&
+      const scrolledInJump = fromScroll && movement.phase === 'jump';
+      if (!reducedMotion.matches && movement.phase === 'blink') return;
+      if (!scrolledInJump && narrowTarget?.x === point.x && narrowTarget.y === point.y && narrowTarget.sectionId === next.id &&
         (!reducedMotion.matches || movement.phase === 'idle')) {
         if (movement.phase === 'idle') showSpeech(point, bounds, next.id, fromScroll);
         return;
@@ -164,7 +166,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       narrowTarget = { ...point, sectionId: next.id, surface: readSurface(next.cover, bounds, next.box, minDashDistance) };
       hideSpeech(fromScroll);
       if (start) {
-        leap({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => {
+        const move = scrolledInJump ? movement.blink : leap;
+        move({ x: start.left - bounds.left, y: start.top - bounds.top }, point, () => {
           settle(point);
           queueUpdate();
         });
@@ -296,6 +299,24 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         };
         movement.appear(start.point, introduction ? 'right' : 'left', reveal);
         start.surface.tile.dispatchEvent(new Event(mascotAppearanceEvent));
+        return;
+      }
+
+      if (fromScroll && visible && !layer.hidden && movement.phase === 'jump') {
+        const start = layer.getBoundingClientRect();
+        currentStop = targetFinish;
+        pending = [];
+        hideSpeech(fromScroll);
+        const finish = () => {
+          settle(targetFinish.point);
+          queueUpdate();
+        };
+        if (reducedMotion.matches) {
+          cancelMotion();
+          finish();
+        } else {
+          movement.blink({ x: start.left - bounds.left, y: start.top - bounds.top }, targetFinish.point, finish);
+        }
         return;
       }
 
