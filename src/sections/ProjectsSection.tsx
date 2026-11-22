@@ -91,14 +91,21 @@ function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps
   );
 }
 
-function CaseCoverStrip({ images, decorative = false }: { images: readonly ProjectImage[]; decorative?: boolean }) {
+function CaseCoverStrip({ images, decorative = false, loading }: {
+  images: readonly ProjectImage[];
+  decorative?: boolean;
+  loading?: 'lazy';
+}) {
   const previewRatio = Math.min(...images.map((image) => image.width / (image.previewCrop?.height ?? image.height)));
   return (
     <span className="case-cover-frame case-cover-strip"
       data-cover-crops={images.some((image) => image.previewCrop) ? '' : undefined}
-      style={{ '--cover-screen-count': images.length, '--cover-preview-ratio': previewRatio } as CSSProperties}>
+      style={{
+        '--cover-screen-count': images.length,
+        '--cover-preview-ratio': previewRatio,
+      } as CSSProperties}>
       {images.map((image) => (
-        <CaseScreenshotImage key={image.src} image={image} decorative={decorative} cropPreview />
+        <CaseScreenshotImage key={image.src} image={image} decorative={decorative} loading={loading} cropPreview />
       ))}
     </span>
   );
@@ -248,6 +255,31 @@ function CaseScreenshot({ image, onOpen }: {
   );
 }
 
+function CaseGalleryTile({ media, label, onOpen, coverId, className, previewAspectRatio, loading }: {
+  media: ProjectImage | readonly ProjectImage[];
+  label: string;
+  onOpen: (trigger: HTMLButtonElement) => void;
+  coverId?: string;
+  className?: string;
+  previewAspectRatio?: string;
+  loading?: 'lazy';
+}) {
+  const singleImage = 'src' in media;
+  const attributes = singleImage ? screenshotAttributes(media) : undefined;
+  const style = previewAspectRatio
+    ? { ...attributes?.style, '--case-preview-aspect-ratio': previewAspectRatio } as CSSProperties
+    : attributes?.style;
+  return (
+    <button type="button" className={className ? `case-zoom-trigger ${className}` : 'case-zoom-trigger'}
+      aria-label={label} onClick={(event) => onOpen(event.currentTarget)}>
+      <span className="case-cover case-screenshot-media" data-cover-gallery="" data-cover={coverId}
+        {...attributes} style={style}>
+        {singleImage ? <CaseScreenshotFrame image={media} loading={loading} /> : <CaseCoverStrip images={media} loading={loading} />}
+      </span>
+    </button>
+  );
+}
+
 function createMedia(source: HTMLElement) {
   const media = source.cloneNode(true) as HTMLElement;
   media.removeAttribute('data-cover');
@@ -297,6 +329,12 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
   const viewingMedia = gallery !== null;
   const toggleCoverPlayback = useCoverPlayback(activeCoverVideo, arrived && !viewingMedia);
   const toggleScenarioPlayback = useCoverPlayback(scenarioVideo, arrived && !viewingMedia);
+  const scenarioSource = isDns ? dnsCase.scenario.video : isVseinstrumenti ? item.coverVideo : undefined;
+  const scenarioMedia = scenarioSource && (
+    <CaseVideoTile video={scenarioSource} videoRef={setScenarioVideo} videoElement={scenarioVideo}
+      togglePlayback={toggleScenarioPlayback} playbackLabel={isDns ? 'сценарий выбора процессора' : 'сценарий выбора доставки'}
+      onOpen={openMedia} />
+  );
   const original = gallery?.slides[gallery.index].dataset;
   const showingOriginal = originalView === 'original';
 
@@ -373,12 +411,10 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     const headings = [...detailedContents].reverse().map(({ id }) => document.getElementById(id));
     let alignment = headingAlignment(overviewHeading);
     const update = () => {
-      const contentsOffset = isDns ? alignment.offset : 0;
-      setContentsVisible(overview.getBoundingClientRect().bottom <= contentsOffset);
+      setContentsVisible(overview.getBoundingClientRect().bottom <= alignment.offset);
       const footerInset = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
-      const activeHeadingOffset = isDns ? window.innerHeight / 2 : alignment.offset + 1;
-      const atBottom = !isDns && window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
-      const current = atBottom ? headings[0] : headings.find((heading) => {
+      const activeHeadingOffset = window.innerHeight / 2;
+      const current = headings.find((heading) => {
         if (!heading) return false;
         const { top, height } = heading.getBoundingClientRect();
         return top + height * alignment.anchor <= activeHeadingOffset;
@@ -401,7 +437,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', resize);
     };
-  }, [detailedContents, arrived, isDns]);
+  }, [detailedContents, arrived]);
 
   function jumpToHeading(id: string) {
     const heading = document.getElementById(id);
@@ -571,19 +607,9 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
               const primary = index === 0 && !item.coverVideo;
               const images = additionalImages?.length ? [image, ...additionalImages] : undefined;
               const label = coverImages?.length ? `Увеличить обложку кейса «${item.title}»` : `Увеличить: ${images ? title : image.alt}`;
-              return (
-                <button key={id} type="button"
-                  className={primary ? 'case-zoom-trigger' : 'case-zoom-trigger case-cover-secondary'}
-                  aria-label={label}
-                  onClick={(event) => openMedia(event.currentTarget)}>
-                  <span className="case-cover case-screenshot-media" data-cover-gallery=""
-                    data-cover={primary ? item.id : undefined}
-                    {...(coverImages?.length || images ? undefined : screenshotAttributes(image))}>
-                    {coverImages?.length ? <CaseCoverStrip images={coverImages} />
-                      : images ? <CaseCoverStrip images={images} /> : <CaseScreenshotFrame image={image} />}
-                  </span>
-                </button>
-              );
+              return <CaseGalleryTile key={id} media={coverImages?.length ? coverImages : images ?? image}
+                label={label} onOpen={openMedia} coverId={primary ? item.id : undefined}
+                className={primary ? undefined : 'case-cover-secondary'} />;
             }) : (
               <>
                 <div className="case-cover" data-cover={item.id} aria-hidden="true" />
@@ -615,12 +641,16 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
             <div className={detailedContents ? 'case-body dns-case-body' : 'case-body'} data-arrived={arrived}>
               {isDns ? (
                 <DnsCase jumpToHeading={jumpToHeading} rocketActor={arrived ? viewportMascot : undefined}
-                  scenarioMedia={<CaseVideoTile video={dnsCase.scenario.video} videoRef={setScenarioVideo} videoElement={scenarioVideo}
-                    togglePlayback={toggleScenarioPlayback} playbackLabel="сценарий выбора процессора" onOpen={openMedia} />}
+                  scenarioMedia={scenarioMedia}
                   renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
               ) : isVseinstrumenti ? (
-                <VseinstrumentiCase jumpToHeading={jumpToHeading}
-                  renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />} />
+                <VseinstrumentiCase jumpToHeading={jumpToHeading} scenarioMedia={scenarioMedia}
+                  renderScreenshot={(image) => <CaseScreenshot image={image} onOpen={openMedia} />}
+                  renderScenario={(images, label) => (
+                    <CaseGalleryTile media={images.map((image) => ({ ...image, previewCrop: undefined }))}
+                      label={`Увеличить сценарий. ${label}`} onOpen={openMedia}
+                      className="case-screenshot" previewAspectRatio="10 / 7" loading="lazy" />
+                  )} />
               ) : (
                 <>
                   <div className="case-text">

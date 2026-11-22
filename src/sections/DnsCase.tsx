@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CaseSection } from '../components/CaseSection';
+import { CaseHeading } from '../components/CaseHeading';
 import { GridIcon } from '../components/GridIcon';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -23,19 +24,14 @@ function renderDnsText(text: string) {
   ));
 }
 
-function DnsHeading({ id, as: Heading = 'h3' }: {
+function DnsHeading({ id, as }: {
   id: string;
   as?: 'h2' | 'h3' | 'h4';
 }) {
   const entry = dnsContents.find((item) => item.id === id);
   if (!entry) return null;
 
-  return (
-    <Heading className="dns-case-labeled-heading" id={id} tabIndex={-1}>
-      <span>{entry.label}</span>
-      {entry.note && <span className="dns-case-heading-label">{entry.note}</span>}
-    </Heading>
-  );
+  return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
 function renderFact({ title, detail, comment }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
