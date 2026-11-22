@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type 
 import { flushSync } from 'react-dom';
 import { CaseContents } from '../components/CaseContents';
 import { ContactButtons } from '../components/ContactButtons';
+import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
@@ -155,12 +156,6 @@ function CaseListCoverArtwork({ project, enabled }: { project: Project; enabled:
   return <CaseCoverArtwork project={project} decorative videoRef={setVideo} />;
 }
 
-function PlaybackIcon({ playing }: { playing: boolean }) {
-  return playing
-    ? <span className="pixel-pause-icon" aria-hidden="true" />
-    : <span className="pixel-chevron pixel-chevron--filled" aria-hidden="true" />;
-}
-
 function CaseVideoTile({ video, videoRef, videoElement, coverId, togglePlayback, playbackLabel, onOpen }: {
   video: CaseVideo;
   videoRef: Ref<HTMLVideoElement>;
@@ -222,7 +217,7 @@ function VideoControls({ video, placement, playbackLabel = 'видео', onToggl
           else if (video.paused || video.ended) void video.play().catch(() => {});
           else video.pause();
         }}>
-        <PlaybackIcon playing={playing} />
+        <GridIcon name={playing ? 'pause' : 'play'} />
       </button>
       <input type="range" className="video-seek" min={0} max={duration || 1} step="any"
         value={Math.min(time, duration)} disabled={!duration}
@@ -368,15 +363,19 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
 
   useEffect(() => {
     if (!detailedContents || !arrived) return;
-    const overview = section.current?.querySelector('.dns-case-overview');
+    const layout = section.current?.querySelector('.dns-case-layout');
+    const overview = layout?.querySelector('.dns-case-overview');
+    const footer = layout?.querySelector('.dns-case-footer');
+    const navigation = layout?.querySelector<HTMLElement>('.case-nav[data-dns-contents]');
     const firstHeading = detailedContents[0].id;
     const overviewHeading = document.getElementById(firstHeading);
-    if (!overview || !overviewHeading) return;
+    if (!layout || !overview || !overviewHeading || !footer || !navigation) return;
     const headings = [...detailedContents].reverse().map(({ id }) => document.getElementById(id));
     let alignment = headingAlignment(overviewHeading);
     const update = () => {
       const contentsOffset = isDns ? alignment.offset : 0;
       setContentsVisible(overview.getBoundingClientRect().bottom <= contentsOffset);
+      const footerInset = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
       const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
       const current = atBottom ? headings[0] : headings.find((heading) => {
         if (!heading) return false;
@@ -384,15 +383,20 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
         return top + height * alignment.anchor <= alignment.offset + 1;
       });
       setActiveHeading(current?.id ?? firstHeading);
+      navigation.style.setProperty('--dns-case-footer-inset', `${footerInset}px`);
     };
     const resize = () => {
       alignment = headingAlignment(overviewHeading);
       update();
     };
     update();
+    const observer = new ResizeObserver(update);
+    observer.observe(layout);
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', resize);
     return () => {
+      observer.disconnect();
+      navigation.style.removeProperty('--dns-case-footer-inset');
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', resize);
     };
@@ -597,7 +601,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   transition(null);
                 }
               }}>
-                <span className="pixel-chevron" aria-hidden="true" />
+                <GridIcon name="left" />
               </a>
               {!detailedContents && <p>Содержание</p>}
               {(!detailedContents || contentsVisible) && (
@@ -647,7 +651,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                       <h2 id="case-materials-heading" tabIndex={-1}>Материалы</h2>
                       <ul className="project-links">
                         {item.links.map((link) => (
-                          <li key={link.id}><a href={link.href} data-track-id={link.id}>{link.label}</a></li>
+                          <li key={link.id}><a href={link.href} data-track-id={link.id}>{link.label}<GridIcon name="link" /></a></li>
                         ))}
                       </ul>
                     </section>
@@ -687,7 +691,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                     <span className="tile-copy">
                       <span className="tile-meta">
                         {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
-                        <span className="pixel-chevron tile-chevron" aria-hidden="true" />
+                        <span className="tile-chevron" aria-hidden="true"><GridIcon name="right" /></span>
                       </span>
                       <strong>{entry.title}</strong>
                       <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>

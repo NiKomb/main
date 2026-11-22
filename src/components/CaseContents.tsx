@@ -25,8 +25,9 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
       });
     };
     reveal();
-    window.addEventListener('resize', reveal);
-    return () => window.removeEventListener('resize', reveal);
+    const observer = new ResizeObserver(reveal);
+    observer.observe(list);
+    return () => observer.disconnect();
   }, [items, activeHeading]);
 
   return (

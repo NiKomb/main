@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CaseSection } from '../components/CaseSection';
+import { GridIcon } from '../components/GridIcon';
 import type { CaseFigure } from '../data/dnsCase';
 import type { ProjectImage } from '../data/projects';
 import { viCase, viDecisions, viFollowupFigures, viScenario } from '../data/vseinstrumentiCase';
@@ -48,8 +49,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
             <div><dt>Следующий шаг</dt><dd>{summary.next}</dd></div>
           </dl>
           <div className="project-links">
-            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading('vi-solutions')}>К решениям</button>
-            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading('vi-test')}>К результатам UX-теста</button>
+            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading('vi-solutions')}>К решениям<GridIcon name="link" /></button>
+            <button className="dns-case-jump" type="button" onClick={() => jumpToHeading('vi-test')}>К результатам UX-теста<GridIcon name="link" /></button>
           </div>
         </section>
       </header>

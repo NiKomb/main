@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CaseSection } from '../components/CaseSection';
+import { GridIcon } from '../components/GridIcon';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsDecisions, type CaseFact, type CaseFigure, type CaseMetric } from '../data/dnsCase';
@@ -115,8 +116,8 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
         {pixelSwapSupported && <ComparisonParticles position={position} width={size.width} height={size.height} />}
         <ComparisonDivider position={position} width={size.width} height={size.height} />
         <span className="icon-tile dns-comparison-handle" aria-hidden="true">
-          <span className="pixel-chevron" />
-          <span className="pixel-chevron" />
+          <GridIcon name="left" />
+          <GridIcon name="right" />
         </span>
       </div>
       {paintFrame && <ComparisonFramePaint tile={tile} {...size} />}
@@ -203,14 +204,14 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           </dl>
           <div ref={summaryActions} className="project-links dns-summary-actions">
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
-              <span className="dns-summary-jump-label">К решениям</span>
+              <span className="dns-summary-jump-label">К решениям<GridIcon name="link" /></span>
             </button>
             <button className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
-              <span className="dns-summary-jump-label">К результатам UX-теста</span>
+              <span className="dns-summary-jump-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
-            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient dns-summary-jump--chevron" {...iconTilePress}
+            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress}
               type="button" onClick={() => jumpToHeading('dns-research')}>
-              <span className="dns-summary-jump-label">К исследованию</span>
+              <span className="dns-summary-jump-label">К исследованию<GridIcon name="link" /></span>
             </button>
           </div>
         </section>

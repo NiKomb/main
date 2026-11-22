@@ -1,4 +1,5 @@
 import type { Project } from '../data/projects';
+import { GridIcon } from './GridIcon';
 
 export function ProjectCard({ project }: { project: Project }) {
   return (
@@ -8,7 +9,7 @@ export function ProjectCard({ project }: { project: Project }) {
       <ul className="project-links" aria-label={`Материалы: ${project.title}`}>
         {project.links.map((link) => (
           <li key={link.id}>
-            <a href={link.href} data-track-id={link.id}>{link.label}</a>
+            <a href={link.href} data-track-id={link.id}>{link.label}<GridIcon name="link" /></a>
           </li>
         ))}
       </ul>

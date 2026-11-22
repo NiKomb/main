@@ -39,7 +39,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   pointer-events: none;
   content: "";
 }
-.icon-tile > :is(svg, .pixel-chevron, .pixel-pause-icon) {
+.icon-tile > svg {
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
   pointer-events: none;
 }
@@ -64,7 +64,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
 }
 @media (prefers-reduced-motion: no-preference) {
   .icon-tile { transition: border-color 120ms ease; }
-  .icon-tile::before { transition: background-color 120ms ease; }
+  .icon-tile::before { transition: background-color 120ms ease, filter 120ms ease; }
 }
 @media (forced-colors: active) {
   .icon-tile { border-color: ButtonText; }
@@ -187,16 +187,14 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
 .tile-summary { color: var(--color-muted); font: var(--type-small) var(--font-body); }
 .tile-meta > .tile-chevron {
   margin-inline-start: auto;
+  display: grid;
+  place-items: center;
+  flex: none;
   width: 28px;
   height: 28px;
   border-radius: 6px;
   background-color: color-mix(in srgb, var(--tile-accent) var(--tile-highlight), var(--color-surface));
   color: color-mix(in srgb, var(--color-background) var(--tile-highlight), var(--tile-accent));
-  transform: scaleX(-1);
-}
-.tile-meta > .tile-chevron::before {
-  top: calc(50% - var(--pixel-step) / 2);
-  left: calc(50% - var(--pixel-step) * 2);
 }
 .tile-preview {
   position: relative;
@@ -387,9 +385,12 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
 .case-nav button { min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
 .case-nav :is(a, button):hover { color: var(--color-text); }
 .case-back { justify-content: center; }
-.pixel-icon {
-  width: calc(var(--pixel-step) * 10);
-  height: calc(var(--pixel-step) * 10);
+.grid-icon {
+  display: block;
+  flex: none;
+  width: calc(var(--pixel-step) * var(--icon-columns));
+  height: calc(var(--pixel-step) * var(--icon-rows));
+  overflow: visible;
 }
 .pixel-chevron {
   --chevron-column: var(--pixel-step);
@@ -419,36 +420,6 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
   height: var(--pixel-step);
   background: currentColor;
   box-shadow: var(--chevron-outline);
-  content: "";
-}
-.pixel-chevron--filled { --chevron-column: calc(-1 * var(--pixel-step)); }
-.pixel-chevron--filled::before {
-  left: auto;
-  right: 0;
-  box-shadow:
-    var(--chevron-outline),
-    var(--chevron-column) 0,
-    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * -1),
-    calc(var(--chevron-column) * 2) 0,
-    calc(var(--chevron-column) * 2) var(--pixel-step),
-    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -2),
-    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -1),
-    calc(var(--chevron-column) * 3) 0,
-    calc(var(--chevron-column) * 3) var(--pixel-step),
-    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * 2);
-}
-@media (forced-colors: active) {
-  .pixel-chevron--filled::before {
-    forced-color-adjust: none;
-    color: ButtonText;
-  }
-}
-:is(.project-links a, .dns-case-jump, .dns-summary-jump-label)::after {
-  flex: none;
-  inline-size: 12px;
-  block-size: 12px;
-  background: currentColor;
-  clip-path: path("M4 0H12V8H10V2H4Z M8 2h2v2h-2Z M6 4h2v2h-2Z M4 6h2v2h-2Z M2 8h2v2h-2Z M0 10h2v2h-2Z");
   content: "";
 }
 :is(.project-links a, .dns-case-jump):is(:focus-visible, :active) { color: var(--color-text); }
@@ -535,12 +506,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .video-controls--gallery { z-index: 2; }
 .video-controls .icon-tile { flex: none; }
-.pixel-pause-icon {
-  width: calc(var(--pixel-step) * 6);
-  height: calc(var(--pixel-step) * 7);
-  border-inline: calc(var(--pixel-step) * 2) solid currentColor;
-}
-.icon-tile > .pixel-chevron--filled {
+.icon-tile > .grid-icon--play {
   /* The filled shape carries more weight on its left side. */
   translate: calc(var(--icon-tile-icon-offset) + var(--pixel-step) / 2) var(--icon-tile-icon-offset);
 }
@@ -773,12 +739,13 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .case-nav[data-dns-contents] :is(.case-back, ul) { pointer-events: auto; }
 .case-nav[data-dns-contents] ul {
+  --contents-bottom-inset: max(var(--dns-case-edge-inset), calc(var(--dns-case-footer-inset, 0px) + var(--space-12)));
   position: absolute;
   inset: var(--dns-case-contents-offset) var(--dns-case-contents-gap) auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-12);
-  max-height: calc(100dvh - 2 * var(--dns-case-edge-inset) - var(--dns-case-contents-offset));
+  max-height: calc(100dvh - var(--dns-case-edge-inset) - var(--dns-case-contents-offset) - var(--contents-bottom-inset));
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -996,7 +963,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   outline: 2px solid var(--color-text);
   outline-offset: var(--space-2);
 }
-.dns-comparison-handle .pixel-chevron:last-child { transform: scaleX(-1); }
 .dns-case-figure figcaption strong { display: block; margin-bottom: var(--space-4); }
 .dns-case-body > :is(.case-text, .case-content-section) { margin-inline: 0; }
 .dns-case-section :is(.dns-case-flow, .dns-case-stages) {
@@ -1055,20 +1021,20 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   max-width: 100%;
   padding: var(--space-8) var(--space-16);
   border: 0;
-  background: none;
+  background: var(--color-dns-button-shadow);
   color: var(--color-background);
   font: var(--type-small) var(--font-accent);
   text-align: start;
   text-transform: var(--type-accent-transform);
 }
-.dns-summary-jump:where(:not(.dns-summary-jump--chevron)) { border-radius: 0; }
 .dns-summary-jump::before {
   --step: var(--pixel-step);
-  --corner: calc(3 * var(--step));
+  --corner: var(--icon-tile-face-radius);
   --double-step: min(calc(2 * var(--step)), calc(var(--corner) - var(--step)));
   --far-step: calc(100% - var(--step));
   --far-double-step: calc(100% - var(--double-step));
   --far-corner: calc(100% - var(--corner));
+  background: var(--color-dns-button-face);
   clip-path: polygon(
     var(--corner) 0, var(--far-corner) 0,
     var(--far-corner) var(--step), var(--far-double-step) var(--step), var(--far-double-step) var(--double-step),
@@ -1082,23 +1048,17 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     var(--double-step) var(--double-step), var(--double-step) var(--step), var(--corner) var(--step)
   );
 }
-.dns-summary-jump:where(:not(.dns-summary-jump--chevron))::before {
-  --shadow-offset: calc(-2 * var(--step));
-  inset: 0;
-  border-radius: 0;
-  background: var(--color-dns-button-face);
-  box-shadow: inset var(--shadow-offset) var(--shadow-offset) 0 var(--color-dns-button-shadow);
-}
 .dns-summary-jump--gradient::before {
   background: var(--dns-summary-gradient, none) var(--color-dns-button-face);
+  background-size: 100% 100%;
   image-rendering: pixelated;
 }
-.dns-summary-jump--chevron { background: var(--color-dns-button-shadow); }
-.dns-summary-jump--chevron::before {
-  --corner: var(--icon-tile-face-radius);
-  background-size: 100% 100%;
+@media (hover: hover) and (forced-colors: none) {
+  .dns-summary-jump:enabled:hover:not(:active, [aria-pressed="true"], [data-touch-pressed])::before {
+    filter: brightness(1.1);
+  }
 }
-.dns-summary-jump--chevron::after {
+.dns-summary-jump::after {
   position: absolute;
   z-index: -2;
   inset: var(--icon-tile-leading) 0 0 var(--icon-tile-leading);
@@ -1107,10 +1067,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   pointer-events: none;
   content: "";
 }
-@media (hover: hover) {
-  .dns-summary-jump:hover::before { --shadow-offset: calc(-3 * var(--step)); }
-}
-.dns-summary-jump:is(:active, [data-touch-pressed])::before { --shadow-offset: calc(2 * var(--step)); }
 .dns-summary-jump-label {
   display: inline-flex;
   align-items: center;
@@ -1122,9 +1078,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   .dns-summary-jump::before {
     forced-color-adjust: none;
     background: ButtonFace;
-    box-shadow: inset var(--shadow-offset) var(--shadow-offset) 0 ButtonText;
   }
-  .dns-summary-jump--chevron::after {
+  .dns-summary-jump::after {
     forced-color-adjust: none;
     background: ButtonText;
   }

@@ -7,3 +7,9 @@
   transform: translateX(-50%);
   pointer-events: none;
 }
+.dns-comparison-divider > path {
+  fill: none;
+  stroke: var(--color-muted);
+  stroke-width: var(--pixel-step);
+  vector-effect: non-scaling-stroke;
+}
