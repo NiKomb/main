@@ -44,26 +44,6 @@ function renderMetric({ value, label, detail, comment, paintGradient }: CaseMetr
   );
 }
 
-function renderDecisionCheck({ checkTitle, checkMethod, metrics }: (typeof dnsDecisions)[number]) {
-  return (
-    <div className="dns-decision-check">
-      <section className="dns-case-block">
-        <h4>Что проверял</h4>
-        <div className="dns-decision-tile dns-decision-signal">
-          <p className="dns-case-fact-title">{checkTitle}</p>
-          <p>{checkMethod}</p>
-        </div>
-      </section>
-      <section className="dns-case-block">
-        <h4>Результат</h4>
-        <ul className={metrics.length > 1 ? 'dns-decision-metrics' : 'dns-decision-tile'}>
-          {metrics.map(renderMetric)}
-        </ul>
-      </section>
-    </div>
-  );
-}
-
 function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = 'Разделитель «Было / Стало»',
   renderScreenshot }: Pick<Props, 'renderScreenshot'> & {
   frames: readonly [CaseFigure, CaseFigure];
@@ -222,11 +202,10 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           <section className="dns-case-group" aria-labelledby="dns-desk-research">
             <div className="dns-case-block">
               <h3 id="dns-desk-research" tabIndex={-1}>{research.discussionsTitle}</h3>
-              <p>{research.discussionMethod}</p>
+              <p>{research.discussionAction}</p>
             </div>
             <div className="dns-case-block">
               <h4>Вывод</h4>
-              <p>{research.discussionFinding}</p>
               <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из обсуждений сборок" data-mascot-comment="external-review">
                 {research.deskMetrics.map((metric, index) => renderMetric({ ...metric, paintGradient: index === 0 }))}
                 {research.discussionExamples.map(renderFact)}
@@ -236,47 +215,35 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           <section className="dns-case-group" aria-labelledby="dns-audit">
             <div className="dns-case-block">
               <h3 id="dns-audit" tabIndex={-1}>{research.auditTitle}</h3>
-              <ol className="dns-case-flow" aria-label="Путь выбора комплектующего">
-                {research.flow.map((step, index) => (
-                  <li key={step}>
-                    {step}
-                    {index < research.flow.length - 1 && <span className="pixel-chevron dns-case-flow-chevron" aria-hidden="true" />}
-                  </li>
-                ))}
-              </ol>
-              <p>{research.auditMethod}</p>
+              <p>{research.auditAction}</p>
             </div>
             <div className="dns-case-block">
               <h4>Вывод</h4>
-              <p>{research.auditFinding}</p>
               <ul className="dns-case-stages dns-case-results" aria-label="Что есть в действующем конфигураторе">
                 {research.auditFindings.map(renderFact)}
               </ul>
             </div>
           </section>
-          <h3 className="dns-case-divider" id="dns-interviews" tabIndex={-1}>{research.interviewTitle}</h3>
-          <section className="dns-case-group" aria-labelledby="dns-interviews">
-            <section className="dns-case-block" data-mascot-comment="comparison-search">
-              <h4 id="dns-interview-task" tabIndex={-1}>{research.interviewTaskTitle}</h4>
-              {research.interviewMethod.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-              <InterviewGallery label={research.framesTitle}>
-                {research.frames.map((figure) => renderFigure(figure))}
-              </InterviewGallery>
-            </section>
-            <section className="dns-case-block">
-              <h4>Наблюдение за сборщиком</h4>
-              <p>{research.builderObservation}</p>
-            </section>
+          <section className="dns-case-group" id="dns-interviews" aria-labelledby="dns-interview-task">
+            <div className="dns-case-block">
+              <h3 id="dns-interview-task" tabIndex={-1}>{research.interviewTitle}</h3>
+              <p>{research.interviewAction}</p>
+            </div>
             <section className="dns-case-block" aria-labelledby="dns-interview-results">
               <h4 id="dns-interview-results">Выводы</h4>
-              <p>{research.interviewFinding}</p>
-              <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из интервью">
+              <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из сессий">
                 {research.interviewFindings.map(renderFact)}
               </ul>
               <p>{research.interviewResultsLimit}</p>
+            </section>
+            <div className="dns-case-block" data-mascot-comment="comparison-search">
+              <InterviewGallery label={research.framesTitle}>
+                {research.frames.map((figure) => renderFigure(figure))}
+              </InterviewGallery>
               <details className="dns-interview-details">
                 <summary>{research.interviewDetailsTitle}</summary>
                 <div className="dns-case-group">
+                  <p>{research.interviewPrompt}</p>
                   {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
                     <div className="dns-case-block" key={title}>
                       <h5>{title}</h5>
@@ -287,33 +254,30 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                   ))}
                 </div>
               </details>
-            </section>
+            </div>
           </section>
           <section className="dns-case-group" aria-labelledby="dns-competitors">
             <div className="dns-case-block">
               <h3 id="dns-competitors" tabIndex={-1}>{research.competitors.title}</h3>
-              <InterviewGallery label={research.competitors.title}>
-                {research.competitors.frames.map((figure) => renderFigure(figure))}
-              </InterviewGallery>
-              <p>{research.competitors.method}</p>
+              <p>{research.competitors.action}</p>
             </div>
             <div className="dns-case-block">
               <h4>Вывод</h4>
-              <p>{research.competitors.finding}</p>
               <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения по конкурентам">
                 {research.competitors.findings.map(renderFact)}
               </ul>
+              <InterviewGallery label={research.competitors.title}>
+                {research.competitors.frames.map((figure) => renderFigure(figure))}
+              </InterviewGallery>
             </div>
           </section>
           <section className="dns-case-group" aria-labelledby="dns-prioritization">
             <div className="dns-case-block">
               <h3 id="dns-prioritization" tabIndex={-1}>{research.prioritization.title}</h3>
-              {renderFigure(research.prioritization.evidence)}
-              <p>{research.prioritization.method}</p>
+              <p>{research.prioritization.action}</p>
             </div>
             <div className="dns-case-block">
-              <h4>Решение</h4>
-              <p>{research.prioritization.decision}</p>
+              <h4>Взял в прототип</h4>
               <ul className="dns-case-stages dns-case-results" aria-label="Гипотезы по направлениям">
                 {research.prioritization.selected.map(({ title, hypotheses }) => (
                   <li className="dns-case-fact" key={title}>
@@ -325,6 +289,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                 ))}
               </ul>
               <p>{research.prioritization.deferred}</p>
+              {renderFigure(research.prioritization.evidence)}
             </div>
           </section>
         </div>
@@ -336,75 +301,67 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             const [before, emphasis, after] = decision.hypothesisText;
             return (
               <section className="dns-case-group" key={decision.id} aria-labelledby={decision.id}>
-                <div className="dns-case-block" data-mascot-comment={decision.painComment}>
+                <div className="dns-case-block" data-mascot-comment={decision.comment}>
                   <h3 id={decision.id} tabIndex={-1}>{decision.title}</h3>
+                  <DnsComparison frames={decision.comparison} headingId={decision.id}
+                    paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
                   <div className="dns-case-frames" data-media-gallery>
                     {decision.detailFrames.map((figure) => renderFigure(figure))}
                   </div>
-                  <h4 id={`${decision.id}-changes`}>{decision.comparison.title}</h4>
-                  <DnsComparison frames={decision.comparison.frames} headingId={`${decision.id}-changes`}
-                    paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
                   {decision.solutionFigure && renderFigure(decision.solutionFigure)}
                 </div>
                 <div className="dns-case-block">
                   <h4>Гипотеза {decision.hypothesis}</h4>
-                  <blockquote cite={test.journalSource.href}>
+                  <blockquote cite={test.journalSource}>
                     <p>{before}<strong className="dns-hypothesis-emphasis">{emphasis}</strong>{after}</p>
                   </blockquote>
-                </div>
-                <div className="dns-case-block">
-                  <h4>Боль пользователей</h4>
-                  <p>{decision.pain}</p>
                 </div>
                 <div className="dns-case-block">
                   <h4>Решение</h4>
                   <p>{decision.solution}</p>
                 </div>
-                {renderDecisionCheck(decision)}
+                <section className="dns-case-block dns-decision-check">
+                  <h4>Результат</h4>
+                  <ul className="dns-case-stages dns-case-results" aria-label={`Результат. ${decision.title}`}>
+                    {decision.metrics.map(renderMetric)}
+                  </ul>
+                </section>
                 {decision.id === 'dns-comparison' && (
                   <section className="dns-case-block">
                     <h4 className="dns-case-labeled-heading" id="dns-comparison-iteration">
                       <span>{comparison.iteration.title}</span>
                       <span className="dns-case-heading-label">{comparison.iteration.label}</span>
                     </h4>
+                    <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
+                      sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
                     <div className="dns-case-frames" data-media-gallery>
                       {renderFigure(comparison.iteration.toggleFigure, toggleCaption)}
                       {renderFigure(comparison.iteration.differencesFigure)}
                     </div>
-                    <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
-                      sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
-                    <div className="dns-case-block">
-                      <h5>Юзабилити-тест ранней версии прототипа</h5>
-                      <p>{comparison.iteration.method}</p>
-                    </div>
-                    <div className="dns-case-block">
-                      <h5>Решение</h5>
-                      <ul className="dns-case-stages" aria-label="Факт раннего теста">
-                        {renderFact(comparison.iteration.fact)}
-                      </ul>
-                    </div>
+                    <p>{comparison.iteration.action}</p>
+                    <ul className="dns-case-stages" aria-label="Результат раннего теста">
+                      {renderFact(comparison.iteration.fact)}
+                    </ul>
                     {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} />}
                   </section>
                 )}
               </section>
             );
           })}
-        </div>
-      </CaseSection>
-
-      <CaseSection id="dns-scenario" title={scenario.title} dividerLabel={scenario.label}>
-        <div className="dns-case-subsections">
-          <div className="dns-case-group" data-mascot-comment="ryzen-review">
-            {scenarioMedia}
+          <section className="dns-case-group" aria-labelledby="dns-scenario" data-mascot-comment="ryzen-review">
             <div className="dns-case-block">
-              <h3>Действия</h3>
+              <h3 id="dns-scenario" tabIndex={-1}>{scenario.label} · {scenario.title}</h3>
+              {scenarioMedia}
+            </div>
+            <div className="dns-case-block">
+              <h4>Шаг покупателя</h4>
               <p>{scenario.action}</p>
             </div>
             <div className="dns-case-block">
-              <h3>Результат</h3>
+              <h4>Результат</h4>
               <p>{scenario.result}</p>
             </div>
-          </div>
+          </section>
           <section className="dns-case-group" aria-labelledby="dns-quick-choice">
             <div className="dns-case-block">
               <h3 id="dns-quick-choice" tabIndex={-1}>{quickChoice.title}</h3>
@@ -413,7 +370,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               </div>
             </div>
             <div className="dns-case-block">
-              <h4>Действие</h4>
+              <h4>Шаг покупателя</h4>
               <p>{quickChoice.action}</p>
             </div>
             <div className="dns-case-block">
@@ -422,54 +379,24 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <p>{quickChoice.articlesIntro}</p>
             </div>
           </section>
-        </div>
-      </CaseSection>
-
-      <CaseSection id="dns-results" title={test.title}>
-        <div className="dns-case-subsections">
-          <div className="dns-case-group">
+          <h3 className="dns-case-divider" id="dns-results" tabIndex={-1}>{test.title}</h3>
+          <section className="dns-case-group" aria-labelledby="dns-results">
             <div className="dns-case-block">
-              <p>{test.intro}</p>
+              <h4 id="dns-test-overview" tabIndex={-1}>{test.overviewTitle}</h4>
+              <p>{test.action}</p>
               <p>{test.accounting}</p>
-            </div>
-            <div className="dns-case-block">
-              <h3 id="dns-test-overview" tabIndex={-1}>{test.overviewTitle}</h3>
               <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
                 {test.overview.map(renderMetric)}
               </ul>
             </div>
-          </div>
-          <section className="dns-case-group" aria-labelledby="dns-hypotheses">
-            <h3 id="dns-hypotheses">{test.journalTitle}</h3>
-            {test.groups.map(({ title, hypothesis, metrics }) => (
-              <section className="dns-case-block" aria-label={title} key={title}>
-                <h4 className="dns-case-labeled-heading">
-                  <span>{title}</span>
-                  <span className="dns-case-heading-label">Гипотеза {hypothesis}</span>
-                </h4>
-                <ul className="dns-case-stages dns-case-results" aria-label={`Показатели. ${title}`}>
-                  {metrics.map(renderMetric)}
-                </ul>
-              </section>
-            ))}
-            <div className="dns-case-block">
-              <p>{test.timing}</p>
-              <p>{test.journalLimit}</p>
-            </div>
           </section>
-        </div>
-      </CaseSection>
-
-      <CaseSection id="dns-reflection" title={reflection.title}>
-        <div className="dns-case-subsections">
-          <div className="dns-case-block">
-            <h3>Сборки без сохранения</h3>
-            <p>{reflection.observation}</p>
-          </div>
-          <div className="dns-case-block">
-            <h3 id="dns-next-test" tabIndex={-1}>{reflection.nextTitle}</h3>
-            <p>{reflection.next}</p>
-          </div>
+          <section className="dns-case-block" id="dns-reflection" aria-labelledby="dns-next-test">
+            <h3 id="dns-next-test" tabIndex={-1}>{reflection.title}</h3>
+            <p>{reflection.action}</p>
+            <ul className="dns-case-stages dns-case-results" aria-label="Что проверю">
+              {reflection.checks.map(renderFact)}
+            </ul>
+          </section>
         </div>
       </CaseSection>
     </>
