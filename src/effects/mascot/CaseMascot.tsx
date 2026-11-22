@@ -193,7 +193,14 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       }
       const metricBlock = metricCheck ?? metricGrid;
       const commentBlock = reaction ? null : metricBlock ?? galleryComment;
-      if (commentBlock) {
+      if (!reaction && article.dataset.sectionId === 'project-dns' && stop.surface.tile.matches('.dns-case-summary')) {
+        const right = x - 8;
+        position.alignment = 0;
+        position.above = true;
+        position.left = Math.max(16, right - 244);
+        position.maxWidth = right - position.left;
+        position.y = y + footOffset - 4;
+      } else if (commentBlock) {
         position.alignment = 0;
         position.above = true;
         if (bounds.width >= (metricBlock ? 1280 : 960)) {

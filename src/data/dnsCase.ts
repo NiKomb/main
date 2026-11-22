@@ -22,11 +22,12 @@ import catalogArticlesAfter from './screens/dns-catalog-articles-after.webp';
 import catalogArticlesDetail from './screens/dns-catalog-articles-detail.png';
 import articlePanelBefore from './screens/dns-article-panel-before.webp';
 import articlePanelAfter from './screens/dns-article-panel-after.webp';
-import articlePanelDetail from './screens/dns-article-panel-detail.png';
+import articlePanelScroll from './screens/dns-article-panel-scroll.png';
 import articlePanelExpandedDetail from './screens/dns-article-panel-expanded-detail.png';
 import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
 import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
 import hoverToggleStates from './screens/dns-hover-toggle-states.png';
+import hoverCardDifferences from './screens/dns-hover-card-differences.png';
 import processorScenario from './screens/dns-processor-scenario.mp4';
 import processorScenarioPoster from './screens/dns-processor-scenario.webp';
 import quickChoice from './screens/dns-quick-choice.webp';
@@ -41,7 +42,6 @@ type Decision = {
   title: string;
   hypothesis: number;
   hypothesisText: readonly [before: string, emphasis: string, after: string];
-  contentsLabel: string;
   checkTitle: string;
   checkMethod: string;
   metrics: readonly CaseMetric[];
@@ -95,13 +95,9 @@ export const dnsCase = {
   title: 'Упростил доступ к сравнению и возврат к сборке после обзора детали',
   role: 'Исследование, проектирование и проверка прототипа',
   status: 'Исследовательский прототип',
-  sectionLabels: {
-    research: 'Погружение',
-    decisions: 'Решения',
-    scenario: 'Сценарий выбора',
-    test: 'Проверка прототипа',
-  },
+  decisionsTitle: 'Продуктовые решения',
   summary: {
+    title: 'Контекст',
     context: 'Покупатель собирает ПК под свою задачу и бюджет. Конфигуратор DNS сужает список до совместимых деталей',
     problem: 'Когда подходят несколько моделей, по характеристикам трудно понять, какая лучше подойдёт для конкретной задачи и оправдана ли доплата. На сессиях участники искали, где открыть сравнение, и обращались к обзорам за подробностями',
     solution: 'Перенёс кнопку сравнения к фильтрам, добавил над товарами обзоры Клуба DNS по моделям из каталога и закрепил в статье панель с составом, суммой и кнопкой возврата к текущей сборке',
@@ -128,7 +124,7 @@ export const dnsCase = {
         detail: 'В Клубе DNS автор уже подобрал детали и спросил, оправдана ли более дорогая видеокарта',
       },
     ],
-    auditTitle: 'UX-аудит конфигуратора DNS',
+    auditTitle: 'UX-аудит',
     auditMethod: 'Прошёл сценарий добавления и замены детали. Проверил, где открывается сравнение, какие данные видны в карточке и как вернуться к сборке с выбранной моделью',
     auditFinding: 'Конфигуратор сужает список до совместимых моделей. В сессиях я проверил, как человек выбирает из этого списка и добавляет модель в сборку',
     flow: ['Сборка', '«Добавить» или «Заменить»', 'Каталог', 'Карточка товара', 'Сравнение', 'Возврат к сборке'],
@@ -138,9 +134,10 @@ export const dnsCase = {
       { title: 'Замена', detail: 'При выборе другой модели общая сумма пересчитывается' },
       { title: 'Сохранение', detail: 'Проверенный состав можно сохранить на экране сборки' },
     ],
-    interviewTitle: 'Интервью с подбором деталей',
+    interviewTitle: 'Интервью и модерируемый UX-тест',
+    interviewTaskTitle: 'Задание на подбор',
     interviewMethod: [
-      'Провёл шесть сессий в действующем DNS с разными задачами и бюджетами. Участники подбирали процессор, материнскую плату, видеокарту и корпус.',
+      'Провёл шесть интервью один на один. В действующем DNS участники подбирали процессор, материнскую плату, видеокарту и корпус под свою задачу и бюджет.',
       'В части сессий я просил сравнить детали и, если за минуту участник сам не находил таблицу, спрашивал, где он искал и чего ему не хватало для выбора',
     ],
     builderObservation: 'По записи эфира проследил, как профессиональный сборщик выбирал детали и когда обращался к обзорам',
@@ -148,7 +145,7 @@ export const dnsCase = {
     interviewFindings: [
       {
         title: 'Сравнение приходилось искать',
-        detail: 'Часть участников открыла таблицу после подсказки. Один нашёл её сам, но с задержкой',
+        detail: 'Не всем удалось найти таблицу самостоятельно. Один участник нашёл её сам, но с задержкой',
       },
       {
         title: 'Характеристики было сложно связать с игрой',
@@ -229,7 +226,7 @@ export const dnsCase = {
       },
     ],
     competitors: {
-      title: 'Анализ конкурентов',
+      title: 'Конкурентный анализ',
       method: 'Сравнил, какие данные видны прямо во время подбора детали в Ситилинке, Регарде и X-core.by',
       finding: 'На экране выбора можно держать под рукой цену, активные фильтры или состояние сборки',
       findings: [
@@ -292,8 +289,9 @@ export const dnsCase = {
     },
   },
   test: {
-    title: 'Результаты UX-теста',
-    intro: 'Участники самостоятельно подбирали комплектующие до видеокарты включительно. Задание заканчивалось сохранением сборки. Все проходили одну версию прототипа без модератора и без сравнения с исходным интерфейсом DNS',
+    title: 'Немодерируемый UX-тест',
+    overviewTitle: 'Подбор и сохранение сборки',
+    intro: 'Участники самостоятельно подбирали комплектующие до видеокарты включительно. Задание заканчивалось сохранением сборки. Все проходили одну версию прототипа. Исходный интерфейс DNS в тесте не использовался',
     comparison: comparisonResult,
     counts: testCounts,
     accounting: 'Журнал учитывает прохождение один раз в каждом показателе. В срезе задания на 16 ноября 2026 года — 26 исследовательских прохождений. 12 технических проверок исключены. Для метрик сравнения и статей журнал проверяет, достаточно ли записанных событий для подсчёта',
@@ -337,12 +335,13 @@ export const dnsCase = {
     journalSource: { href: 'https://nikomb.github.io/dns-prototype/journal/?task=task-3', label: 'Открыть журнал DNS' },
   },
   reflection: {
-    title: 'Рефлексия',
-    observation: `В ${testCounts.assembled - testCounts.saved} прохождениях подобрали все пять деталей, но журнал не зафиксировал сохранение. По журналу видно, что произошло после просмотра статьи. Причину выбора нужно уточнить у участника`,
+    title: 'Выводы и следующий тест',
+    nextTitle: 'Сравнительный юзабилити-тест',
+    observation: `В ${testCounts.assembled - testCounts.saved} прохождениях подобрали все пять деталей, но журнал не зафиксировал сохранение`,
     next: 'Дам одно и то же задание в исходном DNS и в прототипе и проверю, где участники сами находят сравнение. Спрошу, какое отличие повлияло на выбор модели и в какой момент участник счёл сборку законченной',
   },
   comparison: {
-    title: 'Счётчик моделей для сравнения',
+    title: 'Счётчик отмеченных моделей',
     frames: [
       {
         src: compareBefore, width: 4020, height: 2400, label: 'Было',
@@ -390,14 +389,21 @@ export const dnsCase = {
         },
       ] as const,
       toggleFigure: {
-        src: hoverToggleStates, width: 1600, height: 900, showFull: true, label: 'Переключатель «Различия при наведении»',
+        src: hoverToggleStates, width: 1600, height: 900, showFull: true,
         alt: 'Сверху режим выключен. Снизу включён, в подписи указан AMD Ryzen 7 9800X3D',
         caption: 'При повторном входе в категорию режим можно было включить переключателем. В подписи было видно, с какой деталью из сборки сравниваются модели',
+      },
+      differencesFigure: {
+        src: hoverCardDifferences, width: 2464, height: 584,
+        previewCrop: { top: 32, height: 520, horizontal: { left: 500, width: 1000 } },
+        alt: 'Карточка AMD Ryzen 7 5700X с блоком «Различие» и характеристиками AMD Ryzen 7 9800X3D',
+        caption: 'При наведении карточка показывала, чем процессор отличается от уже выбранного',
       },
     },
   },
   scenario: {
-    title: 'Как это работает на примере процессора',
+    label: 'Сценарий',
+    title: 'Выбор процессора',
     action: 'Покупатель нажимает «Добавить» в строке процессора, открывает над товарами обзор Ryzen 5 5600X и Core i5‑12400, затем возвращается к подбору',
     result: 'Добавляет Ryzen 7 7800X3D в сборку и переходит к выбору материнской платы',
     video: {
@@ -425,14 +431,13 @@ export const dnsCase = {
 export const dnsDecisions: readonly Decision[] = [
   {
     id: 'dns-comparison',
-    title: 'Кнопка сравнения рядом с фильтрами',
+    title: 'Сравнение у фильтров',
     hypothesis: testHypotheses.comparison,
     hypothesisText: ['Если ', 'сравнение доступно при выборе или замене детали', ', пользователь заметит его без подсказки и сопоставит варианты внутри DNS.'],
-    contentsLabel: 'Сравнение',
     checkTitle: 'Открытие таблицы',
     checkMethod: 'Смотрел в журнале, кто сам открыл таблицу с двумя или больше товарами. Во время теста не подсказывал',
     metrics: [{ ...comparisonTableMetric, comment: 'comparison-opened' }],
-    pain: 'Часть участников открыла таблицу только после подсказки модератора',
+    pain: 'На интервью часть участников затруднилась найти таблицу сравнения',
     solution: 'Покупатель отмечает модели в карточках. Кнопка у фильтров показывает, сколько моделей отмечено, и открывает таблицу. В режиме «Только различия» остаются строки с разными значениями',
     detailFrames: dnsCase.comparison.detailFrames,
     solutionFigure: {
@@ -444,10 +449,9 @@ export const dnsDecisions: readonly Decision[] = [
   },
   {
     id: 'dns-return',
-    title: 'Из статьи обратно к сборке',
+    title: 'Возврат к сборке',
     hypothesis: testHypotheses.evidence,
     hypothesisText: ['Если участник просмотрит в статье целевые данные о комплектующих (тесты, характеристики, совместимость), то ', 'после возврата в конфигуратор', ' он выберет или заменит деталь той же категории.'],
-    contentsLabel: 'Возврат',
     checkTitle: 'Продолжение подбора',
     checkMethod: 'В журнале смотрел, кто выбрал деталь после просмотра данных и возврата. Почему выбрали эту модель, стоит спросить у участников',
     metrics: [evidenceSelectionMetric],
@@ -461,10 +465,10 @@ export const dnsDecisions: readonly Decision[] = [
         caption: 'При переходе из конфигуратора видны две выбранные детали и стоимость сборки',
       },
       {
-        src: articlePanelDetail, width: 1712, height: 244, label: 'При прокрутке',
-        previewCrop: { top: 0, height: 244, horizontal: { left: 42, width: 880 } },
-        alt: 'Компактная панель сборки в статье с процессором, материнской платой, общей суммой и кнопкой возврата',
-        caption: 'Панель сужается. Сумма, детали и кнопка «В конфигуратор» остаются видны',
+        src: articlePanelScroll, width: 1712, height: 1416, roundedCorners: 6, label: 'При прокрутке',
+        previewCrop: { top: 0, height: 963 },
+        alt: 'Компактная панель сборки над разделом обзора DNS с результатами тестирования процессоров',
+        caption: 'Компактная панель с суммой, деталями и кнопкой «В конфигуратор» закреплена над результатами тестирования',
       },
     ],
     comparison: {
@@ -486,10 +490,9 @@ export const dnsDecisions: readonly Decision[] = [
   },
   {
     id: 'dns-articles',
-    title: 'Обзоры по моделям из каталога',
+    title: 'Обзоры моделей в каталоге',
     hypothesis: testHypotheses.recommendation,
     hypothesisText: ['Если при выборе или сравнении ', 'показать подходящие материалы Клуба, объясняющие различия и условия тестов', ', пользователю будет легче обосновать выбор между вариантами.'],
-    contentsLabel: 'Обзоры',
     checkTitle: 'Просмотр рекомендации',
     checkMethod: 'В журнале смотрел, кто просмотрел рекомендацию и выбрал деталь. Чтобы узнать, помогла ли статья, нужно спросить участника',
     metrics: [recommendationViewingMetric, recommendationSelectionMetric],
@@ -528,21 +531,23 @@ export const dnsDecisions: readonly Decision[] = [
 ];
 
 export const dnsContents = [
-  { id: 'projects-heading', label: 'Контекст', note: 'Проблема и решение' },
-  { id: 'dns-research', label: 'Анализ', note: 'Обсуждения и аудит' },
-  { id: 'dns-interviews', label: 'Интервью', note: 'Ключевые результаты' },
-  { id: 'dns-competitors', label: 'Конкуренты', note: 'Три подхода' },
-  { id: 'dns-prioritization', label: 'Приоритеты', note: 'Отбор гипотез' },
-  ...dnsDecisions.map(({ id, contentsLabel, hypothesis }) => ({ id, label: contentsLabel, note: `Гипотеза ${hypothesis}` })),
-  { id: 'dns-scenario', label: 'Сценарий', note: 'Выбор детали' },
-  { id: 'dns-results', label: 'UX-тест', note: 'Результаты и метрики' },
-  { id: 'dns-reflection', label: dnsCase.reflection.title, note: 'Ошибки и правки' },
+  { id: 'projects-heading', label: dnsCase.summary.title, note: 'Проблема, решение и эффект' },
+  { id: 'dns-desk-research', label: dnsCase.research.discussionsTitle, note: 'Обсуждения сборок' },
+  { id: 'dns-audit', label: dnsCase.research.auditTitle, note: 'Путь выбора детали' },
+  { id: 'dns-interview-task', label: dnsCase.research.interviewTaskTitle, note: 'Шесть сессий в DNS' },
+  { id: 'dns-competitors', label: dnsCase.research.competitors.title, note: 'Три конфигуратора' },
+  { id: 'dns-prioritization', label: dnsCase.research.prioritization.title },
+  ...dnsDecisions.map(({ id, title, hypothesis }) => ({ id, label: title, note: `Гипотеза ${hypothesis}` })),
+  { id: 'dns-scenario', label: dnsCase.scenario.label, note: dnsCase.scenario.title },
+  { id: 'dns-quick-choice', label: dnsCase.quickChoice.title },
+  { id: 'dns-test-overview', label: dnsCase.test.overviewTitle, note: `${testCounts.started} прохождений` },
+  { id: 'dns-next-test', label: dnsCase.reflection.nextTitle },
 ];
 
 export const dnsMascotComments: Readonly<Record<string, string>> = {
   'intro': 'Сборку сохранили. Кто уже мысленно пробил чек?',
   'external-review': 'Сборку кинули в чат. С чего мы решили, что в DNS им было неудобно?',
-  'moderator-hint': 'Кнопку нашли. Подсказку модератора тоже добавим в интерфейс?',
+  'comparison-search': 'А где бы ты искал кнопку сравнения?',
   'interview-quotes': 'Цифры есть. Что брать и куда жать? Угадай с трёх раз',
   'comparison-opened': 'Две модели в таблице. Ну и какую брать?',
   'hover-mode-unused': 'Ноль из пяти включили. Удобный был режим? Вот и я не знаю',

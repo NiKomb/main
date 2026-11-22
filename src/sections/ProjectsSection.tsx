@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
+import { CaseContents } from '../components/CaseContents';
 import { ContactButtons } from '../components/ContactButtons';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -283,7 +284,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
   const viewportMascot = useRef<HTMLSpanElement>(null);
   const section = useRef<HTMLElement>(null);
   const caseBack = useRef<HTMLAnchorElement>(null);
-  const caseContents = useRef<HTMLUListElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const dialogContent = useRef<HTMLDivElement>(null);
   const originalViewport = useRef<HTMLDivElement>(null);
@@ -375,7 +375,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     const headings = [...detailedContents].reverse().map(({ id }) => document.getElementById(id));
     let alignment = headingAlignment(overviewHeading);
     const update = () => {
-      setContentsVisible(overview.getBoundingClientRect().bottom <= 0);
+      const contentsOffset = isDns ? alignment.offset : 0;
+      setContentsVisible(overview.getBoundingClientRect().bottom <= contentsOffset);
       const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
       const current = atBottom ? headings[0] : headings.find((heading) => {
         if (!heading) return false;
@@ -395,27 +396,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', resize);
     };
-  }, [detailedContents, arrived]);
-
-  useEffect(() => {
-    const list = caseContents.current;
-    const active = list?.querySelector('button[aria-current="location"]');
-    if (!detailedContents || !contentsVisible || !list || !active) return;
-
-    const reveal = () => {
-      if (!list.clientWidth) return;
-      const bounds = list.getBoundingClientRect();
-      const item = active.getBoundingClientRect();
-      list.scrollBy({
-        left: Math.min(0, item.left - bounds.left) + Math.max(0, item.right - bounds.right),
-        top: Math.min(0, item.top - bounds.top) + Math.max(0, item.bottom - bounds.bottom),
-        behavior: 'instant',
-      });
-    };
-    reveal();
-    window.addEventListener('resize', reveal);
-    return () => window.removeEventListener('resize', reveal);
-  }, [detailedContents, contentsVisible, activeHeading]);
+  }, [detailedContents, arrived, isDns]);
 
   function jumpToHeading(id: string) {
     const heading = document.getElementById(id);
@@ -540,28 +521,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       [{ id: 'case-gallery-heading', label: 'Интерфейсы' }]),
     ...(item?.links.length ? [{ id: 'case-materials-heading', label: 'Материалы' }] : []),
   ];
-  const contentsList = (
-    <ul ref={caseContents}>
-      {contents.map(({ id, label, note }) => {
-        const current = detailedContents && activeHeading === id;
-        return (
-          <li key={id}>
-            <button type="button" onClick={() => jumpToHeading(id)}
-              aria-label={note ? label : undefined}
-              aria-describedby={note ? `${id}-contents-note` : undefined}
-              title={note}
-              aria-current={current ? 'location' : undefined}
-              style={current ? { '--contents-label-length': label.length } as CSSProperties : undefined}>
-              <span className="case-contents-label">
-                <span className="case-contents-text">{label}</span>
-              </span>
-              {note && <span id={`${id}-contents-note`} className="case-contents-note">{note}</span>}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
 
   return (
     <section id="projects" ref={section} className="projects" data-case-open={item ? '' : undefined}
@@ -641,7 +600,9 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                 <span className="pixel-chevron" aria-hidden="true" />
               </a>
               {!detailedContents && <p>Содержание</p>}
-              {(!detailedContents || contentsVisible) && contentsList}
+              {(!detailedContents || contentsVisible) && (
+                <CaseContents items={contents} activeHeading={detailedContents ? activeHeading : undefined} onJump={jumpToHeading} />
+              )}
             </nav>
             {mascotComments ? arrived && <CaseMascot actorRef={viewportMascot} comments={mascotComments}
               shotComment={isDns ? dnsCase.comparison.iteration.shotComment : undefined} paused={viewingMedia} />

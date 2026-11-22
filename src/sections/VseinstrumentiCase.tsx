@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CaseSection } from '../components/CaseSection';
 import type { CaseFigure } from '../data/dnsCase';
 import type { ProjectImage } from '../data/projects';
 import { viCase, viDecisions, viFollowupFigures, viScenario } from '../data/vseinstrumentiCase';
@@ -53,28 +54,26 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
         </section>
       </header>
 
-      <section className="case-content-section dns-case-section" aria-labelledby="vi-audit">
-        <p className="dns-case-divider">Погружение</p>
-        <div className="vi-case-group">
+      <CaseSection id="vi-audit" title="Условия приходилось выяснять по ходу оформления" dividerLabel="Погружение">
+        <div className="dns-case-subsections">
           <div className="dns-case-block">
-            <h2 id="vi-audit" tabIndex={-1}>Условия приходилось выяснять по ходу оформления</h2>
             <p>{audit.introduction}</p>
+            <ul className="dns-case-stages dns-case-results">
+              {audit.findings.map(({ title, detail }) => (
+                <li className="dns-case-fact" key={title}>
+                  <p className="dns-case-fact-title">{title}</p>
+                  <p>{detail}</p>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="dns-case-stages dns-case-results">
-            {audit.findings.map(({ title, detail }) => (
-              <li className="dns-case-fact" key={title}>
-                <h3 className="dns-case-fact-title">{title}</h3>
-                <p>{detail}</p>
-              </li>
-            ))}
-          </ul>
-          <section className="dns-case-block vi-case-subtopic" aria-labelledby="vi-competitors">
+          <section className="dns-case-block" aria-labelledby="vi-competitors">
             <h3 id="vi-competitors" tabIndex={-1}>Как показывают условия в других сервисах</h3>
             <p>{audit.competitors.introduction}</p>
             <ul className="dns-case-stages dns-case-results">
               {audit.competitors.findings.map(({ title, detail }) => (
                 <li className="dns-case-fact" key={title}>
-                  <h4 className="dns-case-fact-title">{title}</h4>
+                  <p className="dns-case-fact-title">{title}</p>
                   <p>{detail}</p>
                 </li>
               ))}
@@ -82,13 +81,12 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
             <p>{audit.competitors.takeaway}</p>
           </section>
         </div>
-      </section>
+      </CaseSection>
 
-      <section className="case-content-section dns-case-section" aria-labelledby="vi-solutions">
-        <h2 id="vi-solutions" className="dns-case-divider" tabIndex={-1}>Решения</h2>
+      <CaseSection id="vi-solutions" title="Решения">
         <div className="dns-case-subsections">
           {viDecisions.map(({ id, title, hypothesis, solution, frames }) => (
-            <section className="vi-case-group" key={id} aria-labelledby={id}>
+            <section className="dns-case-group" key={id} aria-labelledby={id}>
               <div className="dns-case-block">
                 <h3 id={id}>{title}</h3>
                 <p><strong>Гипотеза.</strong> {hypothesis}</p>
@@ -100,40 +98,34 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
             </section>
           ))}
         </div>
-      </section>
+      </CaseSection>
 
-      <section className="case-content-section dns-case-section" aria-labelledby="vi-scenario">
-        <p className="dns-case-divider">Сценарий</p>
-        <div className="vi-case-group">
-          <div className="dns-case-block">
-            <h2 id="vi-scenario" tabIndex={-1}>От генератора в корзине до запроса расчёта</h2>
-            <p>{scenario.intro}</p>
-          </div>
+      <CaseSection id="vi-scenario" title="От генератора в корзине до запроса расчёта" dividerLabel="Сценарий">
+        <div className="dns-case-block">
+          <p>{scenario.intro}</p>
           <ol className="dns-case-frames" data-media-gallery>
             {viScenario.map((frame) => <li key={frame.src}>{renderFigure(frame)}</li>)}
           </ol>
         </div>
-      </section>
+      </CaseSection>
 
-      <section className="case-content-section dns-case-section" aria-labelledby="vi-test">
-        <p className="dns-case-divider">Немодерируемый UX-тест</p>
-        <div className="vi-case-group">
+      <CaseSection id="vi-test" title="Как участники оформляли доставку" dividerLabel="Немодерируемый UX-тест">
+        <div className="dns-case-group">
           <div className="dns-case-block">
-            <h2 id="vi-test" tabIndex={-1}>Как участники оформляли доставку</h2>
             <p>{test.introduction}</p>
             <p>{test.criteria}</p>
           </div>
           <ul className="dns-case-stages dns-case-results" aria-label={`Результаты на ${test.date}`}>
             <li className="dns-case-fact dns-case-metric">
-              <h3>{ratio(test.success)}</h3>
+              <p className="dns-case-metric-value">{ratio(test.success)}</p>
               <p>Оформили все товары с подходящим способом получения</p>
             </li>
             <li className="dns-case-fact dns-case-metric" data-mascot-comment="test-lifting">
-              <h3>{ratio(test.critical)}</h3>
+              <p className="dns-case-metric-value">{ratio(test.critical)}</p>
               <p>Подтвердили курьера, хотя для заказа был недоступен необходимый подъём</p>
             </li>
             <li className="dns-case-fact dns-case-metric">
-              <h3>{ratio(test.unresolved)}</h3>
+              <p className="dns-case-metric-value">{ratio(test.unresolved)}</p>
               <p>Оставил одну единицу товара без оформления</p>
             </li>
           </ul>
@@ -141,24 +133,22 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot }: Props) {
             <p>{test.limitations}</p>
           </div>
         </div>
-      </section>
+      </CaseSection>
 
-      <section className="case-content-section dns-case-section" aria-labelledby="vi-followup">
-        <p className="dns-case-divider">После теста</p>
-        <div className="vi-case-group">
+      <CaseSection id="vi-followup" title="Уточнил подсказки про подъём и согласование" dividerLabel="После теста">
+        <div className="dns-case-subsections">
           <div className="dns-case-block">
-            <h2 id="vi-followup" tabIndex={-1}>Уточнил подсказки про подъём и согласование</h2>
             <p>{followup.introduction}</p>
+            <div className="dns-case-frames" data-media-gallery data-mascot-comment="followup">
+              {viFollowupFigures.map((frame) => <div key={frame.src}>{renderFigure(frame)}</div>)}
+            </div>
           </div>
-          <div className="dns-case-frames" data-media-gallery data-mascot-comment="followup">
-            {viFollowupFigures.map((frame) => <div key={frame.src}>{renderFigure(frame)}</div>)}
-          </div>
-          <div className="dns-case-block vi-case-subtopic">
+          <div className="dns-case-block">
             <h3>Что проверю дальше</h3>
             <p>{followup.next}</p>
           </div>
         </div>
-      </section>
+      </CaseSection>
     </>
   );
 }
