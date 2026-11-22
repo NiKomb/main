@@ -995,6 +995,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-summary-context,
 .dns-case-summary dd,
 .dns-case-section p { color: var(--color-muted); }
+.dns-case-summary .dns-copy-emphasis { color: var(--color-dns-accent); }
 .dns-case-jump {
   min-height: 44px;
   border: 0;
@@ -1005,7 +1006,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-summary-actions {
   gap: var(--space-8);
-  margin-block-start: var(--space-16);
+  margin-block-start: var(--space-28);
 }
 .dns-summary-jump {
   --icon-tile-border-width: 0px;

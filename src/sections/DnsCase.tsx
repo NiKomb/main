@@ -19,6 +19,12 @@ type Props = {
   rocketActor?: RefObject<HTMLSpanElement | null>;
 };
 
+function renderDnsText(text: string) {
+  return text.split('**').map((part, index) => (
+    index % 2 === 0 ? part : <span className="dns-copy-emphasis" key={index}>{part}</span>
+  ));
+}
+
 function renderFact({ title, detail, comment, quote }: CaseFact) {
   return (
     <li className="dns-case-fact" key={title} data-mascot-comment={comment}>
@@ -135,11 +141,11 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         </dl>
         <section className="dns-case-summary" aria-labelledby="dns-summary" data-mascot-comment="intro">
           <h2 id="dns-summary">{summary.title}</h2>
-          <p className="dns-summary-context">{summary.context}</p>
+          <p className="dns-summary-context">{renderDnsText(summary.context)}</p>
           <dl>
-            <div><dt>Проблема</dt><dd>{summary.problem}</dd></div>
-            <div><dt>Решение</dt><dd>{summary.solution}</dd></div>
-            <div><dt>Эффект в тесте</dt><dd>{summary.effect}</dd></div>
+            <div><dt>Проблема</dt><dd>{renderDnsText(summary.problem)}</dd></div>
+            <div><dt>Решение</dt><dd>{renderDnsText(summary.solution)}</dd></div>
+            <div><dt>Эффект</dt><dd>{summary.effect}</dd></div>
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
           <div className="project-links dns-summary-actions">
@@ -148,9 +154,6 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             </button>
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
               <span className="dns-summary-jump-label">К результатам UX-теста<GridIcon name="link" /></span>
-            </button>
-            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-research')}>
-              <span className="dns-summary-jump-label">К исследованию<GridIcon name="link" /></span>
             </button>
           </div>
         </section>
