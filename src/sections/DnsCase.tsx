@@ -11,7 +11,6 @@ import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivid
 import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
 import { MetricGradientPaint } from '../effects/metric-gradient-paint/MetricGradientPaint';
 import { RocketShot } from '../effects/rocket-shot/RocketShot';
-import { paintDnsButtonGradient } from './dns-button-gradient';
 
 type Props = {
   jumpToHeading: (id: string) => void;
@@ -112,45 +111,6 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
 export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { decisionsTitle, research, summary, comparison, scenario, quickChoice, test, reflection } = dnsCase;
   const toggleCaption = useRef<HTMLElement>(null);
-  const summaryActions = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const actions = summaryActions.current;
-    if (!actions) return;
-    const styles = getComputedStyle(actions);
-    const step = parseFloat(styles.getPropertyValue('--pixel-step'));
-    if (!(step > 0)) return;
-    const dark = styles.getPropertyValue('--color-dns-button-shadow').trim();
-    const light = styles.getPropertyValue('--color-dns-button-face').trim();
-    const canvases = new Map<HTMLButtonElement, CanvasRenderingContext2D>();
-    const paint = (button: Element) => {
-      if (!(button instanceof HTMLButtonElement)) return;
-      const context = canvases.get(button);
-      if (!context) return;
-      const { canvas } = context;
-      const width = Math.ceil(button.clientWidth / step);
-      const height = Math.ceil(button.clientHeight / step);
-      if (!width || !height || (width === canvas.width && height === canvas.height)) return;
-      canvas.width = width;
-      canvas.height = height;
-      paintDnsButtonGradient(context, dark, light);
-      button.style.setProperty('--dns-summary-gradient', `url("${canvas.toDataURL()}") 0 0 / ${width * step}px ${height * step}px no-repeat`);
-    };
-    const observer = new ResizeObserver((entries) => entries.forEach(({ target }) => paint(target)));
-    actions.querySelectorAll<HTMLButtonElement>('.dns-summary-jump--gradient').forEach((button) => {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) return;
-      canvas.width = canvas.height = 0;
-      canvases.set(button, context);
-      paint(button);
-      observer.observe(button);
-    });
-    return () => {
-      observer.disconnect();
-      for (const button of canvases.keys()) button.style.removeProperty('--dns-summary-gradient');
-    };
-  }, []);
 
   function renderFigure(figure: CaseFigure, captionTarget?: RefObject<HTMLElement | null>) {
     return (
@@ -182,15 +142,14 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <div><dt>Эффект в тесте</dt><dd>{summary.effect}</dd></div>
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
-          <div ref={summaryActions} className="project-links dns-summary-actions">
+          <div className="project-links dns-summary-actions">
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
               <span className="dns-summary-jump-label">К решениям<GridIcon name="link" /></span>
             </button>
-            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
+            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
               <span className="dns-summary-jump-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
-            <button className="icon-tile dns-summary-jump dns-summary-jump--gradient" {...iconTilePress}
-              type="button" onClick={() => jumpToHeading('dns-research')}>
+            <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-research')}>
               <span className="dns-summary-jump-label">К исследованию<GridIcon name="link" /></span>
             </button>
           </div>

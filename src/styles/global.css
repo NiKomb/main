@@ -12,6 +12,8 @@ a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 .icon-tile {
+  --icon-tile-border-width: 1px;
+  --icon-tile-radius: calc(var(--radius-card) - 4px);
   --icon-tile-face: var(--icon-tile-rest-face, var(--color-surface));
   --icon-tile-face-radius: calc(var(--radius-card) / 2 - 2px);
   --icon-tile-leading: 3px;
@@ -25,9 +27,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   width: var(--size-icon-tile);
   height: var(--size-icon-tile);
   padding: 0;
-  border: 1px solid var(--icon-tile-edge, var(--color-border));
-  border-radius: calc(var(--radius-card) - 4px);
-  background: linear-gradient(135deg, var(--icon-tile-edge, var(--color-border)) 50%, var(--color-background) 50%);
+  border: var(--icon-tile-border-width) solid var(--icon-tile-edge, var(--color-border));
+  border-radius: var(--icon-tile-radius);
+  background: var(--icon-tile-edge, var(--color-border));
   color: var(--color-text);
 }
 .icon-tile::before {
@@ -36,6 +38,22 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   inset: var(--icon-tile-leading) var(--icon-tile-trailing) var(--icon-tile-trailing) var(--icon-tile-leading);
   border-radius: var(--icon-tile-face-radius);
   background: var(--icon-tile-face);
+  pointer-events: none;
+  content: "";
+}
+.icon-tile::after {
+  --bevel: calc(var(--icon-tile-leading) + var(--icon-tile-trailing));
+  --bevel-offset: calc(var(--icon-tile-leading) - var(--icon-tile-trailing));
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  border-radius: calc(var(--icon-tile-radius) - var(--icon-tile-border-width));
+  background: var(--icon-tile-depth, var(--color-background));
+  clip-path: polygon(
+    100% var(--bevel-offset), 100% 100%, var(--bevel-offset) 100%,
+    calc(var(--bevel) + var(--bevel-offset)) calc(100% - var(--bevel)),
+    calc(100% - var(--bevel)) calc(var(--bevel) + var(--bevel-offset))
+  );
   pointer-events: none;
   content: "";
 }
@@ -48,7 +66,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   touch-action: manipulation;
 }
 @media (hover: hover) {
-  .icon-tile:is(:any-link, button:enabled):not([aria-pressed="true"], [data-touch-pressed]):hover,
+  .icon-tile:is(:any-link, button:enabled):hover,
   .dns-comparison-control:hover ~ .icon-tile {
     --icon-tile-face: var(--icon-tile-hover-face, var(--color-skeleton));
     border-color: color-mix(in srgb, var(--icon-tile-edge, var(--color-border)), var(--color-muted) 20%);
@@ -57,7 +75,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
 .icon-tile:is(:any-link, button:enabled):active,
 .icon-tile:is([aria-pressed="true"], [data-touch-pressed]),
 .dns-comparison-control:is(:active, [data-touch-pressed]) ~ .icon-tile {
-  --icon-tile-face: var(--icon-tile-pressed-face, color-mix(in srgb, var(--color-surface), var(--color-background) 30%));
   --icon-tile-leading: 5px;
   --icon-tile-trailing: 3px;
   --icon-tile-icon-offset: 1px;
@@ -69,6 +86,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
 @media (forced-colors: active) {
   .icon-tile { border-color: ButtonText; }
   .icon-tile[aria-pressed="true"] { border-color: Highlight; }
+  .icon-tile::after { clip-path: none; }
 }
 h1, h2, h3, p { margin: 0; }
 :where(p, figcaption, dd, td, .tile-summary) {
@@ -391,35 +409,11 @@ a.tile-layout:is(:focus-visible, :active) { --tile-highlight: 100%; }
   height: calc(var(--pixel-step) * var(--icon-rows));
   overflow: visible;
 }
-.pixel-chevron {
-  --chevron-column: var(--pixel-step);
-  --chevron-outline:
-    var(--chevron-column) calc(var(--pixel-step) * -1),
-    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * -2),
-    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * -3),
-    var(--chevron-column) var(--pixel-step),
-    calc(var(--chevron-column) * 2) calc(var(--pixel-step) * 2),
-    calc(var(--chevron-column) * 3) calc(var(--pixel-step) * 3);
-  position: relative;
-  flex: none;
-  width: calc(var(--pixel-step) * 4);
-  height: calc(var(--pixel-step) * 7);
-}
 :is(.project-links a, .dns-case-jump) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
   color: var(--color-muted);
-}
-.pixel-chevron::before {
-  position: absolute;
-  top: calc(var(--pixel-step) * 3);
-  left: 0;
-  width: var(--pixel-step);
-  height: var(--pixel-step);
-  background: currentColor;
-  box-shadow: var(--chevron-outline);
-  content: "";
 }
 :is(.project-links a, .dns-case-jump):is(:focus-visible, :active) { color: var(--color-text); }
 @media (hover: hover) {
@@ -1014,57 +1008,26 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   margin-block-start: var(--space-16);
 }
 .dns-summary-jump {
+  --icon-tile-border-width: 0px;
+  --icon-tile-edge: var(--color-dns-button-shadow);
+  --icon-tile-depth: var(--color-dns-button-depth);
   width: auto;
   height: auto;
   min-height: 44px;
   max-width: 100%;
   padding: var(--space-8) var(--space-16);
-  border: 0;
-  background: var(--color-dns-button-shadow);
   color: var(--color-background);
   font: var(--type-small) var(--font-accent);
   text-align: start;
   text-transform: var(--type-accent-transform);
 }
 .dns-summary-jump::before {
-  --step: var(--pixel-step);
-  --corner: var(--icon-tile-face-radius);
-  --double-step: min(calc(2 * var(--step)), calc(var(--corner) - var(--step)));
-  --far-step: calc(100% - var(--step));
-  --far-double-step: calc(100% - var(--double-step));
-  --far-corner: calc(100% - var(--corner));
   background: var(--color-dns-button-face);
-  clip-path: polygon(
-    var(--corner) 0, var(--far-corner) 0,
-    var(--far-corner) var(--step), var(--far-double-step) var(--step), var(--far-double-step) var(--double-step),
-    var(--far-step) var(--double-step), var(--far-step) var(--corner), 100% var(--corner),
-    100% var(--far-corner), var(--far-step) var(--far-corner), var(--far-step) var(--far-double-step),
-    var(--far-double-step) var(--far-double-step), var(--far-double-step) var(--far-step), var(--far-corner) var(--far-step),
-    var(--far-corner) 100%, var(--corner) 100%,
-    var(--corner) var(--far-step), var(--double-step) var(--far-step), var(--double-step) var(--far-double-step),
-    var(--step) var(--far-double-step), var(--step) var(--far-corner), 0 var(--far-corner),
-    0 var(--corner), var(--step) var(--corner), var(--step) var(--double-step),
-    var(--double-step) var(--double-step), var(--double-step) var(--step), var(--corner) var(--step)
-  );
-}
-.dns-summary-jump--gradient::before {
-  background: var(--dns-summary-gradient, none) var(--color-dns-button-face);
-  background-size: 100% 100%;
-  image-rendering: pixelated;
 }
 @media (hover: hover) and (forced-colors: none) {
-  .dns-summary-jump:enabled:hover:not(:active, [aria-pressed="true"], [data-touch-pressed])::before {
+  .dns-summary-jump:enabled:hover::before {
     filter: brightness(1.1);
   }
-}
-.dns-summary-jump::after {
-  position: absolute;
-  z-index: -2;
-  inset: var(--icon-tile-leading) 0 0 var(--icon-tile-leading);
-  border-radius: inherit;
-  background: var(--color-dns-button-depth);
-  pointer-events: none;
-  content: "";
 }
 .dns-summary-jump-label {
   display: inline-flex;

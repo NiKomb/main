@@ -8,7 +8,7 @@ const icons = {
   right: [4, 7, 'M0 0h1v1H0zM1 1h1v1h-1zM2 2h1v1h-1zM3 3h1v1h-1zM2 4h1v1h-1zM1 5h1v1h-1zM0 6h1v1H0z'],
   play: [4, 7, 'M0 0h1v1h1v1h1v1h1v1H3v1H2v1H1v1H0z'],
   pause: [6, 7, 'M0 0h2v7H0zM4 0h2v7H4z'],
-  link: [6, 6, 'M2 0h4v4H5V1H2zM4 1h1v1H4zM3 2h1v1H3zM2 3h1v1H2zM1 4h1v1H1zM0 5h1v1H0z'],
+  link: [6, 5, 'M2 0h4v4H5V1H2zM4 1h1v1H4zM3 2h1v1H3zM2 3h1v1H2zM1 4h1v1H1z'],
 } as const;
 
 export function GridIcon({ name }: { name: keyof typeof icons }) {
