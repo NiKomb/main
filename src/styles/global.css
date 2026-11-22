@@ -873,16 +873,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   list-style: none;
 }
 .dns-case-figure figcaption.dns-case-frames { row-gap: var(--space-12); }
-.dns-hover-details .dns-case-fact { align-content: space-between; }
-@media (width >= 740px) {
-  .dns-hover-details > .dns-case-stages {
-    align-self: start;
-    aspect-ratio: 16 / 9;
-  }
-}
-@media (width < 740px) {
-  .dns-hover-details { grid-template-columns: minmax(0, 1fr); }
-}
 .interview-gallery { position: relative; min-width: 0; }
 .interview-gallery-scroll {
   display: flex;
@@ -1017,6 +1007,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-16) var(--space-32);
   margin: var(--space-28) 0 var(--dns-meta-gap);
 }
+.dns-case-layout[data-section-id="project-dns"] .dns-case-meta { margin-block-end: var(--space-80); }
+@media (width < 900px) {
+  .dns-case-layout[data-section-id="project-dns"] .dns-case-meta {
+    margin-block-end: calc(var(--space-80) + var(--space-40));
+  }
+}
 .dns-case-meta-results { flex-basis: 100%; }
 .dns-case-meta dt { color: var(--color-muted); font: var(--type-small) var(--font-accent); }
 .dns-case-meta dd, .dns-case-summary dd { margin: 0; }
@@ -1027,6 +1023,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-summary dl { display: grid; gap: var(--space-12); margin: var(--space-16) 0 var(--space-6); }
 .dns-case-summary dl div { display: grid; grid-template-columns: 125px 1fr; gap: var(--space-6) var(--space-16); }
+.dns-summary-context { margin-block-start: var(--space-12); }
+.dns-summary-context,
 .dns-case-summary dd,
 .dns-case-section p { color: var(--color-muted); }
 .dns-case-jump {
@@ -1177,6 +1175,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   background: var(--color-surface);
 }
 .dns-case-section blockquote p { color: var(--color-text); }
+.dns-case-section .dns-hypothesis-emphasis { color: var(--color-dns-accent); }
 .dns-interview-details > summary {
   inline-size: fit-content;
   min-block-size: 44px;
