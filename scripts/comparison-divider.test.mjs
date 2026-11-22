@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dividerPath, pullDivider, stepDivider } from '../src/effects/comparison-divider/spring.ts';
+import { dividerPath, maxVisibleStretch, pullDivider, stepDivider, visibleDividerStretch } from '../src/effects/comparison-divider/spring.ts';
 
 test('the divider is a continuous straight line at rest', () => {
   assert.equal(dividerPath(0, 15), 'M0 0V15');
@@ -11,10 +11,11 @@ test('divider ends trail the handle with a bounded stretch in either direction',
   const still = { offset: 0, velocity: 0 };
   for (const direction of [-1, 1]) {
     const dragged = pullDivider(still, direction * 300);
-    assert.equal(dragged.offset, direction * 28);
-    const path = dividerPath(dragged.offset, 120);
-    assert.match(path, new RegExp(`^M${direction * 10} 0(?:V\\d+H-?\\d+)+V120$`));
-    let x = direction * 10;
+    const stretch = visibleDividerStretch(dragged.offset);
+    assert.equal(stretch, direction * maxVisibleStretch);
+    const path = dividerPath(stretch, 120);
+    assert.match(path, new RegExp(`^M${stretch} 0(?:V\\d+H-?\\d+)+V120$`));
+    let x = stretch;
     let crossesHandle = false;
     for (const [, y, next] of path.matchAll(/V(\d+)H(-?\d+)/g)) {
       assert.equal(Number(y) % 2, 0);
@@ -23,7 +24,7 @@ test('divider ends trail the handle with a bounded stretch in either direction',
       crossesHandle ||= x === 0;
     }
     assert.ok(crossesHandle);
-    assert.equal(x, direction * 10);
+    assert.equal(x, stretch);
   }
 });
 

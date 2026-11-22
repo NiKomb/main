@@ -957,6 +957,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   outline-offset: var(--space-2);
 }
 .dns-case-figure figcaption strong { display: block; margin-bottom: var(--space-4); }
+.dns-case-figure figcaption.dns-case-frames strong,
+.dns-decision-copy .dns-copy-emphasis {
+  font: var(--type-small) var(--font-accent);
+  text-transform: var(--type-accent-transform);
+  overflow-wrap: anywhere;
+}
 .dns-case-body > :is(.case-text, .case-content-section) { margin-inline: 0; }
 .dns-case-section .dns-case-stages {
   width: 100%;
@@ -979,8 +985,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-16) var(--space-32);
   margin: var(--space-28) 0 var(--dns-meta-gap);
 }
-/* Match the mascot's foot offset when it stands on the summary card. */
-.dns-case-layout[data-section-id="project-dns"] .dns-case-meta { margin-block-end: 68px; }
+.dns-case-layout[data-section-id="project-dns"] .dns-case-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(min-content, 1fr);
+  column-gap: var(--space-16);
+  margin-block-end: var(--space-24);
+}
 .dns-case-meta-results { flex-basis: 100%; }
 .dns-case-meta dt { color: var(--color-muted); font: var(--type-small) var(--font-accent); }
 .dns-case-meta dd, .dns-case-summary dd { margin: 0; }
@@ -989,13 +999,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
+.dns-case-layout[data-section-id="project-dns"] .dns-case-summary { --dns-summary-padding: var(--space-20); }
 .dns-case-summary dl { display: grid; gap: var(--space-12); margin: var(--space-16) 0 var(--space-6); }
 .dns-case-summary dl div { display: grid; grid-template-columns: 125px 1fr; gap: var(--space-6) var(--space-16); }
 .dns-summary-context { margin-block-start: var(--space-12); }
 .dns-summary-context,
 .dns-case-summary dd,
 .dns-case-section p { color: var(--color-muted); }
-.dns-case-summary .dns-copy-emphasis { color: var(--color-dns-accent); }
+.dns-case-summary .dns-copy-emphasis,
+.dns-case-section .dns-copy-emphasis { color: var(--color-dns-accent); }
 .dns-case-jump {
   min-height: 44px;
   border: 0;
@@ -1005,6 +1017,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   cursor: pointer;
 }
 .dns-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-8);
   margin-block-start: var(--space-28);
 }
@@ -1026,7 +1040,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   background: var(--color-dns-button-face);
 }
 @media (hover: hover) and (forced-colors: none) {
-  .dns-summary-jump:enabled:hover::before {
+  .dns-summary-jump:is(:any-link, :enabled):hover::before {
     filter: brightness(1.1);
   }
 }
@@ -1060,6 +1074,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-subsections > * + .dns-case-divider,
 .dns-case-subsections > .dns-case-divider + * { margin-block-start: var(--dns-case-section-gap); }
 .dns-case-block { gap: var(--space-12); }
+.dns-decision-copy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+.dns-decision-copy > .dns-case-block { grid-template-rows: auto 1fr; }
 @media (width < 960px) {
   .dns-case-block[data-mascot-comment] > .interview-gallery { margin-block-start: var(--space-60); }
 }
@@ -1088,14 +1108,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-transform: var(--type-accent-transform);
 }
 .dns-case-block > :is(p, blockquote, .dns-case-points) { max-inline-size: 64ch; }
-.dns-case-block > blockquote {
+.dns-case-block > blockquote,
+.dns-decision-copy .dns-case-block > p {
   margin: 0;
   padding: var(--space-12);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
-.dns-case-section blockquote p { color: var(--color-text); }
-.dns-case-section .dns-hypothesis-emphasis { color: var(--color-dns-accent); }
+.dns-case-section blockquote p,
+.dns-decision-copy .dns-case-block > p { color: var(--color-text); }
 .dns-interview-details > summary {
   inline-size: fit-content;
   min-block-size: 44px;
@@ -1174,6 +1195,12 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-transform: var(--type-accent-transform);
 }
 .dns-case-metric-copy { display: grid; gap: var(--space-6); }
+.dns-decision-check .dns-case-metric {
+  align-content: stretch;
+  grid-template-rows: auto 1fr;
+}
+.dns-decision-check .dns-case-metric-value { color: var(--color-dns-accent); }
+.dns-decision-check .dns-case-metric-copy { align-self: end; }
 /* Switch spacing at the midpoint between adjacent values on the scale. */
 @media (width >= 600px) {
   .dns-case-body { --dns-summary-padding: var(--space-20); }
@@ -1220,7 +1247,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 @media (width < 560px) {
   .dns-case-layout .case-covers { gap: var(--space-16); }
   .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body { --dns-case-section-gap: var(--space-40); }
-  .dns-case-frames { grid-template-columns: 1fr; }
+  .dns-case-frames,
+  .dns-decision-copy { grid-template-columns: 1fr; }
   .dns-case-summary dl div { grid-template-columns: 1fr; gap: 0; }
   .dns-case-stages > li { padding: var(--space-8); font: var(--type-small) var(--font-body); }
 }

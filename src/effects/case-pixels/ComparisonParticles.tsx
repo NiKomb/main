@@ -1,13 +1,12 @@
-import { useLayoutEffect, useRef } from 'react';
-import { comparisonExitCells, pixelSize } from './pixel-swap';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { comparisonExitCells, pixelSize, type ComparisonOffset } from './pixel-swap';
 import { clearParticles, createParticle, drawParticles, particleSeed, type Particle } from './particles';
 
-type Props = { position: number; width: number; height: number };
+export type DrawComparisonParticles = (position: number, offsetAt?: ComparisonOffset) => void;
+type Props = { drawEdge: RefObject<DrawComparisonParticles | null>; width: number; height: number };
 
-export function ComparisonParticles({ position, width, height }: Props) {
+export function ComparisonParticles({ drawEdge, width, height }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const release = useRef<((previous: number, current: number) => void) | null>(null);
-  const previous = useRef(position);
 
   useLayoutEffect(() => {
     const element = canvas.current;
@@ -19,6 +18,7 @@ export function ComparisonParticles({ position, width, height }: Props) {
     const particles: Particle[] = [];
     let frame: number | undefined;
     let ratio = 0;
+    let previous: { position: number; offsetAt?: ComparisonOffset } | undefined;
 
     function stop() {
       if (frame !== undefined) cancelAnimationFrame(frame);
@@ -33,8 +33,10 @@ export function ComparisonParticles({ position, width, height }: Props) {
       if (particles.length) frame = requestAnimationFrame(draw);
     }
 
-    release.current = (from, to) => {
-      if (document.hidden || motion.matches) return;
+    drawEdge.current = (position, offsetAt) => {
+      const from = previous;
+      previous = { position, offsetAt };
+      if (!from || document.hidden || motion.matches || (from.position === position && from.offsetAt === offsetAt)) return;
       const bounds = element.getBoundingClientRect();
       if (bounds.bottom <= 0 || bounds.top >= innerHeight) return;
 
@@ -48,8 +50,8 @@ export function ComparisonParticles({ position, width, height }: Props) {
 
       const color = getComputedStyle(element).color;
       const time = performance.now();
-      const direction = to > from ? 1 : -1;
-      for (const { column, row } of comparisonExitCells(width, height, from, to)) {
+      const direction = (position - from.position || (offsetAt?.(0) ?? 0) - (from.offsetAt?.(0) ?? 0)) > 0 ? 1 : -1;
+      for (const { column, row } of comparisonExitCells(width, height, from.position, position, from.offsetAt, offsetAt)) {
         const seed = particleSeed(column, row);
         if (seed % 7 > 1) continue;
         particles.push(createParticle((column + .5) * pixelSize, (row + .5) * pixelSize, color, time, direction, seed));
@@ -67,18 +69,13 @@ export function ComparisonParticles({ position, width, height }: Props) {
     motion.addEventListener('change', stop);
     document.addEventListener('visibilitychange', stop);
     return () => {
-      release.current = null;
+      drawEdge.current = null;
       stop();
       observer.disconnect();
       motion.removeEventListener('change', stop);
       document.removeEventListener('visibilitychange', stop);
     };
-  }, [width, height]);
-
-  useLayoutEffect(() => {
-    if (previous.current !== position) release.current?.(previous.current, position);
-    previous.current = position;
-  }, [position]);
+  }, [drawEdge, width, height]);
 
   return <canvas ref={canvas} className="comparison-particles" aria-hidden="true" />;
 }

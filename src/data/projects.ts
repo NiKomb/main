@@ -53,6 +53,13 @@ export type Project = {
   links: readonly ProjectLink[];
 };
 
+export const dnsConfiguratorLink: ProjectLink = {
+  id: 'dns-prototype',
+  kind: 'prototype',
+  label: 'Собрать ПК',
+  href: 'https://nikomb.github.io/dns-prototype/',
+};
+
 export const projects = [
   {
     id: 'dns',
@@ -97,7 +104,7 @@ export const projects = [
     ],
     links: [
       { id: 'dns-presentation', kind: 'presentation', label: 'Презентация', href: 'https://nikomb.github.io/dns-prototype/presentation/' },
-      { id: 'dns-prototype', kind: 'prototype', label: 'Прототип', href: 'https://nikomb.github.io/dns-prototype/' },
+      dnsConfiguratorLink,
       { id: 'dns-changes', kind: 'demo', label: 'Было / стало', href: 'https://nikomb.github.io/dns-prototype/?demo=changes' },
       { id: 'dns-journal', kind: 'journal', label: 'Журнал', href: 'https://nikomb.github.io/dns-prototype/journal/' },
     ],

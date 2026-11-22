@@ -5,7 +5,7 @@ import impact from './heavy-landing.png';
 import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
 import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
-import { caseRouteComment, metricCommentRightEdge } from './case-comments';
+import { caseRouteComment } from './case-comments';
 import { caseFooterRoute, caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
@@ -67,7 +67,6 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let current: CaseStop | undefined;
     let destination: CaseStop | undefined;
     let routeFinish: CaseStop | undefined;
-    let galleryComment: Element | null = null;
     let metricCheck: Element | null = null;
     let metricGrid: Element | null = null;
     let frame = 0;
@@ -194,22 +193,11 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return;
       }
       const metricBlock = metricCheck ?? metricGrid;
-      const commentBlock = reaction ? null : metricBlock ?? galleryComment;
       if (!reaction && article.dataset.sectionId === 'project-dns' && stop.surface.tile.matches('.dns-case-summary')) {
-        const right = x - 8;
-        position.alignment = 0;
         position.above = true;
-        position.left = Math.max(16, right - 244);
-        position.maxWidth = right - position.left;
         position.y = y + footOffset - 4;
-      } else if (commentBlock) {
-        position.alignment = 0;
-        position.above = true;
-        if (bounds.width >= (metricBlock ? 1280 : 960)) {
-          const textRight = metricCommentRightEdge(stop.surface.tile, metricGrid, metricCheck) ?? Math.max(commentBlock.getBoundingClientRect().left,
-            ...Array.from(commentBlock.querySelectorAll(':scope > h4, :scope > p'), (element) => element.getBoundingClientRect().right));
-          position.left = textRight - bounds.left + 12;
-          position.maxWidth = Math.min(244, bounds.width - position.left - 12);
+      } else if (!reaction && metricBlock) {
+        if (bounds.width >= 1280) {
           position.above = !metricGrid;
           position.y = metricGrid ? y + footOffset : y - 8;
         } else {
@@ -218,19 +206,17 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
             hideSpeech(fromScroll);
             return;
           }
-          const column = metricGrid ?? (metricCheck && stop.surface.tile.closest('.dns-case-block'));
-          position.left = column ? column.getBoundingClientRect().left - bounds.left + 12 : 16;
-          position.maxWidth = Math.min(244, x - position.left - 8);
+          position.above = true;
           position.y = y + footOffset - 4;
         }
       }
       const paintTile = !reaction && stop.surface.tile.hasAttribute('data-mascot-paint-frame')
         ? stop.surface.tile : undefined;
-      const next = { ...position, message, paintTile };
+      const next = { ...position, message, paintTile, avoidTiles: metricGrid ?? undefined };
       if (fromScroll) interrupt(message);
       setSpeech((previous) => previous?.message === next.message && !previous.hidden && previous.y === next.y &&
-        previous.above === next.above && previous.alignment === next.alignment && previous.left === next.left &&
-        previous.maxWidth === next.maxWidth && previous.paintTile === next.paintTile ? previous : next);
+        previous.above === next.above && previous.alignment === next.alignment &&
+        previous.paintTile === next.paintTile && previous.avoidTiles === next.avoidTiles ? previous : next);
     };
 
     const replaySpeech = () => setSpeechReplay((replay) => replay + 1);
@@ -332,8 +318,6 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const selected = selectCaseSurface(upperSurfaces, upperSurfaces.find(({ tile }) => tile === current?.surface.tile),
         innerHeight, direction < 0);
-      galleryComment = selected?.group.matches('.interview-gallery-scroll')
-        ? selected.group.closest('.dns-case-block[data-mascot-comment]') : null;
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
       const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
@@ -542,7 +526,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         </button>
         {interruption}
       </span>
-      {!interruption && speech && <span ref={paintSpeech} hidden={speech.hidden} data-paint-speech={speech.paintTile ? '' : undefined}>
+      {!interruption && speech && !speech.hidden && <span ref={paintSpeech} data-paint-speech={speech.paintTile ? '' : undefined}>
         <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message} position={speech}
           duration="persistent" bubbleRef={bubbleRef} mascotRef={actorRef} />
       </span>}

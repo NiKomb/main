@@ -1,12 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CaseSection } from '../components/CaseSection';
 import { GridIcon } from '../components/GridIcon';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsDecisions, type CaseFact, type CaseFigure, type CaseMetric } from '../data/dnsCase';
-import type { ProjectImage } from '../data/projects';
-import { ComparisonParticles } from '../effects/case-pixels/ComparisonParticles';
-import { comparisonSwapClips } from '../effects/case-pixels/pixel-swap';
+import { dnsConfiguratorLink, type ProjectImage } from '../data/projects';
 import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
 import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
 import { MetricGradientPaint } from '../effects/metric-gradient-paint/MetricGradientPaint';
@@ -60,16 +58,7 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
   const [size, setSize] = useState({ width: 0, height: 0 });
   const tile = useRef<HTMLDivElement>(null);
   const [before, after] = frames;
-  const pixelSwapSupported = CSS.supports('clip-path', 'path(evenodd, "M0 0H1V1Z")');
-  const clips = useMemo(
-    () => pixelSwapSupported ? comparisonSwapClips(size.width, size.height, position) : undefined,
-    [pixelSwapSupported, size, position],
-  );
-  const style = {
-    '--comparison-position': `${position}%`,
-    '--comparison-clip-before': clips?.near,
-    '--comparison-clip-after': clips?.far,
-  } as CSSProperties;
+  const style = { '--comparison-position': `${position}%` } as CSSProperties;
 
   useLayoutEffect(() => {
     const element = tile.current;
@@ -86,7 +75,7 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
-      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-pixel-swap={clips ? '' : undefined}
+      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery
         data-mascot-paint-frame={paintFrame ? '' : undefined} style={style}>
         <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
@@ -98,8 +87,7 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
         <div className="dns-comparison-frame" data-side="after" hidden={position === 100}>
           {renderScreenshot(after)}
         </div>
-        {pixelSwapSupported && <ComparisonParticles position={position} width={size.width} height={size.height} />}
-        <ComparisonDivider position={position} width={size.width} height={size.height} />
+        <ComparisonDivider tile={tile} position={position} width={size.width} height={size.height} />
         <span className="icon-tile dns-comparison-handle" aria-hidden="true">
           <GridIcon name="left" />
           <GridIcon name="right" />
@@ -148,13 +136,17 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <div><dt>Эффект</dt><dd>{summary.effect}</dd></div>
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
-          <div className="project-links dns-summary-actions">
+          <div className="dns-summary-actions">
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
               <span className="dns-summary-jump-label">К решениям<GridIcon name="link" /></span>
             </button>
             <button className="icon-tile dns-summary-jump" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
               <span className="dns-summary-jump-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
+            <a className="icon-tile dns-summary-jump" {...iconTilePress}
+              href={dnsConfiguratorLink.href} target="_blank" rel="noopener" data-track-id={dnsConfiguratorLink.id}>
+              <span className="dns-summary-jump-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
+            </a>
           </div>
         </section>
       </header>
@@ -263,24 +255,26 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             const [before, emphasis, after] = decision.hypothesisText;
             return (
               <section className="dns-case-group" key={decision.id} aria-labelledby={decision.id}>
+                <h3 id={decision.id} tabIndex={-1}>{decision.title}</h3>
+                <div className="dns-decision-copy">
+                  <div className="dns-case-block">
+                    <h4>Гипотеза {decision.hypothesis}</h4>
+                    <blockquote cite={test.journalSource}>
+                      <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
+                    </blockquote>
+                  </div>
+                  <div className="dns-case-block">
+                    <h4>Решение</h4>
+                    <p>{renderDnsText(decision.solution)}</p>
+                  </div>
+                </div>
                 <div className="dns-case-block" data-mascot-comment={decision.comment}>
-                  <h3 id={decision.id} tabIndex={-1}>{decision.title}</h3>
-                  <DnsComparison frames={decision.comparison} headingId={decision.id}
-                    paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
                   <div className="dns-case-frames" data-media-gallery>
                     {decision.detailFrames.map((figure) => renderFigure(figure))}
                   </div>
                   {decision.solutionFigure && renderFigure(decision.solutionFigure)}
-                </div>
-                <div className="dns-case-block">
-                  <h4>Гипотеза {decision.hypothesis}</h4>
-                  <blockquote cite={test.journalSource}>
-                    <p>{before}<strong className="dns-hypothesis-emphasis">{emphasis}</strong>{after}</p>
-                  </blockquote>
-                </div>
-                <div className="dns-case-block">
-                  <h4>Решение</h4>
-                  <p>{decision.solution}</p>
+                  <DnsComparison frames={decision.comparison} headingId={decision.id}
+                    paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
                 </div>
                 <section className="dns-case-block dns-decision-check">
                   <h4>Результат</h4>

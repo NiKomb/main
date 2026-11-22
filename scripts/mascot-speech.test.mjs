@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { caseRouteComment, metricCommentRightEdge } from '../src/effects/mascot/case-comments.ts';
+import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
 import { caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
-import { speechAvoidanceOffset, speechPosition, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
+import { speechAvoidanceOffset, speechPlacement, speechPosition, speechSides, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
 test('speech grows toward the grid from a mascot near the right edge', () => {
@@ -13,6 +13,33 @@ test('speech grows toward the grid from a mascot near the right edge', () => {
     const left = (944 - width) * position.alignment / 100;
     assert.ok(left >= 0 && left + width <= 944);
   }
+});
+
+test('speech prefers a close right-side placement whenever the whole message fits', () => {
+  const mascot = { left: 800, right: 872 };
+  assert.deepEqual(speechSides(mascot, 160, 1048)[0], { anchor: 876, alignment: 0, maxWidth: 160 });
+  assert.deepEqual(speechSides(mascot, 160, 1000)[0], { anchor: 796, alignment: 100, maxWidth: 784 });
+  assert.deepEqual(speechSides({ left: 100, right: 172 }, 244, 390)[0],
+    { anchor: 176, alignment: 0, maxWidth: 202 });
+});
+
+test('speech uses the left side when visible text occupies the space to the right', () => {
+  const mascot = { left: 350, right: 422, top: 200, bottom: 272 };
+  const columns = speechSides(mascot, 180, 900).map((column) => ({ ...column, width: 180, height: 60 }));
+  assert.deepEqual(speechPlacement(columns, mascot, 600, []), { ...columns[0], top: 206 });
+  assert.deepEqual(speechPlacement(columns, mascot, 600, [
+    { left: 480, right: 560, top: 202, bottom: 275 },
+  ]), { ...columns[1], top: 206 });
+});
+
+test('speech finds a nearby row when metric text blocks both centered placements', () => {
+  const mascot = { left: 678, right: 750, top: 168, bottom: 250 };
+  const columns = speechSides(mascot, 244, 1100).map((column) => ({ ...column, width: 244, height: 80 }));
+  assert.deepEqual(speechPlacement(columns, mascot, 900, [
+    { left: 746, right: 980, top: 145, bottom: 240 },
+    { left: 430, right: 670, top: 150, bottom: 245 },
+    { left: 430, right: 670, top: 260, bottom: 460 },
+  ]), { ...columns[0], top: 244 });
 });
 
 test('speech opens below a mascot near the top and stays hidden outside the viewport', () => {
@@ -46,6 +73,14 @@ test('speech flips to the opposite side only when that clears a control and fits
   assert.equal(speechAvoidanceOffset(above, { ...above, left: 125 }, mascot, true, 500), 0);
   assert.equal(speechAvoidanceOffset(above, { ...above, bottom: 295 }, mascot, true, 500), 0);
   assert.equal(speechAvoidanceOffset(above, above, mascot, true, 300), 0);
+});
+
+test('hovered text moves speech only when the pointer is inside the covered area', () => {
+  const mascot = { top: 200, bottom: 272 };
+  const bubble = { left: 20, right: 120, top: 162, bottom: 192 };
+  const text = { left: 10, right: 250, top: 172, bottom: 190 };
+  assert.equal(speechAvoidanceOffset(bubble, text, mascot, true, 500, { x: 45, y: 180 }), 118);
+  assert.equal(speechAvoidanceOffset(bubble, text, mascot, true, 500, { x: 180, y: 180 }), 0);
 });
 
 test('a case comment follows the current stop and its closest marked group', () => {
@@ -119,18 +154,6 @@ test('metric rows traverse adjacent tiles to the right and stop on their own las
   assert.equal(rightmostCaseSurface(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextRight, tiles), undefined);
-});
-
-test('a metric grid comment uses the last tile edge even when the row leaves an empty column', () => {
-  const edge = (right) => ({ getBoundingClientRect: () => ({ right }) });
-  const grid = edge(1120);
-  const tile = edge(851);
-  const check = edge(940);
-
-  assert.equal(metricCommentRightEdge(tile, grid, null), 851);
-  assert.equal(metricCommentRightEdge(edge(1120), grid, null), 1120);
-  assert.equal(metricCommentRightEdge(tile, null, check), 940);
-  assert.equal(metricCommentRightEdge(tile, null, null), undefined);
 });
 
 test('blink vanishes at the origin and cues arrival on a different row', () => {

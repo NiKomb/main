@@ -1,11 +1,11 @@
 type Spring = { offset: number; velocity: number };
 
-const maxStretch = 28;
-const maxVisibleStretch = 10;
-const pixelStep = 2;
+const maxStretch = 36;
+export const maxVisibleStretch = 18;
+const dividerPixelStep = 2;
 export const dividerHalfWidth = maxVisibleStretch + 2;
-const stiffness = 240;
-const damping = 22;
+const stiffness = 180;
+const damping = 16;
 
 function limitStretch(offset: number) {
   return Math.max(-maxStretch, Math.min(maxStretch, offset));
@@ -22,16 +22,23 @@ export function stepDivider(spring: Spring, seconds: number): Spring {
   return { offset: spring.offset + velocity * dt, velocity };
 }
 
-export function dividerPath(offset: number, height: number) {
+export function visibleDividerStretch(offset: number) {
+  return Math.round(limitStretch(offset) * maxVisibleStretch / maxStretch);
+}
+
+export function dividerOffsetAt(stretch: number, height: number, y: number) {
+  // Sample the same pixel row for the stroke, masks and particle origins.
+  const row = Math.floor(y / dividerPixelStep) * dividerPixelStep;
+  const distance = Math.abs(row * 2 / height - 1);
+  return Math.round(stretch * distance ** 2 * (3 - 2 * distance)) || 0;
+}
+
+export function dividerPath(stretch: number, height: number) {
   if (height <= 0) return '';
-  const stretch = limitStretch(offset) * maxVisibleStretch / maxStretch;
-  let x = Math.round(stretch);
+  let x = stretch;
   let path = `M${x} 0`;
-  for (let y = pixelStep; y < height; y += pixelStep) {
-    // Keep the line near the handle and let the ends trail behind it.
-    const distance = Math.abs(y * 2 / height - 1);
-    const weight = distance ** 2 * (3 - 2 * distance);
-    const nextX = Math.round(stretch * weight);
+  for (let y = dividerPixelStep; y < height; y += dividerPixelStep) {
+    const nextX = dividerOffsetAt(stretch, height, y);
     if (nextX === x) continue;
     path += `V${y}H${nextX}`;
     x = nextX;

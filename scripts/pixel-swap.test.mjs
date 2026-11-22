@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { comparisonExitCells, comparisonSwapClips, pixelSize, viewportExitCell, viewportSwapClip } from '../src/effects/case-pixels/pixel-swap.ts';
+import { dividerOffsetAt } from '../src/effects/comparison-divider/spring.ts';
+
+function clipContains(clip, x, y) {
+  const matches = [...clip.matchAll(/M(-?[\d.]+) (-?[\d.]+)H(-?[\d.]+)V(-?[\d.]+)/g)];
+  const hits = matches.filter(([, left, top, right, bottom]) =>
+    x >= Number(left) && x < Number(right) && y >= Number(top) && y < Number(bottom)).length;
+  return clip.startsWith('path(evenodd') ? hits % 2 === 1 : hits > 0;
+}
 
 test('comparison masks are complementary and follow the slider', () => {
   const { near, far } = comparisonSwapClips(120, 48, 50);
@@ -17,6 +25,27 @@ test('comparison endpoints show a whole screenshot', () => {
   assert.equal(comparisonSwapClips(0, 0, 50), undefined);
 });
 
+test('comparison masks and particles follow the bend even when the handle stays still', () => {
+  const straight = comparisonSwapClips(120, 120, 50);
+  for (const stretch of [-18, 18]) {
+    const offsetAt = (y) => dividerOffsetAt(stretch, 120, y);
+    const curved = comparisonSwapClips(120, 120, 50, offsetAt);
+    const x = stretch < 0 ? 48 : 68;
+    assert.notEqual(clipContains(curved.near, x, 2), clipContains(curved.near, x, 62));
+    assert.equal(clipContains(curved.near, x, 62), clipContains(straight.near, x, 62));
+
+    const cells = comparisonExitCells(120, 120, 50, 50, undefined, offsetAt);
+    assert.ok(cells.some(({ row }) => row === 0));
+    assert.ok(cells.every(({ row }) => row !== 15));
+    for (const { column, row } of cells) {
+      const x = (column + .5) * pixelSize;
+      const y = (row + .5) * pixelSize;
+      assert.notEqual(clipContains(curved.near, x, y), clipContains(straight.near, x, y));
+      assert.notEqual(clipContains(curved.near, x, y), clipContains(curved.far, x, y));
+    }
+  }
+});
+
 test('viewport switches the clipped side with the scroll direction', () => {
   const bounds = { left: 12, right: 72, top: -12, bottom: 612 };
   assert.match(viewportSwapClip(bounds, 'top', 600), /^path\(evenodd, "M-8\.00 -8\.00H68\.00V632\.00/);
@@ -28,17 +57,11 @@ test('the trail starts in a hidden cell on either viewport edge', () => {
   const bounds = { left: 0, right: 120, top: 0, bottom: 600 };
   const column = 3;
   const x = (column + .5) * pixelSize;
-  function visible(clip, y) {
-    const matches = [...clip.matchAll(/M(-?[\d.]+) (-?[\d.]+)H(-?[\d.]+)V(-?[\d.]+)/g)];
-    const hits = matches.filter(([, left, top, right, bottom]) =>
-      x >= Number(left) && x < Number(right) && y >= Number(top) && y < Number(bottom)).length;
-    return clip.startsWith('path(evenodd') ? hits % 2 === 1 : hits > 0;
-  }
   for (const edge of ['top', 'bottom']) {
     const clip = viewportSwapClip(bounds, edge, bounds.bottom);
     const exit = viewportExitCell(column, edge, bounds.bottom) + pixelSize / 2;
-    assert.equal(visible(clip, exit), false);
-    assert.equal(visible(clip, exit + (edge === 'top' ? pixelSize : -pixelSize)), true);
+    assert.equal(clipContains(clip, x, exit), false);
+    assert.equal(clipContains(clip, x, exit + (edge === 'top' ? pixelSize : -pixelSize)), true);
   }
 });
 
