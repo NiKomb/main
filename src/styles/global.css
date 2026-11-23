@@ -122,10 +122,10 @@ h3, .portfolio-profile-section > h2 {
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 40px;
 }
-.page:not(:has(.projects[data-case-open])),
-.page:not(:has(.projects[data-case-open])) + .site-footer {
+.page:not(:has(.projects[data-case-open])) {
   --content-width: var(--home-content-width);
 }
+.page:not(:has(.projects[data-case-open])) + .site-footer { display: none; }
 .portfolio-profile {
   align-self: start;
   position: sticky;
@@ -240,6 +240,10 @@ a.tile-layout--sign:is(:focus-visible, :active) {
 }
 .case-sign-heading > div { flex: 1; min-inline-size: 0; }
 .case-sign-heading h2 { text-wrap: balance; }
+.case-sign-summary {
+  margin-block-start: var(--space-8);
+  color: var(--color-muted);
+}
 .case-sign-brand {
   color: color-mix(in srgb, color-mix(in srgb, var(--sign-light) 35%, white) var(--tile-highlight), var(--color-muted));
   text-shadow:

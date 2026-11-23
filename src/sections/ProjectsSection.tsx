@@ -11,7 +11,7 @@ import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import financePreview from '../data/screens/portfolio-finance-preview.png';
 import { site } from '../data/site';
-import { viCase, viContents, viMascotComments } from '../data/vseinstrumentiCase';
+import { viContents, viMascotComments } from '../data/vseinstrumentiCase';
 import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
@@ -26,9 +26,15 @@ const cases: readonly Project[] = [
   ...projects,
   { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
-const caseTitles: Partial<Record<string, string>> = {
-  dns: dnsCase.title,
-  vseinstrumenti: viCase.title,
+const caseCardCopy: Partial<Record<string, { title: string; summary: string }>> = {
+  dns: {
+    title: 'Упростил выбор комплектующих и возврат к сборке',
+    summary: 'Сравнение в каталоге и возврат к сборке из обзора',
+  },
+  vseinstrumenti: {
+    title: 'Убрал сюрприз с подъёмом тяжёлого заказа',
+    summary: 'Условия подъёма и запрос расчёта при выборе доставки',
+  },
 };
 const resizeScreensOnZoom = '[data-portrait-preview], [data-preview-crop], :has(> .case-cover-strip)';
 
@@ -722,7 +728,10 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   <div className="case-sign-heading">
                     <div>
                       <p className="case-sign-brand">{entry.title}</p>
-                      <h2>{caseTitles[entry.id] ?? entry.summary}</h2>
+                      <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
+                      {caseCardCopy[entry.id] && (
+                        <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
+                      )}
                     </div>
                     <span className="case-sign-arrow" aria-hidden="true">
                       <span className="icon-tile"><GridIcon name="right" /></span>
