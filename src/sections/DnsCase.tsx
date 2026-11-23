@@ -189,7 +189,6 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         </section>
         <CaseEvidence id="dns-interviews" headingId="dns-interview-task" heading={<DnsHeading id="dns-interview-task" />}
           introduction={research.interviewAction} panelId="dns-interview-quotes" panelTitle={research.interviewDetailsTitle}
-          closeLabel="Свернуть цитаты"
           evidence={<>
             {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
               <div className="case-evidence-entry" key={title}>

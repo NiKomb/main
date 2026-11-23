@@ -1106,9 +1106,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-16);
 }
 .dns-decision-copy > .dns-case-block { grid-template-rows: auto 1fr; }
-@media (width < 960px) {
-  .dns-case-block[data-mascot-comment] > .interview-gallery { margin-block-start: var(--space-60); }
-}
 .dns-case-divider {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1172,7 +1169,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-content: start;
   gap: var(--space-16);
   overflow: auto;
-  overscroll-behavior: contain;
   scrollbar-width: none;
   outline: none;
   mask-image: linear-gradient(to bottom,
@@ -1183,7 +1179,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .case-evidence-scroll[data-fade-start] { --quote-fade-start: transparent; }
 .case-evidence-scroll[data-fade-end] { --quote-fade-end: transparent; }
 .case-evidence-header h4 { font: var(--type-subheading) var(--font-accent); }
-.case-evidence-close { display: none; }
 .case-evidence-entry { display: grid; gap: var(--space-6); }
 .case-evidence-panel :is(h4, h5) { text-wrap: pretty; }
 .case-evidence-scroll > p,
@@ -1214,15 +1209,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     translate: 0 -100%;
   }
   .case-evidence-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-8);
     padding-block: var(--space-8);
   }
-  .case-evidence-close { display: grid; flex: none; }
-  .case-evidence-toggle .grid-icon,
-  .case-evidence-close .grid-icon { rotate: 90deg; }
+  .case-evidence-toggle .grid-icon { rotate: 90deg; }
 }
 .dns-case-labeled-heading {
   display: flex;
@@ -1240,9 +1229,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   overflow-wrap: anywhere;
 }
 .dns-case-heading-label:last-child { margin-inline-start: auto; }
-@media (width < 1280px) {
-  .dns-decision-check > .dns-case-results:has(> [data-mascot-comment]) { margin-block-start: 68px; }
-}
 .dns-case-section strong { color: var(--color-text); }
 .dns-case-stages {
   display: grid;
@@ -1269,9 +1255,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-section[aria-labelledby="dns-research"] .dns-case-results > .dns-case-fact,
 .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-results > .dns-case-fact {
   align-content: space-between;
-}
-@media (width < 1280px) {
-  .dns-case-results[data-mascot-comment] { margin-block-start: var(--space-60); }
 }
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }

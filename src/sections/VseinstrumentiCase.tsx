@@ -80,7 +80,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
       <CaseSection id="vi-research" title={viCase.researchTitle}>
         <CaseEvidence headingId="vi-reviews" heading={<ViHeading id="vi-reviews" />}
           introduction={reviews.introduction} panelId="vi-review-quotes" panelTitle="Фрагменты пяти отзывов"
-          closeLabel="Свернуть отзывы" evidence={reviews.quotes.map(({ title, quote }) => (
+          evidence={reviews.quotes.map(({ title, quote }) => (
             <div className="case-evidence-entry" key={title}>
               <h5>{title}</h5>
               <blockquote><p>{quote}</p></blockquote>

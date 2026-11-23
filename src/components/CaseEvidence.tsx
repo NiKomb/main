@@ -9,7 +9,6 @@ type Props = {
   introduction: string;
   panelId: string;
   panelTitle: string;
-  closeLabel: string;
   evidence: ReactNode;
   children: ReactNode;
 };
@@ -33,19 +32,24 @@ function positionPanel(panel: HTMLElement, toggle: HTMLButtonElement) {
   panel.setAttribute('data-above', '');
 }
 
-export function CaseEvidence({ id, headingId, heading, introduction, panelId, panelTitle, closeLabel, evidence, children }: Props) {
+export function CaseEvidence({ id, headingId, heading, introduction, panelId, panelTitle, evidence, children }: Props) {
   const [open, setOpen] = useState(false);
+  const blockRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelHeadingId = `${panelId}-heading`;
 
   useLayoutEffect(() => {
+    const block = blockRef.current;
     const scroll = scrollRef.current;
     const panel = scroll?.parentElement;
     const toggle = toggleRef.current;
-    if (!open || !scroll || !panel || !toggle) return;
+    if (!open || !block || !scroll || !panel || !toggle) return;
 
     const position = () => positionPanel(panel, toggle);
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!event.composedPath().includes(block)) setOpen(false);
+    };
     position();
     scroll.scrollTop = 0;
     scroll.focus({ preventScroll: true });
@@ -55,9 +59,11 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
     observer.observe(scroll);
     for (const child of scroll.children) observer.observe(child);
     window.addEventListener('resize', position);
+    document.addEventListener('click', closeOnOutsideClick, true);
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', position);
+      document.removeEventListener('click', closeOnOutsideClick, true);
     };
   }, [open]);
 
@@ -67,7 +73,7 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
   }
 
   return (
-    <section className="dns-case-group case-evidence" id={id} aria-labelledby={headingId}
+    <section ref={blockRef} className="dns-case-group case-evidence" id={id} aria-labelledby={headingId}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || !open) return;
         event.stopPropagation();
@@ -88,10 +94,6 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
         aria-labelledby={panelHeadingId} hidden={!open} data-viewport-edge-overlay>
         <header className="case-evidence-header">
           <h4 id={panelHeadingId}>{panelTitle}</h4>
-          <button className="icon-tile case-evidence-close" type="button" {...iconTilePress}
-            aria-label={closeLabel} onClick={close}>
-            <GridIcon name="left" />
-          </button>
         </header>
         <div ref={scrollRef} className="case-evidence-scroll" tabIndex={0} role="group" aria-labelledby={panelHeadingId}
           onScroll={(event) => updateFades(event.currentTarget)}>
