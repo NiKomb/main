@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
-import { CaseContents } from '../components/CaseContents';
+import { CaseContents, type CaseContentsItem } from '../components/CaseContents';
 import { ContactButtons } from '../components/ContactButtons';
 import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
@@ -556,7 +556,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     delete event.currentTarget.dataset.dragging;
   }
 
-  const contents: readonly { id: string; label: string; note?: string }[] = detailedContents ?? [
+  const contents: readonly CaseContentsItem[] = detailedContents ?? [
     { id: 'projects-heading', label: 'Обзор' },
     ...(item?.screens?.map((screen) => ({ id: screen.id, label: screen.title })) ??
       [{ id: 'case-gallery-heading', label: 'Интерфейсы' }]),

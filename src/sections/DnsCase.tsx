@@ -1,11 +1,13 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { CaseEvidence } from '../components/CaseEvidence';
+import { renderCaseText } from '../components/renderCaseText';
 import { CaseSection } from '../components/CaseSection';
 import { CaseHeading } from '../components/CaseHeading';
 import { GridIcon } from '../components/GridIcon';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsContents, dnsDecisions, type CaseFact, type CaseFigure, type CaseMetric } from '../data/dnsCase';
-import { dnsConfiguratorLink, type ProjectImage } from '../data/projects';
+import { dnsConfiguratorLink, dnsDemoLink, type ProjectImage } from '../data/projects';
 import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
 import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
 import { MetricGradientPaint } from '../effects/metric-gradient-paint/MetricGradientPaint';
@@ -17,12 +19,6 @@ type Props = {
   scenarioMedia: ReactNode;
   rocketActor?: RefObject<HTMLSpanElement | null>;
 };
-
-function renderDnsText(text: string) {
-  return text.split('**').map((part, index) => (
-    index % 2 === 0 ? part : <span className="dns-copy-emphasis" key={index}>{part}</span>
-  ));
-}
 
 function DnsHeading({ id, as }: {
   id: string;
@@ -55,25 +51,6 @@ function renderMetric({ value, label, detail, comment, paintGradient }: CaseMetr
       </div>
     </li>
   );
-}
-
-function updateInterviewQuoteFades(scroll: HTMLDivElement) {
-  const remaining = scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop;
-  scroll.toggleAttribute('data-fade-start', scroll.scrollTop > 1);
-  scroll.toggleAttribute('data-fade-end', remaining > 1);
-}
-
-function positionInterviewQuotes(panel: HTMLElement, toggle: HTMLButtonElement) {
-  panel.removeAttribute('data-above');
-  const { top, height } = panel.getBoundingClientRect();
-  const button = toggle.getBoundingClientRect();
-  const spaceBelow = window.innerHeight - top;
-  const gap = top - button.bottom;
-  const spaceAbove = button.top - 2 * gap;
-  if (gap <= 0 || spaceBelow >= Math.min(height, 160) || spaceAbove <= spaceBelow) return;
-
-  panel.style.setProperty('--interview-quotes-space-above', `${spaceAbove}px`);
-  panel.setAttribute('data-above', '');
 }
 
 function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = 'Разделитель «Было / Стало»',
@@ -134,37 +111,7 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
 export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocketActor }: Props) {
   const { decisionsTitle, research, summary, comparison, scenario, test, reflection } = dnsCase;
   const reflectionNote = dnsContents.find((item) => item.id === 'dns-next-test')?.note;
-  const [interviewQuotesOpen, setInterviewQuotesOpen] = useState(false);
-  const interviewToggle = useRef<HTMLButtonElement>(null);
-  const interviewQuotesScroll = useRef<HTMLDivElement>(null);
   const toggleCaption = useRef<HTMLElement>(null);
-
-  useLayoutEffect(() => {
-    const scroll = interviewQuotesScroll.current;
-    const panel = scroll?.parentElement;
-    const toggle = interviewToggle.current;
-    if (!interviewQuotesOpen || !scroll || !panel || !toggle) return;
-
-    const position = () => positionInterviewQuotes(panel, toggle);
-    position();
-    scroll.scrollTop = 0;
-    scroll.focus({ preventScroll: true });
-    updateInterviewQuoteFades(scroll);
-
-    const observer = new ResizeObserver(() => updateInterviewQuoteFades(scroll));
-    observer.observe(scroll);
-    for (const child of scroll.children) observer.observe(child);
-    window.addEventListener('resize', position);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', position);
-    };
-  }, [interviewQuotesOpen]);
-
-  function closeInterviewQuotes() {
-    setInterviewQuotesOpen(false);
-    interviewToggle.current?.focus({ preventScroll: true });
-  }
 
   function renderFigure(figure: CaseFigure, { captionTarget, skipMascot }: {
     captionTarget?: RefObject<HTMLElement | null>;
@@ -192,10 +139,10 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         </dl>
         <section className="dns-case-summary" aria-labelledby="dns-summary" data-mascot-comment="intro">
           <DnsHeading as="h2" id="dns-summary" />
-          <p className="dns-summary-context">{renderDnsText(summary.context)}</p>
+          <p className="dns-summary-context">{renderCaseText(summary.context)}</p>
           <dl>
-            <div><dt>Проблема</dt><dd>{renderDnsText(summary.problem)}</dd></div>
-            <div><dt>Решение</dt><dd>{renderDnsText(summary.solution)}</dd></div>
+            <div><dt>Проблема</dt><dd>{renderCaseText(summary.problem)}</dd></div>
+            <div><dt>Решение</dt><dd>{renderCaseText(summary.solution)}</dd></div>
             <div><dt>Эффект</dt><dd>{summary.effect}</dd></div>
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
@@ -207,7 +154,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <span className="dns-brand-button-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
             <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
-              href={dnsConfiguratorLink.href} target="_blank" rel="noopener" data-track-id={dnsConfiguratorLink.id}>
+              href={dnsDemoLink.href} target="_blank" rel="noopener" data-track-id={dnsDemoLink.id}>
               <span className="dns-brand-button-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
@@ -224,7 +171,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из обсуждений сборок" data-mascot-comment="external-review">
               {research.deskMetrics.map((metric, index) => renderMetric({ ...metric, paintGradient: index === 0 }))}
             </ul>
-            <p>{renderDnsText(research.discussionConclusion)}</p>
+            <p>{renderCaseText(research.discussionConclusion)}</p>
           </div>
         </section>
         <section className="dns-case-group" aria-labelledby="dns-audit">
@@ -237,63 +184,36 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <ul className="dns-case-stages dns-case-results" aria-labelledby="dns-audit-problems">
               {research.auditProblems.map(renderFact)}
             </ul>
-            <p>{renderDnsText(research.auditConclusion)}</p>
+            <p>{renderCaseText(research.auditConclusion)}</p>
           </div>
         </section>
-        <section className="dns-case-group dns-interviews" id="dns-interviews" aria-labelledby="dns-interview-task"
-          onKeyDown={(event) => {
-            if (event.key !== 'Escape' || !interviewQuotesOpen) return;
-            event.stopPropagation();
-            closeInterviewQuotes();
-          }}>
-          <div className="dns-case-block">
-            <DnsHeading id="dns-interview-task" />
-            <div className="dns-interview-intro">
-              <p>{research.interviewAction}</p>
-              <button ref={interviewToggle} className="icon-tile dns-brand-button dns-interview-toggle" {...iconTilePress} type="button"
-                aria-label={research.interviewDetailsTitle}
-                aria-expanded={interviewQuotesOpen} aria-controls="dns-interview-quotes"
-                onClick={() => interviewQuotesOpen ? closeInterviewQuotes() : setInterviewQuotesOpen(true)}>
-                <GridIcon name={interviewQuotesOpen ? 'left' : 'right'} />
-              </button>
-            </div>
-          </div>
+        <CaseEvidence id="dns-interviews" headingId="dns-interview-task" heading={<DnsHeading id="dns-interview-task" />}
+          introduction={research.interviewAction} panelId="dns-interview-quotes" panelTitle={research.interviewDetailsTitle}
+          closeLabel="Свернуть цитаты"
+          evidence={<>
+            {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
+              <div className="case-evidence-entry" key={title}>
+                <h5>{title}</h5>
+                <blockquote><p>{quote}</p></blockquote>
+                <p>{detail}</p>
+                {followUp && <p>{followUp}</p>}
+              </div>
+            ))}
+            <p>{research.interviewPrompt}</p>
+            <p>{research.interviewResultsLimit}</p>
+          </>}>
           <div className="dns-case-block" id="dns-interview-results">
             <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из сессий">
               {research.interviewFindings.map(renderMetric)}
             </ul>
-            <p>{renderDnsText(research.interviewConclusion)}</p>
+            <p>{renderCaseText(research.interviewConclusion)}</p>
           </div>
-          <section className="dns-case-group dns-interview-quotes" id="dns-interview-quotes"
-            aria-labelledby="dns-interview-quotes-heading" hidden={!interviewQuotesOpen} data-viewport-edge-overlay>
-            <header className="dns-interview-quotes-header">
-              <h4 id="dns-interview-quotes-heading">{research.interviewDetailsTitle}</h4>
-              <button className="icon-tile dns-interview-close" type="button" {...iconTilePress}
-                aria-label="Свернуть цитаты" onClick={closeInterviewQuotes}>
-                <GridIcon name="left" />
-              </button>
-            </header>
-            <div ref={interviewQuotesScroll} className="dns-interview-quotes-scroll" tabIndex={0}
-              role="group" aria-labelledby="dns-interview-quotes-heading"
-              onScroll={(event) => updateInterviewQuoteFades(event.currentTarget)}>
-              {research.interviewQuotes.map(({ title, detail, quote, followUp }) => (
-                <div className="dns-interview-quote" key={title}>
-                  <h5>{title}</h5>
-                  <blockquote><p>{quote}</p></blockquote>
-                  <p>{detail}</p>
-                  {followUp && <p>{followUp}</p>}
-                </div>
-              ))}
-              <p>{research.interviewPrompt}</p>
-              <p>{research.interviewResultsLimit}</p>
-            </div>
-          </section>
           <div className="dns-case-block" data-mascot-comment="comparison-search">
             <InterviewGallery label={research.framesTitle}>
               {research.frames.map((figure, index) => renderFigure(figure, { skipMascot: index >= 2 }))}
             </InterviewGallery>
           </div>
-        </section>
+        </CaseEvidence>
         <section className="dns-case-group" aria-labelledby="dns-competitors">
           <div className="dns-case-block">
             <DnsHeading id="dns-competitors" />
@@ -303,7 +223,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения по конкурентам">
               {research.competitors.findings.map(renderFact)}
             </ul>
-            <p>{renderDnsText(research.competitors.conclusion)}</p>
+            <p>{renderCaseText(research.competitors.conclusion)}</p>
           </div>
           <div className="dns-case-block">
             <InterviewGallery label={research.competitors.title}>
@@ -320,7 +240,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <ol className="dns-case-stages dns-case-results" aria-label="Гипотезы для прототипа">
               {dnsDecisions.map(({ hypothesis, contentsLabel, hypothesisText }) => renderFact({
                 title: `Гипотеза ${hypothesis} · ${contentsLabel}`,
-                detail: renderDnsText(hypothesisText.join('**')),
+                detail: renderCaseText(hypothesisText.join('**')),
               }))}
             </ol>
             {renderFigure(research.prioritization.evidence)}
@@ -352,7 +272,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                   </div>
                   <div className="dns-case-block">
                     <h4>Решение</h4>
-                    <p>{renderDnsText(decision.solution)}</p>
+                    <p>{renderCaseText(decision.solution)}</p>
                   </div>
                 </div>
                 <h4>Результат</h4>
@@ -405,7 +325,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
               {test.overview.map(renderMetric)}
             </ul>
-            <p>{renderDnsText(test.conclusion)}</p>
+            <p>{renderCaseText(test.conclusion)}</p>
             <p>{test.accounting}</p>
           </section>
         </CaseSection>
@@ -414,7 +334,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           <div className="dns-case-block">
             <p>{reflection.summary}</p>
             <ul className="dns-case-stages dns-case-results" aria-label="Итоги проверки">
-              {reflection.takeaways.map(({ detail, ...fact }) => renderFact({ ...fact, detail: renderDnsText(detail) }))}
+              {reflection.takeaways.map(({ detail, ...fact }) => renderFact({ ...fact, detail: renderCaseText(detail) }))}
             </ul>
           </div>
         </CaseSection>

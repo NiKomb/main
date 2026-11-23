@@ -1,13 +1,17 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 
+export type CaseContentsItem = { id: string; label: string; note?: string; divider?: string | null };
+
 type Props = {
-  items: readonly { id: string; label: string; note?: string; divider?: string }[];
+  items: readonly CaseContentsItem[];
   activeHeading?: string;
   onJump: (id: string) => void;
 };
 
 export function CaseContents({ items, activeHeading, onJump }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
+  const activeIndex = items.findIndex(({ id }) => id === activeHeading);
+  const activeDivider = items.slice(0, activeIndex + 1).reverse().find(({ divider }) => divider !== undefined);
 
   useEffect(() => {
     const list = listRef.current;
@@ -36,7 +40,7 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
         const current = activeHeading === id;
         return (
           <li key={id}>
-            {divider && <span className="case-contents-divider">{divider}</span>}
+            {divider && <span className="case-contents-divider" data-active={activeDivider?.id === id ? '' : undefined}>{divider}</span>}
             <button type="button" onClick={() => onJump(id)}
               aria-label={note ? label : undefined}
               aria-describedby={note ? `${id}-contents-note` : undefined}

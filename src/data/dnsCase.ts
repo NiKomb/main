@@ -224,7 +224,7 @@ export const dnsCase = {
     action: 'Дал участникам задание самостоятельно подобрать пять комплектующих и сохранить сборку. Все проходили одну версию рабочего веб‑прототипа',
     comparison: comparisonResult,
     counts: testCounts,
-    accounting: `В срезе от 16 ноября 2026 года учёл ${testCounts.started} прохождений. Ещё ${testCounts.technical} были техническими проверками. Каждое прохождение учитывал один раз в каждом показателе`,
+    accounting: `В срезе от 16 ноября 2026 года учёл ${testCounts.started} прохождений. Каждое прохождение учитывал один раз в каждом показателе`,
     overview: [
       { value: ratio(comparisonResult.opened, comparisonResult.withCatalog), label: 'Открыли таблицу с двумя или более моделями', detail: 'Среди прохождений с каталогом' },
       { value: ratio(testCounts.assembled, testCounts.started), label: 'Подобрали все пять комплектующих' },
@@ -470,7 +470,7 @@ export const dnsContents = [
   })),
   { id: 'dns-scenario', label: dnsCase.scenario.label, note: dnsCase.scenario.title, divider: dnsCase.test.title },
   { id: 'dns-test-overview', label: 'UX‑тест', note: `${testCounts.started} прохождений веб‑прототипа` },
-  { id: 'dns-next-test', label: dnsCase.reflection.title, note: 'Что понял по итогам' },
+  { id: 'dns-next-test', label: dnsCase.reflection.title, note: 'Что понял по итогам', divider: null },
 ];
 
 export const dnsMascotComments: Readonly<Record<string, string>> = {

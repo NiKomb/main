@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
+import { CaseEvidence } from '../components/CaseEvidence';
 import { CaseHeading } from '../components/CaseHeading';
 import { CaseSection } from '../components/CaseSection';
 import { GridIcon } from '../components/GridIcon';
 import { iconTilePress } from '../components/icon-tile-press';
+import { renderCaseText } from '../components/renderCaseText';
 import type { CaseFact } from '../data/dnsCase';
-import type { ProjectImage } from '../data/projects';
+import { viPrototypeLink, type ProjectImage } from '../data/projects';
 import { viCase, viContents, viDecisions } from '../data/vseinstrumentiCase';
 
 type Props = {
@@ -14,9 +16,11 @@ type Props = {
   scenarioMedia: ReactNode;
 };
 
-function ViHeading({ id, as, children }: { id: string; as?: 'h2' | 'h3'; children: ReactNode }) {
-  const note = viContents.find((item) => item.id === id)?.note;
-  return <CaseHeading id={id} as={as} note={note}>{children}</CaseHeading>;
+function ViHeading({ id, as }: { id: string; as?: 'h2' | 'h3' }) {
+  const entry = viContents.find((item) => item.id === id);
+  if (!entry) return null;
+
+  return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
 function renderHypothesis([before, emphasis, after]: readonly [string, string, string]) {
@@ -24,7 +28,7 @@ function renderHypothesis([before, emphasis, after]: readonly [string, string, s
 }
 
 export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScenario, scenarioMedia }: Props) {
-  const { audit, reflection, reviews, scenario, summary, test } = viCase;
+  const { audit, competitors, reflection, reviews, scenario, summary, test } = viCase;
   const reflectionHeading = viContents.find((item) => item.id === 'vi-followup');
   const ratio = (count: number) => `${count} из ${test.runs}`;
 
@@ -32,7 +36,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
     return (
       <li className="dns-case-fact" key={title}>
         <p className="dns-case-fact-title">{title}</p>
-        <p>{detail}</p>
+        <p>{renderCaseText(detail)}</p>
       </li>
     );
   }
@@ -47,11 +51,11 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           <div><dt>Статус</dt><dd>{viCase.status}</dd></div>
         </dl>
         <section className="dns-case-summary" aria-labelledby="vi-summary" data-mascot-comment="intro">
-          <ViHeading id="vi-summary" as="h2">Контекст</ViHeading>
-          <p className="dns-summary-context">{summary.context}</p>
+          <ViHeading id="vi-summary" as="h2" />
+          <p className="dns-summary-context">{renderCaseText(summary.context)}</p>
           <dl>
-            <div><dt>Проблема</dt><dd>{summary.problem}</dd></div>
-            <div><dt>Решение</dt><dd>{summary.solution}</dd></div>
+            <div><dt>Проблема</dt><dd>{renderCaseText(summary.problem)}</dd></div>
+            <div><dt>Решение</dt><dd>{renderCaseText(summary.solution)}</dd></div>
             <div>
               <dt>UX-тест</dt>
               <dd>{ratio(test.success)} участников оформили все товары с подходящим способом получения</dd>
@@ -65,37 +69,57 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('vi-test')}>
               <span className="dns-brand-button-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
+            <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
+              href={viPrototypeLink.href} target="_blank" rel="noopener" data-track-id={viPrototypeLink.id}>
+              <span className="dns-brand-button-label">{viPrototypeLink.label}<GridIcon name="link" /></span>
+            </a>
           </div>
         </section>
       </header>
 
-      <CaseSection id="vi-research" title="Исследование">
-        <section className="dns-case-block" aria-labelledby="vi-reviews">
-          <ViHeading id="vi-reviews">Что покупатели выясняли после заказа</ViHeading>
-          <p>{reviews.introduction}</p>
-          <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из отзывов">
-            {reviews.findings.map(renderFact)}
-          </ul>
-        </section>
+      <CaseSection id="vi-research" title={viCase.researchTitle}>
+        <CaseEvidence headingId="vi-reviews" heading={<ViHeading id="vi-reviews" />}
+          introduction={reviews.introduction} panelId="vi-review-quotes" panelTitle="Фрагменты пяти отзывов"
+          closeLabel="Свернуть отзывы" evidence={reviews.quotes.map(({ title, quote }) => (
+            <div className="case-evidence-entry" key={title}>
+              <h5>{title}</h5>
+              <blockquote><p>{quote}</p></blockquote>
+            </div>
+          ))}>
+          <div className="dns-case-block">
+            <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из отзывов">
+              {reviews.findings.map(renderFact)}
+            </ul>
+            <p>{renderCaseText(reviews.conclusion)}</p>
+          </div>
+        </CaseEvidence>
         <section className="dns-case-group" aria-labelledby="vi-audit">
           <div className="dns-case-block">
-            <ViHeading id="vi-audit">Что было видно при выборе способа получения</ViHeading>
+            <ViHeading id="vi-audit" />
             <p>{audit.introduction}</p>
-            <p>{audit.available}</p>
           </div>
           <div className="dns-case-block">
             <h4 id="vi-audit-problems">Где приходилось искать условия</h4>
             <ul className="dns-case-stages dns-case-results" aria-labelledby="vi-audit-problems">
               {audit.problems.map(renderFact)}
             </ul>
+            <p>{renderCaseText(audit.conclusion)}</p>
           </div>
         </section>
-        <section className="dns-case-block" aria-labelledby="vi-competitors">
-          <ViHeading id="vi-competitors">Как показывают условия в других сервисах</ViHeading>
-          <p>{audit.competitors}</p>
+        <section className="dns-case-group" aria-labelledby="vi-competitors">
+          <div className="dns-case-block">
+            <ViHeading id="vi-competitors" />
+            <p>{competitors.introduction}</p>
+          </div>
+          <div className="dns-case-block">
+            <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения по конкурентам">
+              {competitors.findings.map(renderFact)}
+            </ul>
+            <p>{renderCaseText(competitors.conclusion)}</p>
+          </div>
         </section>
         <section className="dns-case-block" aria-labelledby="vi-hypotheses">
-          <ViHeading id="vi-hypotheses">Какие гипотезы взял в прототип</ViHeading>
+          <ViHeading id="vi-hypotheses" />
           <ol className="dns-case-stages dns-case-results vi-hypotheses" aria-labelledby="vi-hypotheses">
             {viDecisions.map(({ id, hypothesis }) => (
               <li className="dns-case-fact" key={id}>
@@ -106,10 +130,10 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         </section>
       </CaseSection>
 
-      <CaseSection id="vi-solutions" title="Проектирование">
+      <CaseSection id="vi-solutions" title={viCase.decisionsTitle}>
         {viDecisions.map(({ id, title, hypothesis, solution: [before, emphasis, after], comparison, scenario: steps, testObservation }, index) => (
           <section className="dns-case-group" key={id} aria-labelledby={id}>
-            <ViHeading id={id}>{title}</ViHeading>
+            <ViHeading id={id} />
             <div className="dns-case-frames" data-media-gallery>
               {comparison.map((frame, frameIndex) => (
                 <figure className="dns-case-figure" key={frame.src} data-mascot-comment={frame.comment}>
@@ -153,10 +177,10 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         ))}
       </CaseSection>
 
-      <CaseSection id="vi-validation" title="Немодерируемый UX-тест">
+      <CaseSection id="vi-validation" title={test.title}>
         <section className="dns-case-group" aria-labelledby="vi-scenario">
           <div className="dns-case-block">
-            <ViHeading id="vi-scenario">От выбора доставки до запроса расчёта</ViHeading>
+            <ViHeading id="vi-scenario" />
             {scenarioMedia}
           </div>
           <div className="dns-decision-copy">
@@ -171,10 +195,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           </div>
         </section>
         <section className="dns-case-block" aria-labelledby="vi-test">
-          <ViHeading id="vi-test">Как участники оформляли доставку</ViHeading>
+          <ViHeading id="vi-test" />
           <p>{test.introduction}</p>
-          <p>{test.criteria}</p>
-          <p>{test.accounting}</p>
           <ul className="dns-case-stages dns-case-results" aria-label={`Результаты на ${test.date}`}>
             <li className="dns-case-fact dns-case-metric">
               <p className="dns-case-metric-value">{ratio(test.success)}</p>
@@ -189,6 +211,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
               <p>Одна единица товара осталась без оформления</p>
             </li>
           </ul>
+          <p>{renderCaseText(test.conclusion)}</p>
+          <p>{test.criteria}</p>
+          <p>{test.accounting}</p>
         </section>
       </CaseSection>
       <CaseSection id="vi-followup" title={reflectionHeading?.label ?? 'Рефлексия'}

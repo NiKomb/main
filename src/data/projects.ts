@@ -60,6 +60,20 @@ export const dnsConfiguratorLink: ProjectLink = {
   href: 'https://nikomb.github.io/dns-prototype/',
 };
 
+export const dnsDemoLink: ProjectLink = {
+  id: 'dns-changes',
+  kind: 'demo',
+  label: 'Было / стало',
+  href: 'https://nikomb.github.io/dns-prototype/?demo=changes',
+};
+
+export const viPrototypeLink: ProjectLink = {
+  id: 'vi-prototype',
+  kind: 'prototype',
+  label: 'Прототип',
+  href: 'https://nikomb.github.io/vseinstrumenti-prototype/',
+};
+
 export const projects = [
   {
     id: 'dns',
@@ -105,7 +119,7 @@ export const projects = [
     links: [
       { id: 'dns-presentation', kind: 'presentation', label: 'Презентация', href: 'https://nikomb.github.io/dns-prototype/presentation/' },
       dnsConfiguratorLink,
-      { id: 'dns-changes', kind: 'demo', label: 'Было / стало', href: 'https://nikomb.github.io/dns-prototype/?demo=changes' },
+      dnsDemoLink,
       { id: 'dns-journal', kind: 'journal', label: 'Журнал', href: 'https://nikomb.github.io/dns-prototype/journal/' },
     ],
   },
@@ -145,7 +159,7 @@ export const projects = [
     ],
     links: [
       { id: 'vi-presentation', kind: 'presentation', label: 'Презентация', href: 'https://nikomb.github.io/vseinstrumenti-prototype/presentation/' },
-      { id: 'vi-prototype', kind: 'prototype', label: 'Прототип', href: 'https://nikomb.github.io/vseinstrumenti-prototype/' },
+      viPrototypeLink,
       { id: 'vi-before', kind: 'demo', label: 'Было', href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=before' },
       { id: 'vi-after', kind: 'demo', label: 'Стало', href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=after' },
       { id: 'vi-journal', kind: 'journal', label: 'Журнал', href: 'https://nikomb.github.io/vseinstrumenti-prototype/journal/' },
