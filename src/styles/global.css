@@ -32,6 +32,13 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   background: var(--icon-tile-edge, var(--color-border));
   color: var(--color-text);
 }
+.icon-tile--labeled {
+  inline-size: auto;
+  block-size: auto;
+  min-block-size: var(--size-icon-tile);
+  max-inline-size: 100%;
+  padding: var(--space-8) var(--space-16);
+}
 .icon-tile::before {
   position: absolute;
   z-index: -1;
@@ -856,17 +863,16 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   outline-offset: 4px;
 }
 .dns-case-body {
-  --dns-case-section-gap: var(--space-40);
+  --dns-case-section-gap: var(--space-60);
   --dns-meta-gap: var(--space-40);
   --dns-summary-padding: var(--space-16);
   grid-area: 2 / 2 / 3 / -1;
   gap: var(--dns-case-section-gap);
 }
 .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body {
-  --dns-case-section-gap: var(--space-60);
+  --case-section-heading-gap: var(--dns-case-section-gap);
   --dns-meta-gap: var(--space-32);
 }
-.dns-case-body > .dns-case-divider { inline-size: min(100%, var(--case-text-width)); }
 .dns-case-body :is(h1, h2, h3, h4)[tabindex] { scroll-margin-top: var(--dns-case-heading-offset); }
 .dns-case-frames {
   display: grid;
@@ -1045,19 +1051,11 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--space-8);
   margin-block-start: var(--space-28);
 }
+.dns-summary-configurator { margin-inline-start: auto; }
 .dns-brand-button {
-  --icon-tile-border-width: 0px;
   --icon-tile-edge: var(--case-button-shadow, var(--color-dns-button-shadow));
   --icon-tile-depth: var(--case-button-depth, var(--color-dns-button-depth));
-  width: auto;
-  height: auto;
-  min-height: 44px;
-  max-width: 100%;
-  padding: var(--space-8) var(--space-16);
   color: var(--case-button-text, var(--color-background));
-  font: var(--type-small) var(--font-accent);
-  text-align: start;
-  text-transform: var(--type-accent-transform);
 }
 .dns-brand-button::before {
   background: var(--case-button-face, var(--color-dns-button-face));
@@ -1071,6 +1069,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
+  font: var(--type-small) var(--font-accent);
+  text-align: start;
+  text-transform: var(--type-accent-transform);
   -webkit-text-stroke: .2px currentColor;
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
 }
@@ -1092,10 +1093,10 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-template-columns: minmax(0, 1fr);
 }
 .dns-case-section { gap: var(--space-20); }
+.case-section--divider { gap: var(--case-section-heading-gap, var(--space-28)); }
+.dns-case-subsections > .case-section--labeled { gap: var(--space-12); }
+.dns-case-subsections { gap: var(--space-40); }
 .dns-case-group { gap: var(--space-28); }
-.dns-case-subsections > * + * { margin-block-start: var(--space-40); }
-.dns-case-subsections > * + .dns-case-divider,
-.dns-case-subsections > .dns-case-divider + * { margin-block-start: var(--dns-case-section-gap); }
 .dns-case-block { gap: var(--space-12); }
 .dns-decision-copy {
   display: grid;
@@ -1140,9 +1141,16 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-section blockquote p,
 .dns-decision-copy .dns-case-block > p { color: var(--color-text); }
-.dns-interviews {
-  --dns-interview-button-height: 44px;
-  position: relative;
+.dns-interviews { position: relative; }
+.dns-interview-intro {
+  display: flex;
+  align-items: end;
+  gap: var(--space-8);
+}
+.dns-interview-intro > p { max-inline-size: 64ch; }
+.dns-interview-toggle {
+  flex: none;
+  margin-inline-start: auto;
 }
 .dns-interview-quotes {
   position: absolute;
@@ -1178,7 +1186,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 /* Leave room for the 800px text column, a 240px panel, and their gap and outer inset. */
 @media (width >= 1368px) {
   .dns-interview-quotes {
-    grid-area: 2 / 1 / 4;
+    grid-area: 1 / 1 / 4;
     inset-block: 0;
     inset-inline-start: calc(100% + var(--space-24));
     inline-size: min(50%, calc((100vw - 100%) / 2 - var(--space-24) - var(--space-20)));
@@ -1186,7 +1194,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 @media (width < 1368px) {
   .dns-interview-quotes {
-    grid-area: 2 / 1 / 3;
+    grid-area: 1 / 1 / 2;
     z-index: 4;
     inset-inline: 0;
     inset-block-start: calc(100% + var(--space-8));
@@ -1197,7 +1205,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     background: var(--color-background);
   }
   .dns-interview-quotes[data-above] {
-    inset-block-start: calc(100% - var(--dns-interview-button-height) - var(--space-8));
+    inset-block-start: calc(100% - var(--size-icon-tile) - var(--space-8));
     max-block-size: min(70dvh, var(--interview-quotes-space-above));
     translate: 0 -100%;
   }
@@ -1209,7 +1217,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     padding-block: var(--space-8);
   }
   .dns-interview-close { display: grid; flex: none; }
-  .dns-interview-action .grid-icon,
+  .dns-interview-toggle .grid-icon,
   .dns-interview-close .grid-icon { rotate: 90deg; }
 }
 .dns-case-labeled-heading {
@@ -1254,19 +1262,15 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
 }
 .dns-case-results > li { align-content: start; }
+.dns-case-section[aria-labelledby="dns-research"] .dns-case-results > .dns-case-fact {
+  align-content: space-between;
+}
 @media (width < 1280px) {
   .dns-case-results[data-mascot-comment] { margin-block-start: var(--space-60); }
 }
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }
 .dns-case-stages > li { display: grid; gap: var(--space-6); }
-.dns-case-stages > li.dns-interview-action {
-  grid-column: -2 / -1;
-  place-self: end;
-  padding: 0;
-  background: none;
-}
-.dns-interview-action > .dns-brand-button { min-block-size: var(--dns-interview-button-height); }
 .dns-case-stages strong { font: var(--type-display) var(--font-accent); font-variant-numeric: tabular-nums; }
 .dns-case-facts > .dns-case-fact { max-inline-size: min(100%, 38ch); align-content: start; }
 .dns-case-fact .dns-case-fact-title {
@@ -1305,7 +1309,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 @media (width >= 1200px) {
   /* Keep the focused section title above the viewport blur. */
-  .dns-case-body > .dns-case-divider:focus,
   .dns-case-body > :has(:is(h1, h2, h3, h4)[tabindex]:focus) { z-index: 2; }
 }
 @media (width < 1200px) {
