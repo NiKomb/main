@@ -120,6 +120,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         </section>
         <section className="dns-case-block" aria-labelledby="vi-hypotheses">
           <ViHeading id="vi-hypotheses" />
+          <p>{viCase.prioritization}</p>
           <ol className="dns-case-stages dns-case-results vi-hypotheses" aria-labelledby="vi-hypotheses">
             {viDecisions.map(({ id, hypothesis }) => (
               <li className="dns-case-fact" key={id}>
@@ -142,16 +143,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 </figure>
               ))}
             </div>
-            <div className="dns-decision-copy">
-              <div className="dns-case-block">
-                <h4>Гипотеза {index + 1}</h4>
-                {renderHypothesis(hypothesis)}
-              </div>
-              <div className="dns-case-block">
-                <h4>Решение</h4>
-                <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
-              </div>
-            </div>
             <figure className="dns-case-figure">
               {renderScenario(steps, title)}
               <figcaption className="vi-scenario-captions">
@@ -162,6 +153,16 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 ))}
               </figcaption>
             </figure>
+            <div className="dns-decision-copy">
+              <div className="dns-case-block">
+                <h4>Гипотеза {index + 1}</h4>
+                {renderHypothesis(hypothesis)}
+              </div>
+              <div className="dns-case-block">
+                <h4>Решение</h4>
+                <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
+              </div>
+            </div>
             {testObservation && (
               <div className="dns-case-block">
                 <h4 id={`${id}-result`}>Результат</h4>
