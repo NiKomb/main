@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { aimLauncher, flightFrame, gripPoint } from './launcher-geometry';
-import { rocketCaptionHitEvent, shotCaptionVisible, shotDeadline } from './scroll-trigger';
+import { rocketCaptionHitEvent, shotCaptionCentered, shotDeadline } from './scroll-trigger';
 import type { createGroundSlam } from './ground-slam';
 import launcher from './launcher.png';
 import flight from './flight.png';
@@ -181,8 +181,7 @@ export function RocketShot({ target, actor, ground }: Props) {
             queue();
           }, () => {});
       }
-      const visible = shotCaptionVisible(bounds, innerHeight, edge);
-      fireAt = shotDeadline(fireAt, time, visible);
+      fireAt = shotDeadline(fireAt, time, shotCaptionCentered(bounds, innerHeight, edge));
       if (fireAt === undefined) return;
       if (time < fireAt) {
         shotTimer = window.setTimeout(queue, fireAt - time);
