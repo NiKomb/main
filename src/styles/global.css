@@ -1327,6 +1327,14 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   font: var(--type-subheading) var(--font-accent);
   text-transform: var(--type-accent-transform);
 }
+@media (width >= 560px) {
+  .dns-case-stages > .dns-case-fact:has(> .dns-case-fact-context) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-20);
+  }
+  .dns-case-fact-context { grid-area: 1 / 2 / span 2; }
+}
 .dns-case-stages .dns-case-metric { font: var(--type-body) var(--font-body); }
 .dns-case-metric > .dns-case-metric-value {
   color: var(--color-text);

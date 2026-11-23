@@ -2,8 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { aimLauncher, flightFrame, gripPoint } from './launcher-geometry';
 import { rocketCaptionHitEvent, shotCaptionVisible, shotDeadline } from './scroll-trigger';
-import { drawFragments, fragmentDuration } from './fragment-motion';
-import { sampleText } from './fragments';
+import type { createGroundSlam } from './ground-slam';
 import launcher from './launcher.png';
 import flight from './flight.png';
 import blast from './blast.png';
@@ -12,6 +11,7 @@ import './rocket-shot.css';
 type Props = {
   target: RefObject<HTMLElement | null>;
   actor: RefObject<HTMLSpanElement | null>;
+  ground: RefObject<HTMLCanvasElement | null>;
 };
 
 const fps = 30;
@@ -31,12 +31,26 @@ function drawFrame(context: CanvasRenderingContext2D, image: HTMLImageElement, i
   context.drawImage(image, index % 8 * width, Math.floor(index / 8) * height, width, height, x, y, width * factor, height * factor);
 }
 
-export function RocketShot({ target, actor }: Props) {
+export function RocketShot({ target, actor, ground }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const page = document.body;
-    if (page.hasAttribute('data-rocket-caption-hit')) return;
+    const groundCanvas = ground.current;
+    if (!groundCanvas) return;
+    let groundSlam: ReturnType<typeof createGroundSlam>;
+    if (page.hasAttribute('data-rocket-caption-hit')) {
+      let active = true;
+      void import('./ground-slam').then(({ createGroundSlam }) => {
+        if (!active) return;
+        groundSlam = createGroundSlam(groundCanvas);
+        groundSlam?.settle();
+      }, () => {});
+      return () => {
+        active = false;
+        groundSlam?.dispose();
+      };
+    }
 
     const block = target.current;
     const mascot = actor.current;
@@ -54,10 +68,7 @@ export function RocketShot({ target, actor }: Props) {
     let frame = 0;
     let shotTimer = 0;
     let fireAt: number | undefined;
-    let shot: {
-      time: number; origin: Point; arrived: boolean;
-      caption: ReturnType<typeof sampleText>;
-    } | undefined;
+    let shot: { time: number; origin: Point; arrived: boolean } | undefined;
     let impactTime: number | undefined;
     let scale = 2;
     let edge = 0;
@@ -68,17 +79,25 @@ export function RocketShot({ target, actor }: Props) {
       frame = 0;
       fireAt = undefined;
       shot = undefined;
-      if (impactTime !== undefined) images = undefined;
+      if (impactTime !== undefined) {
+        if (active) groundSlam?.settle();
+        images = undefined;
+      }
       stage.hidden = true;
     };
 
     const measure = () => {
-      stop();
       const style = getComputedStyle(heading);
       edge = parseFloat(style.getPropertyValue('--dns-case-heading-anchor')) === 0
         ? parseFloat(style.scrollMarginTop)
         : parseFloat(getComputedStyle(layout).getPropertyValue('--dns-case-edge-inset'));
       scale = window.innerWidth < 560 ? 2 : 3;
+    };
+
+    const sizeStage = () => {
+      stage.width = Math.ceil(innerWidth / scale);
+      stage.height = Math.ceil(innerHeight / scale);
+      context.imageSmoothingEnabled = false;
     };
 
     const readGrip = (): Point => {
@@ -99,7 +118,8 @@ export function RocketShot({ target, actor }: Props) {
       if (!images || !shot) return;
       const [gun, trail, explosion] = images;
       const bounds = block.getBoundingClientRect();
-      if (bounds.bottom <= edge || bounds.top >= innerHeight) return stop();
+      const captionInView = bounds.bottom > edge && bounds.top < innerHeight;
+      if (!captionInView && impactTime === undefined) return stop();
       const aim = targetCenter(bounds);
       context.clearRect(0, 0, stage.width, stage.height);
       if (!shot.arrived) {
@@ -133,12 +153,15 @@ export function RocketShot({ target, actor }: Props) {
         const impactElapsed = time - impactTime;
         const blastFrame = Math.floor(impactElapsed * fps / 1000);
         if (blastFrame >= blastFrames) return stop();
-        const maxBlastSize = scale === 2 ? 160 : 216;
-        const blastSize = Math.max(64, Math.min(maxBlastSize, bounds.width)) / scale;
-        drawFrame(context, explosion, blastFrame, 184, 184,
-          Math.round(aim.x - blastSize / 2), Math.round(aim.y - blastSize / 2), blastSize / 184);
-        if (impactElapsed < fragmentDuration) {
-          drawFragments(context, shot.caption, aim, impactElapsed, scale);
+        if (captionInView) {
+          const maxBlastSize = scale === 2 ? 160 : 216;
+          const blastSize = Math.max(64, Math.min(maxBlastSize, bounds.width)) / scale;
+          drawFrame(context, explosion, blastFrame, 184, 184,
+            Math.round(aim.x - blastSize / 2), Math.round(aim.y - blastSize / 2), blastSize / 184);
+        }
+        const groundBounds = groundCanvas.parentElement?.getBoundingClientRect();
+        if (groundBounds && groundBounds.bottom > 0 && groundBounds.top < innerHeight) {
+          groundSlam?.paint(impactElapsed);
         }
       }
       frame = requestAnimationFrame(paint);
@@ -150,11 +173,13 @@ export function RocketShot({ target, actor }: Props) {
       const bounds = block.getBoundingClientRect();
       if (!loadStarted && bounds.top < 2 * innerHeight && bounds.bottom > 0) {
         loadStarted = true;
-        void Promise.all([loadImage(launcher), loadImage(flight), loadImage(blast)]).then((loaded) => {
-          if (!active) return;
-          images = loaded;
-          queue();
-        }, () => {});
+        void Promise.all([loadImage(launcher), loadImage(flight), loadImage(blast), import('./ground-slam')])
+          .then(([gun, trail, explosion, { createGroundSlam }]) => {
+            if (!active) return;
+            images = [gun, trail, explosion];
+            groundSlam = createGroundSlam(groundCanvas);
+            queue();
+          }, () => {});
       }
       const visible = shotCaptionVisible(bounds, innerHeight, edge);
       fireAt = shotDeadline(fireAt, time, visible);
@@ -171,15 +196,12 @@ export function RocketShot({ target, actor }: Props) {
       const gripBounds = sprite.getBoundingClientRect();
       if (!gripBounds.width || gripBounds.bottom <= 0 || gripBounds.top >= innerHeight) return;
       const aim = targetCenter(bounds);
-      stage.width = Math.ceil(innerWidth / scale);
-      stage.height = Math.ceil(innerHeight / scale);
+      sizeStage();
       stage.hidden = false;
-      context.imageSmoothingEnabled = false;
       shot = {
         time,
         origin: aimLauncher(readGrip(), aim, 2 / scale).muzzle,
         arrived: false,
-        caption: sampleText(block, bounds, scale),
       };
       paint(time);
     };
@@ -190,6 +212,11 @@ export function RocketShot({ target, actor }: Props) {
 
     const reset = () => {
       measure();
+      if (shot && impactTime !== undefined && !document.hidden && !motion.matches) {
+        sizeStage();
+        return;
+      }
+      stop();
       queue();
     };
 
@@ -203,12 +230,13 @@ export function RocketShot({ target, actor }: Props) {
     return () => {
       active = false;
       stop();
+      groundSlam?.dispose();
       window.removeEventListener('scroll', queue);
       window.removeEventListener('resize', reset);
       document.removeEventListener('visibilitychange', reset);
       motion.removeEventListener('change', reset);
     };
-  }, [target, actor]);
+  }, [target, actor, ground]);
 
   return createPortal(<canvas ref={canvas} className="rocket-shot" aria-hidden="true" hidden />, document.body);
 }

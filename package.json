@@ -12,6 +12,7 @@
   },
   "type": "module",
   "dependencies": {
+    "pixelfx": "https://codeload.github.com/patch-gg/pixelfx/tar.gz/5294518ce7c72e48b6100a744596e0acf57f2826",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

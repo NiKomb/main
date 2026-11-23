@@ -29,12 +29,23 @@ function DnsHeading({ id, as }: {
   return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
-function renderFact({ title, detail, comment, highlight }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
+function renderFact({ title, detail, context, comment, highlight, ground }: Omit<CaseFact, 'detail'> & {
+  detail: ReactNode;
+  context?: string;
+  ground?: RefObject<HTMLCanvasElement | null>;
+}) {
   return (
-    <li className="dns-case-fact" key={title} data-mascot-comment={comment} data-mascot-highlight={highlight ? '' : undefined}>
+    <li className={ground ? 'dns-case-fact rocket-shot-debris' : 'dns-case-fact'}
+      key={title} data-mascot-comment={comment} data-mascot-highlight={highlight ? '' : undefined}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
+      {context && <p className="dns-case-fact-context">{context}</p>}
       {highlight && <span className="case-fact-highlight" data-viewport-edge-overlay="" aria-hidden="true" />}
+      {ground && (
+        <span className="rocket-shot-ground" aria-hidden="true">
+          <canvas ref={ground} hidden />
+        </span>
+      )}
     </li>
   );
 }
@@ -112,6 +123,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
   const { decisionsTitle, research, summary, comparison, scenario, test, reflection } = dnsCase;
   const reflectionNote = dnsContents.find((item) => item.id === 'dns-next-test')?.note;
   const toggleCaption = useRef<HTMLElement>(null);
+  const groundCanvas = useRef<HTMLCanvasElement>(null);
 
   function renderFigure(figure: CaseFigure, { captionTarget, skipMascot }: {
     captionTarget?: RefObject<HTMLElement | null>;
@@ -291,11 +303,10 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                     {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
                     {renderFigure(comparison.iteration.differencesFigure)}
                   </div>
-                  <p>{comparison.iteration.action}</p>
                   <ul className="dns-case-stages" aria-label="Результат раннего теста">
-                    {renderFact(comparison.iteration.fact)}
+                    {renderFact({ ...comparison.iteration.fact, ground: groundCanvas })}
                   </ul>
-                  {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} />}
+                  {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} ground={groundCanvas} />}
                 </section>
               )}
             </section>

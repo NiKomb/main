@@ -106,6 +106,9 @@
   translate: calc(0% - var(--speech-alignment)) calc(var(--speech-offset, 0%) + var(--speech-avoid-y, 0px));
   pointer-events: none;
 }
+/* Keep the hidden text measurement from widening the mobile viewport. */
+.case-grid > .mascot-speech { overflow: clip; }
+
 .mascot-speech:not([data-replaying]),
 .mascot-speech__replay::before,
 .mascot-speech__replay > span {
