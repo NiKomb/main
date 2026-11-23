@@ -74,6 +74,13 @@ export const viPrototypeLink: ProjectLink = {
   href: 'https://nikomb.github.io/vseinstrumenti-prototype/',
 };
 
+export const viAfterLink: ProjectLink = {
+  id: 'vi-after',
+  kind: 'demo',
+  label: 'Стало',
+  href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=after',
+};
+
 export const projects = [
   {
     id: 'dns',
@@ -161,7 +168,7 @@ export const projects = [
       { id: 'vi-presentation', kind: 'presentation', label: 'Презентация', href: 'https://nikomb.github.io/vseinstrumenti-prototype/presentation/' },
       viPrototypeLink,
       { id: 'vi-before', kind: 'demo', label: 'Было', href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=before' },
-      { id: 'vi-after', kind: 'demo', label: 'Стало', href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=after' },
+      viAfterLink,
       { id: 'vi-journal', kind: 'journal', label: 'Журнал', href: 'https://nikomb.github.io/vseinstrumenti-prototype/journal/' },
     ],
   },

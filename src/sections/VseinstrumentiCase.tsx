@@ -6,7 +6,7 @@ import { GridIcon } from '../components/GridIcon';
 import { iconTilePress } from '../components/icon-tile-press';
 import { renderCaseText } from '../components/renderCaseText';
 import type { CaseFact } from '../data/dnsCase';
-import { viPrototypeLink, type ProjectImage } from '../data/projects';
+import { viAfterLink, viPrototypeLink, type ProjectImage } from '../data/projects';
 import { viCase, viContents, viDecisions } from '../data/vseinstrumentiCase';
 
 type Props = {
@@ -70,7 +70,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
               <span className="dns-brand-button-label">К результатам UX-теста<GridIcon name="link" /></span>
             </button>
             <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
-              href={viPrototypeLink.href} target="_blank" rel="noopener" data-track-id={viPrototypeLink.id}>
+              href={viAfterLink.href} target="_blank" rel="noopener" data-track-id={viAfterLink.id}>
               <span className="dns-brand-button-label">{viPrototypeLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
