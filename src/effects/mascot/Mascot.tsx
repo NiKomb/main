@@ -138,7 +138,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         const box = cover?.getBoundingClientRect();
         if (!cover || !box?.width || !box.height) return [];
         const surface = readSurface(cover, bounds, box, minDashDistance);
-        const centered = narrow.matches || id === 'project-preview';
+        const centered = id === 'project-preview';
         const x = centered ? Math.round((surface.left + surface.right) / 2)
           : onSurface(Math.round(box.right - bounds.left - spriteWidth / 2 - sectionEdgeInset), surface);
         const finish: Stop = { surface, edge: 'finish', point: { x, y: surface.y } };

@@ -21,7 +21,7 @@ type Props = {
 
 function DnsHeading({ id, as }: {
   id: string;
-  as?: 'h2' | 'h3' | 'h4';
+  as?: 'h2' | 'h3';
 }) {
   const entry = dnsContents.find((item) => item.id === id);
   if (!entry) return null;
@@ -301,33 +301,34 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             </section>
           );
         })}
-        <CaseSection as="h3" id="dns-results" title={test.title}>
-          <section className="dns-case-group" aria-labelledby="dns-scenario" data-mascot-comment="ryzen-review">
+      </CaseSection>
+
+      <CaseSection id="dns-results" title={test.title}>
+        <section className="dns-case-group" aria-labelledby="dns-scenario" data-mascot-comment="ryzen-review">
+          <div className="dns-case-block">
+            <DnsHeading id="dns-scenario" />
+            {scenarioMedia}
+          </div>
+          <div className="dns-decision-copy">
             <div className="dns-case-block">
-              <DnsHeading as="h4" id="dns-scenario" />
-              {scenarioMedia}
+              <h4>Шаг покупателя</h4>
+              <p>{scenario.action}</p>
             </div>
-            <div className="dns-decision-copy">
-              <div className="dns-case-block">
-                <h5>Шаг покупателя</h5>
-                <p>{scenario.action}</p>
-              </div>
-              <div className="dns-case-block">
-                <h5>Результат</h5>
-                <p>{scenario.result}</p>
-              </div>
+            <div className="dns-case-block">
+              <h4>Результат</h4>
+              <p>{scenario.result}</p>
             </div>
-          </section>
-          <section className="dns-case-block" aria-labelledby="dns-test-overview">
-            <DnsHeading as="h4" id="dns-test-overview" />
-            <p>{test.action}</p>
-            <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
-              {test.overview.map(renderMetric)}
-            </ul>
-            <p>{renderCaseText(test.conclusion)}</p>
-            <p>{test.accounting}</p>
-          </section>
-        </CaseSection>
+          </div>
+        </section>
+        <section className="dns-case-block" aria-labelledby="dns-test-overview">
+          <DnsHeading id="dns-test-overview" />
+          <p>{test.action}</p>
+          <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
+            {test.overview.map(renderMetric)}
+          </ul>
+          <p>{renderCaseText(test.conclusion)}</p>
+          <p>{test.accounting}</p>
+        </section>
         <CaseSection as="h3" id="dns-next-test" sectionId="dns-reflection" title={reflection.title}
           variant="labeled" note={reflectionNote}>
           <div className="dns-case-block">

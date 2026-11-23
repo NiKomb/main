@@ -117,7 +117,7 @@ h3, .portfolio-profile-section > h2 {
 .page {
   width: min(var(--content-width), 100% - 64px);
   margin-inline: auto;
-  padding-block: 48px 64px;
+  padding-block: var(--space-60);
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 40px;
@@ -175,6 +175,7 @@ h3, .portfolio-profile-section > h2 {
 }
 .tile-layout--sign {
   --tile-highlight: 0%;
+  --sign-background: #0e0c13;
   --sign-border-width: 2px;
   --sign-glow-lit:
     0 0 34px color-mix(in srgb, var(--sign-light) 55%, transparent),
@@ -185,9 +186,12 @@ h3, .portfolio-profile-section > h2 {
   gap: var(--home-tile-gap);
   padding: var(--space-16);
   border-radius: 8px;
-  background: #0e0c13;
+  background: var(--sign-background);
 }
 a.tile-layout--sign { cursor: url('./open-case-cursor.svg') 30 10, pointer; }
+a.tile-layout--sign:focus-visible {
+  outline-color: color-mix(in srgb, var(--sign-background), var(--color-text) 36%);
+}
 .tile-layout--sign::after,
 .case-sign-arrow::after {
   content: "";
@@ -234,22 +238,24 @@ a.tile-layout--sign:is(:focus-visible, :active) {
   56% { opacity: .8; }
 }
 .case-sign-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-16);
+  column-gap: var(--space-16);
 }
-.case-sign-heading > div { flex: 1; min-inline-size: 0; }
+.case-sign-heading > :is(h2, .case-sign-summary) { grid-column: 1 / -1; }
 .case-sign-heading h2 { text-wrap: balance; }
+.case-sign-arrow + h2 { margin-block-start: var(--space-4); }
 .case-sign-summary {
-  margin-block-start: var(--space-8);
+  margin-block-start: var(--space-4);
   color: var(--color-muted);
 }
 .case-sign-brand {
+  align-self: start;
   color: color-mix(in srgb, color-mix(in srgb, var(--sign-light) 35%, white) var(--tile-highlight), var(--color-muted));
   text-shadow:
     0 0 6px color-mix(in srgb, var(--sign-light) var(--tile-highlight), transparent),
     0 0 18px color-mix(in srgb, var(--sign-light) calc(var(--tile-highlight) * .7), transparent);
-  margin-block-end: var(--space-4);
 }
 .tile-layout--sign > .case-cover {
   border-radius: 4px;
@@ -285,8 +291,6 @@ a.tile-layout--sign:is(:focus-visible, :active) {
 }
 .case-sign-arrow {
   position: relative;
-  align-self: flex-start;
-  flex: none;
   border-radius: calc(var(--radius-card) - 4px);
 }
 .case-sign-arrow::after {
@@ -725,21 +729,25 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   height: auto;
 }
 .page:has(.dns-case-body) {
-  --dns-case-page-padding: var(--space-80);
-  padding-block: var(--dns-case-page-padding);
+  --dns-case-page-padding: var(--space-20);
+  padding-block: var(--space-80) var(--dns-case-page-padding);
 }
 .page:has(.dns-case-body) + .site-footer { display: none; }
 .dns-case-layout {
   position: relative;
   /* The edge effects occupy 40px at the top and 44px at the bottom. */
   --dns-case-edge-inset: 48px;
-  --dns-case-contents-offset: calc(var(--size-icon-tile) + var(--space-24));
-  --dns-case-contents-gap: calc(2 * var(--space-32));
+  --dns-case-side-alignment: calc(var(--space-20) - max(var(--space-32), (100vw - var(--content-width)) / 2));
+  --dns-case-contents-base-gap: calc(2 * var(--space-32));
+  --dns-case-contents-outset: 0px;
+  /* Keep the contents column at its original width with room for the doubled gap. */
+  --dns-case-reading-width: min(var(--case-text-width),
+    calc(100vw - var(--content-width) + var(--case-text-width) - 2 * (var(--dns-case-contents-base-gap) + var(--space-8))));
   --dns-case-project-line-height: 20px;
   --dns-case-heading-offset: calc(var(--dns-case-edge-inset) + var(--size-icon-tile) / 2);
   --dns-case-heading-anchor: 0.5;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--case-text-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--dns-case-reading-width) minmax(0, 1fr);
   row-gap: var(--space-60);
 }
 .dns-case-layout > .case-layout { display: contents; }
@@ -753,26 +761,24 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   --case-button-hover-brightness: .96;
 }
 .dns-case-layout .case-covers {
+  --case-gallery-inset: max(var(--case-page-gutter), calc((100vw - var(--dns-case-reading-width)) / 2));
   grid-area: 1 / 1 / 2 / -1;
   min-width: 0;
   gap: var(--space-32);
 }
 .dns-case-footer {
-  grid-area: 3 / 1 / 4 / -1;
-  display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
+  grid-area: 3 / 2 / 4 / -1;
+  inline-size: min(100%, var(--case-text-width));
   padding-block-start: var(--space-16);
   border-block-start: 1px solid var(--color-border);
 }
-.dns-case-footer-actions {
-  display: flex;
-  gap: var(--space-8);
-  justify-self: end;
-  margin-inline-end: var(--dns-case-contents-gap);
+.dns-case-contacts {
+  position: fixed;
+  z-index: 4;
+  inset-block-end: var(--space-20);
+  inset-inline-start: var(--space-20);
 }
 .dns-case-footer-signature {
-  grid-column: 2;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -782,24 +788,30 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-transform: var(--type-accent-transform);
 }
 .case-nav[data-dns-contents] {
+  --dns-case-back-inset: var(--space-20);
   grid-area: 2 / 1 / 3 / 2;
   position: sticky;
-  top: var(--dns-case-edge-inset);
+  top: var(--dns-case-back-inset);
   z-index: 2;
   margin-block-start: calc((var(--dns-case-project-line-height) - var(--size-icon-tile)) / 2);
-  padding-inline-end: var(--dns-case-contents-gap);
-  text-align: end;
+  margin-inline-start: var(--dns-case-side-alignment);
+  text-align: start;
   pointer-events: none;
 }
 .case-nav[data-dns-contents] :is(.case-back, ul) { pointer-events: auto; }
 .case-nav[data-dns-contents] ul {
-  --contents-bottom-inset: max(var(--dns-case-edge-inset), calc(var(--dns-case-footer-inset, 0px) + var(--space-12)));
+  --dns-case-contents-offset: calc(var(--size-icon-tile) + var(--space-40));
+  --contents-bottom-inset: max(calc(var(--size-icon-tile) + var(--space-20) + var(--space-12)),
+    calc(var(--dns-case-footer-inset, 0px) + var(--space-12)));
   position: absolute;
-  inset: var(--dns-case-contents-offset) var(--dns-case-contents-gap) auto 0;
+  inset-block-start: var(--dns-case-contents-offset);
+  inset-inline-start: 0;
+  inline-size: calc((min(var(--content-width), 100vw - 2 * var(--space-32)) - var(--case-text-width)) / 2 -
+    var(--dns-case-contents-base-gap) + var(--dns-case-contents-outset));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-12);
-  max-height: calc(100dvh - var(--dns-case-edge-inset) - var(--dns-case-contents-offset) - var(--contents-bottom-inset));
+  max-height: calc(100dvh - var(--dns-case-back-inset) - var(--dns-case-contents-offset) - var(--contents-bottom-inset));
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -808,48 +820,59 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
-  justify-items: end;
+  justify-items: start;
   width: 100%;
+  font: var(--type-body) var(--font-body);
+  text-align: start;
+  white-space: nowrap;
+}
+.case-nav[data-dns-contents] button[aria-current] .case-contents-text {
   font: var(--type-subheading) var(--font-accent);
   text-transform: var(--type-accent-transform);
-  white-space: nowrap;
+}
+.case-nav[data-dns-contents] button:not([aria-current], :hover, :focus-visible) {
+  --contents-inactive-color: var(--color-muted-dim);
+  color: var(--contents-inactive-color);
 }
 .case-contents-divider {
   display: block;
   margin-block: var(--space-8) var(--space-6);
   color: var(--color-text);
   font: var(--type-small) var(--font-body);
-  text-align: end;
+  text-align: start;
 }
 .case-contents-note {
   max-inline-size: 100%;
   overflow: hidden;
-  color: var(--color-muted);
+  color: var(--contents-inactive-color, var(--color-muted));
   font: var(--type-small) var(--font-body);
   text-transform: none;
   text-overflow: ellipsis;
 }
+.case-nav[data-dns-contents] button[aria-current] .case-contents-note { color: var(--color-text); }
 .case-nav[data-dns-contents] button:focus-visible { outline-offset: -2px; }
 .case-nav[data-dns-contents] .case-contents-label {
   position: relative;
+  max-inline-size: 100%;
   overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .case-nav[data-dns-contents] .case-contents-text { display: block; }
 .dns-case-layout .case-contents-note {
   overflow: visible;
-  text-align: end;
+  text-align: start;
   text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 @media (1200px <= width < 1344px) {
-  .dns-case-layout .case-nav[data-dns-contents] {
-    --dns-case-contents-gap: var(--space-40);
+  .dns-case-layout {
+    --dns-case-contents-base-gap: var(--space-40);
+    --dns-case-contents-outset: var(--space-24);
+    --dns-case-reading-width: calc(var(--case-text-width) - 2 * var(--dns-case-contents-base-gap));
   }
-  .dns-case-layout .case-nav[data-dns-contents] ul {
-    inset-inline-start: calc(-1 * var(--space-24));
-  }
-  .dns-case-layout .case-contents-text {
+  .case-nav[data-dns-contents] button[aria-current] .case-contents-text {
     font: var(--type-small) var(--font-accent);
   }
 }
@@ -903,6 +926,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-area: 2 / 2 / 3 / -1;
   gap: var(--dns-case-section-gap);
 }
+.dns-case-body p { text-wrap: pretty; }
 .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body {
   --case-section-heading-gap: var(--dns-case-section-gap);
   --dns-meta-gap: var(--space-32);
@@ -1126,11 +1150,11 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
-.dns-case-section { gap: var(--space-20); }
-.case-section--divider { gap: var(--case-section-heading-gap, var(--space-28)); }
-.dns-case-subsections > .case-section--labeled { gap: var(--space-12); }
-.dns-case-subsections { gap: var(--space-40); }
-.dns-case-group { gap: var(--space-28); }
+.dns-case-section { gap: var(--space-32); }
+.case-section--divider { gap: var(--case-section-heading-gap, var(--space-40)); }
+.dns-case-subsections > .case-section--labeled { gap: var(--space-20); }
+.dns-case-subsections { gap: var(--space-60); }
+.dns-case-group { gap: var(--space-24); }
 .dns-case-block { gap: var(--space-12); }
 .dns-decision-copy {
   display: grid;
@@ -1162,7 +1186,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   font: var(--type-small) var(--font-accent);
   text-transform: var(--type-accent-transform);
 }
-.dns-case-block > :is(p, blockquote) { max-inline-size: 64ch; }
+.dns-case-block > :is(p, blockquote) { max-inline-size: 80ch; }
 :is(.dns-case-block, .case-evidence-entry) > blockquote,
 .dns-decision-copy .dns-case-block > p {
   margin: 0;
@@ -1328,6 +1352,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-shadow: 0 0 7px color-mix(in srgb, var(--color-dns-accent) calc(68% * var(--case-fact-glow-opacity)), transparent);
 }
 @media (prefers-reduced-motion: no-preference) {
+  [data-mascot-highlighted] > .case-fact-highlight {
+    animation: case-sign-startup 600ms steps(1) 140ms backwards;
+  }
   .dns-case-fact[data-mascot-highlighted] { animation: case-fact-hum 6s steps(1) infinite; }
 }
 @keyframes case-fact-hum {
@@ -1362,32 +1389,33 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 @media (width < 1200px) {
   .dns-case-layout {
+    --dns-case-reading-width: var(--case-text-width);
+    --dns-case-side-alignment: calc(var(--space-20) - max(var(--space-20), (100vw - var(--case-text-width)) / 2));
     --dns-case-heading-offset: calc(var(--dns-case-edge-inset) + var(--size-icon-tile) + var(--space-8));
     --dns-case-heading-anchor: 0;
     grid-template-columns: minmax(0, 1fr) minmax(0, var(--case-text-width)) minmax(0, 1fr);
     row-gap: var(--space-12);
   }
   .dns-case-body { grid-area: 2 / 2 / 3 / 3; }
-  .dns-case-footer {
-    grid-area: 3 / 2 / 4 / 3;
-    grid-template-columns: auto minmax(0, 1fr);
-    column-gap: var(--space-16);
-  }
+  .dns-case-footer { grid-area: 3 / 2 / 4 / 3; }
   .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-footer { margin-block-start: var(--space-20); }
-  .dns-case-footer-actions { margin-inline-end: 0; }
   .dns-case-overview { padding-block-start: calc(var(--size-icon-tile) + var(--space-8)); }
   .case-nav[data-dns-contents] {
     grid-area: 2 / 2 / 3 / 3;
     display: grid;
     justify-self: start;
     margin-block-start: 0;
-    padding-inline-end: 0;
   }
   .case-nav[data-dns-contents] ul { display: none; }
 }
+@media (width < 1120px) {
+  .dns-case-footer { padding-block-end: calc(var(--size-icon-tile) + var(--space-12)); }
+}
 @media (width < 560px) {
+  .dns-case-contacts .portfolio-socials { flex-direction: column; }
+  .dns-case-footer { padding-block-end: 0; }
+  .dns-case-footer-signature { padding-inline-start: calc(var(--size-icon-tile) + var(--space-12)); }
   .dns-case-layout .case-covers { gap: var(--space-16); }
-  .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body { --dns-case-section-gap: var(--space-40); }
   .dns-case-frames,
   .dns-decision-copy { grid-template-columns: 1fr; }
   .dns-case-summary dl div { grid-template-columns: 1fr; gap: 0; }
@@ -1418,11 +1446,27 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 
 @media (width < 1040px) {
   .page {
-    width: min(620px, 100% - 40px);
+    width: min(560px, 100% - 48px);
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
-  .portfolio-profile { position: static; gap: 16px; }
+  .portfolio-profile {
+    position: static;
+    grid-template-columns: minmax(min-content, 1fr) auto;
+    gap: var(--space-16);
+  }
+  .portfolio-profile > .portfolio-avatar {
+    grid-area: 1 / 1;
+    margin-block-end: var(--space-16);
+  }
+  .portfolio-profile > .portfolio-socials {
+    grid-area: 1 / 2;
+    align-self: start;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .portfolio-profile > .portfolio-profile-section { grid-column: 1 / -1; }
+  .portfolio-profile p { max-inline-size: none; }
   .site-footer { width: calc(100% - 40px); }
   .page:has(.projects[data-case-open]) { width: calc(100% - 40px); }
   .case-covers {

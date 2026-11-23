@@ -449,7 +449,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     };
   }, [detailedContents, arrived]);
 
-  function jumpToHeading(id: string) {
+  function jumpToHeading(id: string, fromContents = false) {
     const heading = document.getElementById(id);
     if (!heading) return;
     const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
@@ -457,7 +457,10 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     if (detailedContents) {
       const { offset, anchor } = headingAlignment(heading);
       const { top, height } = heading.getBoundingClientRect();
-      window.scrollBy({ top: top + height * anchor - offset, behavior });
+      const listTop = fromContents
+        ? section.current?.querySelector('.case-nav[data-dns-contents] ul')?.getBoundingClientRect().top
+        : undefined;
+      window.scrollBy({ top: listTop === undefined ? top + height * anchor - offset : top - listTop, behavior });
     } else {
       heading.scrollIntoView({ block: 'start', behavior });
     }
@@ -642,9 +645,15 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
               </a>
               {!detailedContents && <p>Содержание</p>}
               {(!detailedContents || contentsVisible) && (
-                <CaseContents items={contents} activeHeading={detailedContents ? activeHeading : undefined} onJump={jumpToHeading} />
+                <CaseContents items={contents} activeHeading={detailedContents ? activeHeading : undefined}
+                  onJump={(id) => jumpToHeading(id, true)} />
               )}
             </nav>
+            {detailedContents && (
+              <div className="dns-case-contacts" data-mascot-route-end>
+                <ContactButtons />
+              </div>
+            )}
             {mascotComments ? arrived && <CaseMascot actorRef={viewportMascot} comments={mascotComments}
               shotComment={isDns ? dnsCase.comparison.iteration.shotComment : undefined} paused={viewingMedia} />
               : <ViewportMascot actorRef={viewportMascot} />}
@@ -703,9 +712,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
           </div>
           {detailedContents && arrived && (
             <footer className="dns-case-footer">
-              <div className="dns-case-footer-actions" data-mascot-route-end>
-                <ContactButtons />
-              </div>
               <div className="dns-case-footer-signature">
                 <span>{site.profile.name}</span>
                 {item.year && <time dateTime={String(item.year)}>{item.year}</time>}
@@ -726,16 +732,14 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   transition(entry.id);
                 }}>
                   <div className="case-sign-heading">
-                    <div>
-                      <p className="case-sign-brand">{entry.title}</p>
-                      <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
-                      {caseCardCopy[entry.id] && (
-                        <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
-                      )}
-                    </div>
+                    <p className="case-sign-brand">{entry.title}</p>
                     <span className="case-sign-arrow" aria-hidden="true">
                       <span className="icon-tile"><GridIcon name="right" /></span>
                     </span>
+                    <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
+                    {caseCardCopy[entry.id] && (
+                      <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
+                    )}
                   </div>
                   <span className="case-cover" data-cover={entry.id} aria-hidden="true">
                     <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />

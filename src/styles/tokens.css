@@ -12,6 +12,7 @@
   --color-surface: #111111;
   --color-text: #f2f2f2;
   --color-muted: #aaa;
+  --color-muted-dim: #888;
   --color-border: #191919;
   --color-skeleton: #242424;
   --color-accent: #bdbdbd;
@@ -51,5 +52,5 @@
   --content-width: 1280px;
   --home-content-width: 1200px;
   --home-tile-gap: 16px;
-  --case-text-width: 800px;
+  --case-text-width: 740px;
 }

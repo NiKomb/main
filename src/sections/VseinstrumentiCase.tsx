@@ -216,16 +216,16 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           <p>{test.criteria}</p>
           <p>{test.accounting}</p>
         </section>
-      </CaseSection>
-      <CaseSection id="vi-followup" title={reflectionHeading?.label ?? 'Рефлексия'}
-        variant="labeled" note={reflectionHeading?.note}>
-        <div className="dns-case-block">
-          <p>{reflection.summary}</p>
-          <h3 id="vi-next-checks">Что проверю дальше</h3>
-          <ul className="dns-case-stages dns-case-results" aria-labelledby="vi-next-checks">
-            {reflection.nextChecks.map(renderFact)}
-          </ul>
-        </div>
+        <CaseSection id="vi-followup" as="h3" title={reflectionHeading?.label ?? 'Рефлексия'}
+          variant="labeled" note={reflectionHeading?.note}>
+          <div className="dns-case-block">
+            <p>{reflection.summary}</p>
+            <h4 id="vi-next-checks">Что проверю дальше</h4>
+            <ul className="dns-case-stages dns-case-results" aria-labelledby="vi-next-checks">
+              {reflection.nextChecks.map(renderFact)}
+            </ul>
+          </div>
+        </CaseSection>
       </CaseSection>
     </>
   );

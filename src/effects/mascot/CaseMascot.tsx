@@ -54,6 +54,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const movement = createMascotMovement(actor, canvas.current, lift.current, image);
     const openingGallery = article.querySelector('.case-covers');
     const footerActions = article.querySelector('[data-mascot-route-end]');
+    const caseFooter = article.querySelector('.dns-case-footer');
     const textColumn = article.querySelector('.dns-case-body > .case-text');
     const caseControls = [...article.querySelectorAll('.dns-case-body .icon-tile:is(button, a[href])')];
     const hitInset = Number.parseFloat(getComputedStyle(control).getPropertyValue('--mascot-hit-inset'));
@@ -152,7 +153,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     };
 
     const readRouteEnd = (bounds: DOMRect) => {
-      if (!footerActions || !textColumn) return;
+      if (!footerActions || !textColumn || !caseFooter || caseFooter.getBoundingClientRect().bottom > innerHeight + 1) return;
       const buttons = Array.from(footerActions.querySelectorAll(':is(button, a[href]):not(:disabled, [aria-disabled="true"])'))
         .filter((tile) => !tile.closest('[inert], [aria-hidden="true"]') && getComputedStyle(tile).visibility === 'visible')
         .map((tile) => {
