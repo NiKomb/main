@@ -205,7 +205,7 @@ a.tile-layout--sign:focus-visible {
 .tile-layout--sign::after {
   border-color: color-mix(in srgb, var(--sign-light) var(--tile-highlight), var(--color-border));
 }
-a.tile-layout--sign:is(:focus-visible, :active) {
+a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover]) {
   --tile-highlight: 100%;
   --sign-glow: var(--sign-glow-lit);
 }
@@ -213,23 +213,28 @@ a.tile-layout--sign:is(:focus-visible, :active) {
   a.tile-layout--sign:hover {
     --tile-highlight: 100%;
     --sign-glow: var(--sign-glow-lit);
+    --sign-startup: case-sign-startup 600ms steps(1) 140ms;
+    --sign-startup-delay: 140ms;
   }
   .case-tile:has(> a.tile-layout--sign:hover) { clip-path: none; }
 }
+a.tile-layout--sign[data-visible-cover] {
+  --sign-startup: case-sign-startup 600ms steps(1) 140ms;
+  --sign-startup-delay: 140ms;
+}
+.case-tile:has(> a.tile-layout--sign[data-visible-cover]) { clip-path: none; }
 @media (prefers-reduced-motion: no-preference) {
   .tile-layout--sign::after { transition: border-color 400ms, box-shadow 500ms; }
   .case-sign-arrow::after { transition: border-color 300ms, box-shadow 300ms; }
   .case-sign-arrow svg { transition: color 300ms, filter 300ms; }
   .case-sign-brand { transition: color 300ms, text-shadow 300ms; }
-}
-@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
-  a.tile-layout--sign:hover::after,
-  a.tile-layout--sign:hover .case-sign-arrow::after,
-  a.tile-layout--sign:hover .case-sign-arrow svg {
-    animation: case-sign-startup 600ms steps(1) 140ms;
+  a.tile-layout--sign::after,
+  .tile-layout--sign .case-sign-arrow::after,
+  .tile-layout--sign .case-sign-arrow svg {
+    animation: var(--sign-startup, none);
   }
-  a.tile-layout--sign:hover::after,
-  a.tile-layout--sign:hover .case-sign-brand { transition-delay: 140ms; }
+  a.tile-layout--sign::after,
+  .tile-layout--sign .case-sign-brand { transition-delay: var(--sign-startup-delay, 0ms); }
 }
 @keyframes case-sign-startup {
   0% { opacity: .4; }

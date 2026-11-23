@@ -352,6 +352,62 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     if (showingOriginal) originalViewport.current?.focus({ preventScroll: true });
   }, [showingOriginal]);
 
+  useEffect(() => {
+    if (item) return;
+    const grid = section.current?.querySelector('.case-grid');
+    if (!grid) return;
+
+    const covers = [...grid.querySelectorAll('.tile-layout--sign[href] > .case-cover')];
+    const touch = matchMedia('(hover: none) and (pointer: coarse)');
+    let highlighted: Element | null = null;
+    let frame = 0;
+
+    function updateHighlight() {
+      frame = 0;
+      let next: Element | null = null;
+      let bestVisibility = 0;
+      let bestDistance = Infinity;
+      if (touch.matches) {
+        for (const cover of covers) {
+          const { top, bottom, height } = cover.getBoundingClientRect();
+          const visibleHeight = Math.min(bottom, innerHeight) - Math.max(top, 0);
+          if (visibleHeight <= 0 || !height) continue;
+          const visibility = visibleHeight / height;
+          const distance = Math.abs((top + bottom - innerHeight) / 2);
+          if (visibility < bestVisibility || (visibility === bestVisibility && distance >= bestDistance)) continue;
+          next = cover.parentElement;
+          bestVisibility = visibility;
+          bestDistance = distance;
+        }
+      }
+      if (next === highlighted) return;
+      highlighted?.removeAttribute('data-visible-cover');
+      next?.setAttribute('data-visible-cover', '');
+      highlighted = next;
+    }
+
+    function queueHighlight() {
+      if (!frame) frame = requestAnimationFrame(updateHighlight);
+    }
+
+    const resize = new ResizeObserver(queueHighlight);
+    resize.observe(page.current ?? grid);
+    covers.forEach((cover) => resize.observe(cover));
+    window.addEventListener('scroll', queueHighlight, { passive: true });
+    window.addEventListener('resize', queueHighlight);
+    touch.addEventListener('change', queueHighlight);
+    queueHighlight();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      highlighted?.removeAttribute('data-visible-cover');
+      resize.disconnect();
+      window.removeEventListener('scroll', queueHighlight);
+      window.removeEventListener('resize', queueHighlight);
+      touch.removeEventListener('change', queueHighlight);
+    };
+  }, [item, page]);
+
   function transition(next: string | null) {
     const element = section.current;
     if (!element || selected === next) return;
