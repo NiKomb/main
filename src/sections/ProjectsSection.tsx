@@ -11,7 +11,7 @@ import { projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import financePreview from '../data/screens/portfolio-finance-preview.png';
 import { site } from '../data/site';
-import { viContents, viMascotComments } from '../data/vseinstrumentiCase';
+import { viCase, viContents, viMascotComments } from '../data/vseinstrumentiCase';
 import { replaceGallerySlide } from '../effects/gallery-slide/transition';
 import { Mascot, ViewportMascot } from '../effects/mascot/Mascot';
 import { CaseMascot } from '../effects/mascot/CaseMascot';
@@ -26,6 +26,10 @@ const cases: readonly Project[] = [
   ...projects,
   { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
+const caseTitles: Partial<Record<string, string>> = {
+  dns: dnsCase.title,
+  vseinstrumenti: viCase.title,
+};
 const resizeScreensOnZoom = '[data-portrait-preview], [data-preview-crop], :has(> .case-cover-strip)';
 
 function readCase() {
@@ -707,29 +711,26 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       ) : (
         <>
           <div className="case-grid">
-            {projects.map((entry: Project) => (
+            {projects.map((entry) => (
               <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <a className="tile-layout" href={`#case-${entry.id}`} onClick={(event) => {
+                <a className="tile-layout--sign" href={`#case-${entry.id}`} onClick={(event) => {
                   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   event.preventDefault();
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
                   transition(entry.id);
                 }}>
+                  <div className="case-sign-heading">
+                    <div>
+                      <p className="case-sign-brand">{entry.title}</p>
+                      <h2>{caseTitles[entry.id] ?? entry.summary}</h2>
+                    </div>
+                    <span className="case-sign-arrow" aria-hidden="true">
+                      <span className="icon-tile"><GridIcon name="right" /></span>
+                    </span>
+                  </div>
                   <span className="case-cover" data-cover={entry.id} aria-hidden="true">
                     <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />
-                  </span>
-                  <span className="tile-side">
-                    <span className="tile-copy">
-                      <span className="tile-meta">
-                        {entry.year && <time dateTime={String(entry.year)}>{entry.year}</time>}
-                        <span className="tile-chevron" aria-hidden="true"><GridIcon name="right" /></span>
-                      </span>
-                      <strong>{entry.title}</strong>
-                      <span className="tile-summary">{entry.tileSummary ?? entry.summary}</span>
-                    </span>
-                    <span className="tile-preview" aria-hidden="true">
-                      {entry.tileIllustration && <img src={entry.tileIllustration} alt="" loading="lazy" />}
-                    </span>
+                    <span className="case-sign-scanlines" />
                   </span>
                 </a>
                 {projectResults[`project-${entry.id}`] && (
@@ -738,21 +739,15 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
               </article>
             ))}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
-              <div className="tile-layout" aria-hidden="true">
-                <span className="case-cover" data-cover="preview">
+              <div className="tile-layout--sign">
+                <div className="case-sign-heading"><h2>Скоро будет</h2></div>
+                <span className="case-cover" data-cover="preview" aria-hidden="true">
                   <span className="case-cover-frame" data-cropped="">
                     <img src={financePreview} width={960} height={732} alt="" loading="lazy" />
                   </span>
-                </span>
-                <span className="tile-side">
-                  <span className="tile-copy">
-                    <span className="tile-skeleton-line" />
-                    <span className="tile-skeleton-line" />
-                  </span>
-                  <span className="tile-preview" />
+                  <span className="case-sign-scanlines" />
                 </span>
               </div>
-              <span className="tile-status">скоро будет</span>
             </article>
             {startupComplete && <Mascot resumeRoute={returnedFromCase} results={projectResults} />}
           </div>

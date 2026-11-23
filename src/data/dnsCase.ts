@@ -33,8 +33,8 @@ import quickChoice from './screens/dns-quick-choice.webp';
 import buildRecommendedArticles from './screens/dns-build-recommended-articles.webp';
 
 export type CaseFigure = ProjectImage & { caption: string; label?: string; comment?: string };
-export type CaseFact = { title: string; detail: string; comment?: string };
-export type CaseMetric = { value: string; label: string; detail?: string; comment?: string };
+export type CaseFact = { title: string; detail: string; comment?: string; highlight?: boolean };
+export type CaseMetric = { value: string; label: string; detail?: string; comment?: string; highlight?: boolean };
 
 type Decision = {
   id: string;
@@ -78,7 +78,7 @@ export const dnsCase = {
     discussionsTitle: 'Кабинетное исследование',
     discussionAction: 'Разобрал публичные обсуждения сборок, в том числе в Клубе DNS, и архив HappyChat из 612 418 сообщений. Повторные сообщения об одном выборе объединил в один эпизод',
     deskMetrics: [
-      { value: '336', label: 'Эпизодов выбора между моделями', detail: 'У 323 аккаунтов в HappyChat' },
+      { value: '336', label: 'Эпизодов выбора между моделями', detail: 'У 323 аккаунтов в HappyChat', highlight: true },
       { value: '59', label: 'Эпизодов, где искали дополнительную проверку', detail: 'У 57 аккаунтов в HappyChat' },
       { value: '46 из 57', label: 'Аккаунтов, которые искали дополнительную проверку и также обсуждали выбор моделей' },
     ],
@@ -93,6 +93,7 @@ export const dnsCase = {
       },
       {
         title: 'Данные для выбора',
+        highlight: true,
         detail: 'В выдаче видны цена и характеристики. Результаты тестов под нагрузкой нужно искать в обзорах',
       },
       {
@@ -108,6 +109,7 @@ export const dnsCase = {
       {
         value: '5 участников',
         label: 'Сравнение приходилось искать',
+        highlight: true,
         detail: 'Четверым понадобилась подсказка. Ещё один нашёл таблицу с задержкой',
       },
       {
@@ -228,7 +230,7 @@ export const dnsCase = {
     overview: [
       { value: ratio(comparisonResult.opened, comparisonResult.withCatalog), label: 'Открыли таблицу с двумя или более моделями', detail: 'Среди прохождений с каталогом' },
       { value: ratio(testCounts.assembled, testCounts.started), label: 'Подобрали все пять комплектующих' },
-      { value: ratio(testCounts.saved, testCounts.started), label: 'Сохранили полную сборку', comment: 'builds-saved' },
+      { value: ratio(testCounts.saved, testCounts.started), label: 'Сохранили полную сборку', comment: 'builds-saved', highlight: true },
     ],
     conclusion: `**В ${testCounts.assembled - testCounts.saved} прохождениях все детали подобрали, но сборку не сохранили**. В следующем тесте отдельно посмотрю, что происходит после выбора последней детали. Чтобы понять, стало ли проще найти сравнение, нужен сопоставимый замер в исходном интерфейсе`,
     journalSource: 'https://nikomb.github.io/dns-prototype/journal/?task=task-3',
@@ -239,6 +241,7 @@ export const dnsCase = {
     takeaways: [
       {
         title: 'Что изменил после проверки',
+        highlight: true,
         detail: 'Я добавил сравнение по наведению после одного наблюдения и убрал его после теста. В следующем проекте **сначала проверю, сравнивают ли другие участники характеристики прямо в карточках**',
       },
       {
@@ -283,6 +286,7 @@ export const dnsCase = {
       action: 'На интервью один участник сверял характеристики прямо в карточках. Я добавил режим, который при наведении показывал отличия от детали в сборке. В тесте проверил, включают ли его при повторном сравнении',
       fact: {
         title: '0 из 5 включили режим',
+        highlight: true,
         comment: 'hover-mode-unused',
         detail: 'Убрал переключатель и оставил таблицу',
       },
@@ -342,6 +346,7 @@ export const dnsDecisions: readonly Decision[] = [
         label: 'Открыли таблицу с двумя или более моделями',
         detail: 'Учитывал модели одной категории, включая добавленные в самой таблице',
         comment: 'comparison-opened',
+        highlight: true,
       },
       {
         value: '2 с', label: 'Медиана до первого действия со сравнением',
@@ -367,6 +372,7 @@ export const dnsDecisions: readonly Decision[] = [
         value: ratio(evidenceResult.viewed, evidenceResult.opened), label: 'Просмотрели целевые данные',
         detail: 'Среди открывших статью с измеряемыми данными учитывал показ целевого блока не менее пяти секунд подряд',
         comment: 'article-data-view',
+        highlight: true,
       },
       {
         value: ratio(evidenceResult.selected, evidenceResult.viewed), label: 'Выбрали деталь после просмотра и возврата',
@@ -419,6 +425,7 @@ export const dnsDecisions: readonly Decision[] = [
       },
       {
         value: ratio(recommendationResult.selected, recommendationResult.viewed), label: 'Посмотрели обзор и выбрали деталь той же категории',
+        highlight: true,
         detail: 'Учитывал выбор после возврата и случаи, когда деталь выбрали до просмотра и оставили в сборке. Чтобы выяснить, помог ли обзор, нужно спросить участника',
       },
       {

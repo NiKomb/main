@@ -215,6 +215,9 @@ export function PixelViewportEdges({ root, targetSelector }: Props) {
 
     const observer = new ResizeObserver(invalidate);
     observer.observe(marker);
+    for (const { overlays } of targets) {
+      for (const overlay of overlays) observer.observe(overlay);
+    }
     window.addEventListener('scroll', invalidate, { passive: true });
     window.addEventListener('resize', sync);
     viewport?.addEventListener('resize', sync);

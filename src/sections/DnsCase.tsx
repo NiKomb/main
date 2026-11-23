@@ -10,7 +10,6 @@ import { dnsCase, dnsContents, dnsDecisions, type CaseFact, type CaseFigure, typ
 import { dnsConfiguratorLink, dnsDemoLink, type ProjectImage } from '../data/projects';
 import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
 import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
-import { MetricGradientPaint } from '../effects/metric-gradient-paint/MetricGradientPaint';
 import { RocketShot } from '../effects/rocket-shot/RocketShot';
 
 type Props = {
@@ -30,25 +29,26 @@ function DnsHeading({ id, as }: {
   return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
-function renderFact({ title, detail, comment }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
+function renderFact({ title, detail, comment, highlight }: Omit<CaseFact, 'detail'> & { detail: ReactNode }) {
   return (
-    <li className="dns-case-fact" key={title} data-mascot-comment={comment}>
+    <li className="dns-case-fact" key={title} data-mascot-comment={comment} data-mascot-highlight={highlight ? '' : undefined}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
+      {highlight && <span className="case-fact-highlight" data-viewport-edge-overlay="" aria-hidden="true" />}
     </li>
   );
 }
 
-function renderMetric({ value, label, detail, comment, paintGradient }: CaseMetric & { paintGradient?: boolean }) {
+function renderMetric({ value, label, detail, comment, highlight }: CaseMetric) {
   return (
     <li className="dns-case-fact dns-case-metric" key={label} data-mascot-comment={comment}
-      data-mascot-paint-gradient={paintGradient ? '' : undefined}>
-      {paintGradient && <MetricGradientPaint />}
+      data-mascot-highlight={highlight ? '' : undefined}>
       <p className="dns-case-metric-value">{value}</p>
       <div className="dns-case-metric-copy">
         <p className="dns-case-fact-title">{label}</p>
         {detail && <p>{detail}</p>}
       </div>
+      {highlight && <span className="case-fact-highlight" data-viewport-edge-overlay="" aria-hidden="true" />}
     </li>
   );
 }
@@ -169,7 +169,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           </div>
           <div className="dns-case-block">
             <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из обсуждений сборок" data-mascot-comment="external-review">
-              {research.deskMetrics.map((metric, index) => renderMetric({ ...metric, paintGradient: index === 0 }))}
+              {research.deskMetrics.map(renderMetric)}
             </ul>
             <p>{renderCaseText(research.discussionConclusion)}</p>
           </div>

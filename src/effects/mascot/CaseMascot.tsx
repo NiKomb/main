@@ -16,6 +16,7 @@ import './mascot.css';
 
 const gallerySelector = '.case-covers, .interview-gallery-scroll, .dns-case-frames';
 const cardSelector = '.dns-case-fact, .dns-case-summary, .dns-case-block > blockquote';
+const unlitFact = '[data-mascot-highlight]:not([data-mascot-highlighted])';
 type RouteSurface = CaseSurface & { surface: Surface };
 type Speech = SpeechPosition & { message: string; hidden?: boolean; paintTile?: Element };
 type CaseSurfaceGeometry = Surface & { routeEnd?: true };
@@ -138,6 +139,9 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       current = next;
       settle(next.point);
       paintMetric(next);
+      if (next.point.x === next.surface.right && next.surface.tile.matches(unlitFact)) {
+        next.surface.tile.setAttribute('data-mascot-highlighted', '');
+      }
       queue();
     }
 
@@ -312,7 +316,13 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const target = (destination ?? current)?.surface;
       const onFooterButton = target?.routeEnd && target.tile !== footerActions;
       const footerButtonIsSafe = onFooterButton && target.tile.getBoundingClientRect().top < limits.bottom;
-      const routeEnd = direction < 0 && !footerButtonIsSafe ? undefined : readRouteEnd(bounds);
+      const footerRoute = direction < 0 && !footerButtonIsSafe ? undefined : readRouteEnd(bounds);
+      const factBeforeFooter = footerRoute && tiles.some(({ tile }) => {
+        if (!tile.matches(unlitFact)) return false;
+        const box = tile.getBoundingClientRect();
+        return box.width >= spriteWidth && box.top >= limits.top && box.top <= innerHeight / 2;
+      });
+      const routeEnd = factBeforeFooter ? undefined : footerRoute;
       control.inert = !!routeEnd;
       const surfaces: RouteSurface[] = routeEnd ? [] : tiles.flatMap(({ tile, kind, group, clip }) => {
         const box = tile.getBoundingClientRect();
@@ -333,6 +343,9 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         innerHeight, direction < 0);
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
+      const routeStart = selected && (upperSurfaces.find((candidate) =>
+        sameCaseRow(candidate, selected) && candidate.tile.matches(unlitFact) &&
+        (!selected.hasOwnComment || candidate.left < selected.left)) ?? selected);
       const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
       routeFinish = routeEnd?.rightFinish ?? (rightmost && stop(rightmost.surface, 'finish', rightmost.surface.right));
       if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
@@ -347,7 +360,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           ? [routeEnd.rightFinish.surface, routeEnd.leftFinish.surface].find(({ tile }) => tile === target?.tile)
           : selected && upperSurfaces.find((candidate) => candidate.tile === target?.tile &&
             candidate.top <= innerHeight / 2 && sameCaseRow(candidate, selected) &&
-            (!selected.hasOwnComment || candidate.tile === selected.tile))?.surface;
+            (!selected.hasOwnComment || candidate === selected || candidate === routeStart))?.surface;
         if (!scrolledInJump && !motion.matches && target && live &&
           live.left === target.left && live.right === target.right && live.y === target.y) {
           drawSpeech(bounds, fromScroll);
@@ -363,7 +376,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
       const surface = routeEnd
         ? current?.surface.tile === routeEnd.rightFinish.surface.tile ? routeEnd.rightFinish.surface : routeEnd.leftFinish.surface
-        : selected?.surface;
+        : routeStart?.surface;
       if (!surface || !routeFinish) {
         if (!actor.hidden) {
           playDeparture(bounds);
@@ -375,11 +388,19 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       }
 
       const runUp = surface.canDash ? surface.dashDistance + 12 : sectionEdgeInset - 12;
-      const entry = scrolledInJump ? routeFinish : routeEnd?.leftFinish ?? stop(surface, 'start', surface.right - runUp);
+      const needsFactRun = surface.tile.matches(unlitFact);
+      const entry = scrolledInJump && !needsFactRun
+        ? routeFinish : routeEnd?.leftFinish ?? stop(surface, 'start', surface.right - runUp);
 
       if (motion.matches) {
         current = routeFinish;
         settle(routeFinish.point);
+        if (selected) {
+          for (const candidate of upperSurfaces) {
+            if (sameCaseRow(candidate, selected) && (!selected.hasOwnComment || candidate === selected || candidate === routeStart) &&
+              candidate.tile.matches(unlitFact)) candidate.tile.setAttribute('data-mascot-highlighted', '');
+          }
+        }
         appeared = true;
         drawSpeech(bounds, fromScroll);
         return;
@@ -394,7 +415,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       }
 
       if (scrolledInJump || crossingRouteEnd || (routeEnd && interrupted) || current?.surface.tile !== surface.tile || actor.hidden) {
-        const landing = previous?.group === selected?.group || surface.tile === routeFinish.surface.tile
+        const landing = !needsFactRun && (previous?.group === selected?.group || surface.tile === routeFinish.surface.tile)
           ? routeFinish : stop(surface, 'landing', surface.left);
         const from = previous && current && stop(previous.surface, current.edge, current.point.x);
         const nearby = from && Math.abs(from.point.y - landing.point.y) <= Math.min(400, innerHeight / 2) &&
@@ -430,9 +451,11 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
       current = stop(surface, current.edge, current.point.x);
       if (surface.tile !== routeFinish.surface.tile || current.point.x !== routeFinish.point.x) {
-        const nextTile = selected && surface.tile !== routeFinish.surface.tile ? nextCaseSurfaceToRight(selected, upperSurfaces) : undefined;
+        const nextTile = routeStart && surface.tile !== routeFinish.surface.tile ? nextCaseSurfaceToRight(routeStart, upperSurfaces) : undefined;
+        const finishFact = current.point.x < surface.right && needsFactRun;
         const arrival = routeEnd?.leftFinish.surface.tile === surface.tile
-          ? routeEnd.landing : nextTile ? stop(nextTile.surface, 'landing', nextTile.surface.left) : routeFinish;
+          ? routeEnd.landing : finishFact ? stop(surface, 'finish', surface.right)
+            : nextTile ? stop(nextTile.surface, 'landing', nextTile.surface.left) : routeFinish;
         destination = arrival;
         const arrive = () => finish(arrival);
         if (surface.tile === arrival.surface.tile) movement.moveOnSurface(current.point, arrival.point.x, surface, arrive);
