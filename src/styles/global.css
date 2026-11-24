@@ -437,7 +437,7 @@ a.tile-layout--sign[data-visible-cover] {
   scroll-snap-type: x proximity;
   scroll-padding-inline: var(--case-gallery-inset) var(--case-page-gutter);
 }
-.case-covers[data-dragging] { scroll-snap-type: none; }
+.case-covers:is([data-dragging], [data-coasting]) { scroll-snap-type: none; }
 .case-covers[data-dragging], .case-covers[data-dragging] button { cursor: grabbing; }
 .case-covers::-webkit-scrollbar { display: none; }
 .case-covers:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }

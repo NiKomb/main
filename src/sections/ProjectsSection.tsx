@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { CaseContents, type CaseContentsItem } from '../components/CaseContents';
+import { GalleryStrip } from '../components/GalleryStrip';
 import { ContactButtons } from '../components/ContactButtons';
 import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
@@ -329,7 +330,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
   const suppressMediaClick = useRef(false);
   const coverFlight = useRef<(() => void) | undefined>(undefined);
   const mediaTransition = useRef<(() => void) | undefined>(undefined);
-  const coverDrag = useRef<{ pointer: number; x: number; scroll: number } | null>(null);
   const scrollPoint = useRef(0);
   const item = cases.find((entry) => entry.id === selected);
   const isDns = item?.id === 'dns';
@@ -411,7 +411,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
   function transition(next: string | null) {
     const element = section.current;
     if (!element || selected === next) return;
-    coverDrag.current = null;
     coverFlight.current?.();
     mediaTransition.current?.();
     if (dialog.current?.open) dismissMedia();
@@ -619,12 +618,6 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     onClickCapture: preventClickAfterSwipe,
   };
 
-  function stopCoverDrag(event: PointerEvent<HTMLDivElement>) {
-    if (coverDrag.current?.pointer !== event.pointerId) return;
-    coverDrag.current = null;
-    delete event.currentTarget.dataset.dragging;
-  }
-
   const contents: readonly CaseContentsItem[] = detailedContents ?? [
     { id: 'projects-heading', label: 'Обзор' },
     ...(item?.screens?.map((screen) => ({ id: screen.id, label: screen.title })) ??
@@ -638,34 +631,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       aria-label={item ? undefined : 'Кейсы'} tabIndex={-1}>
       {item ? (
         <article key={item.id} className={detailedContents ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
-          <div className="case-covers" data-media-gallery role="region" aria-label="Обложки кейса" tabIndex={0}
-            onPointerDown={(event) => {
-              if (event.pointerType !== 'mouse' || event.button !== 0) return;
-              const strip = event.currentTarget;
-              if (strip.scrollWidth <= strip.clientWidth) return;
-              coverDrag.current = { pointer: event.pointerId, x: event.clientX, scroll: strip.scrollLeft };
-            }}
-            onPointerMove={(event) => {
-              const drag = coverDrag.current;
-              const strip = event.currentTarget;
-              if (!drag || drag.pointer !== event.pointerId) return;
-              if (!(event.buttons & 1)) {
-                stopCoverDrag(event);
-                return;
-              }
-              const offset = drag.x - event.clientX;
-              if (!strip.hasPointerCapture(event.pointerId)) {
-                if (Math.abs(offset) < 5) return;
-                strip.setPointerCapture(event.pointerId);
-                strip.dataset.dragging = '';
-              }
-              strip.scrollLeft = drag.scroll + offset;
-            }}
-            onPointerUp={stopCoverDrag}
-            onPointerLeave={(event) => {
-              if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopCoverDrag(event);
-            }}
-            onPointerCancel={stopCoverDrag} onLostPointerCapture={stopCoverDrag}>
+          <GalleryStrip className="case-covers" role="region" aria-label="Обложки кейса" tabIndex={0}>
             {item.coverVideo && (
               <CaseVideoTile video={item.coverVideo} videoRef={setActiveCoverVideo} videoElement={activeCoverVideo} coverId={item.id}
                 togglePlayback={toggleCoverPlayback} playbackLabel={`видео «${item.title}»`} onOpen={openMedia} />
@@ -685,7 +651,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                 <div className="case-cover case-cover-secondary" aria-hidden="true" />
               </>
             )}
-          </div>
+          </GalleryStrip>
           <div className="case-layout">
             <nav className="case-nav" data-dns-contents={detailedContents ? '' : undefined} aria-label="Навигация по кейсу">
               <a ref={caseBack} className="icon-tile case-back" {...iconTilePress} href="#projects" aria-label="К кейсам" onClick={(event) => {
