@@ -12,7 +12,7 @@ a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 .icon-tile {
-  --icon-tile-border-width: 1px;
+  --icon-tile-border-width: 2px;
   --icon-tile-radius: calc(var(--radius-card) - 4px);
   --icon-tile-face: var(--icon-tile-rest-face, var(--color-surface));
   --icon-tile-face-radius: calc(var(--radius-card) / 2 - 2px);
@@ -73,14 +73,60 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   touch-action: manipulation;
 }
 @media (hover: hover) {
-  .icon-tile:is(:any-link, button:enabled):hover,
+  .icon-tile:is(:any-link, button:enabled):not(:where(.icon-tile--secondary, .icon-tile--lit)):hover,
   .dns-comparison-control:hover ~ .icon-tile {
     --icon-tile-face: var(--icon-tile-hover-face, var(--color-skeleton));
     border-color: color-mix(in srgb, var(--icon-tile-edge, var(--color-border)), var(--color-muted) 20%);
   }
 }
+@media (forced-colors: none) {
+  :is(.icon-tile--secondary, .icon-tile--lit) {
+    --icon-tile-accent: var(--contact-accent, var(--case-accent));
+    --icon-tile-glow: calc(var(--icon-tile-light, 0) * var(--case-fact-glow-opacity) * var(--icon-tile-visibility));
+    --icon-tile-face: color-mix(in srgb, var(--icon-tile-accent) calc(12% * var(--icon-tile-glow)), var(--color-surface));
+    --icon-tile-color: color-mix(in srgb, var(--icon-tile-accent) calc(100% * var(--icon-tile-glow)), var(--color-text));
+    border-color: color-mix(in srgb, var(--icon-tile-accent) calc(100% * var(--icon-tile-glow)), var(--color-border));
+    color: var(--icon-tile-color);
+    box-shadow: 0 0 17px color-mix(in srgb, var(--icon-tile-accent) calc(55% * var(--icon-tile-glow)), transparent),
+      inset 0 0 12px color-mix(in srgb, var(--icon-tile-accent) calc(30% * var(--icon-tile-glow)), transparent);
+  }
+  .icon-tile--lit {
+    --icon-tile-rest-light: 1;
+    --icon-tile-light: var(--case-sign-light-opacity);
+  }
+  .icon-tile--lit .icon-tile-label {
+    --case-label-accent: var(--case-sign-accent, var(--case-accent));
+    --case-label-light: calc(100% * var(--icon-tile-glow));
+  }
+  .icon-tile--lit .icon-tile-label > svg { filter: drop-shadow(0 0 3px var(--case-label-glow)); }
+  @media (hover: hover) {
+    :is(.icon-tile--secondary, .icon-tile--lit):is(:any-link, button:enabled):hover {
+      --icon-tile-light: var(--case-sign-light-opacity);
+      --icon-tile-startup: var(--case-sign-startup);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :is(.icon-tile--secondary, .icon-tile--lit)[data-icon-tile-startup] {
+      --icon-tile-light: var(--case-sign-light-opacity);
+      --icon-tile-startup: var(--case-sign-startup);
+    }
+    :is(.icon-tile--secondary, .icon-tile--lit) {
+      --case-sign-light-opacity: var(--icon-tile-rest-light, 0);
+      animation: var(--icon-tile-startup, none) forwards;
+    }
+    .icon-tile--lit {
+      animation: var(--icon-tile-startup, none) forwards, var(--case-fact-hum) var(--icon-tile-hum-delay, 0s);
+    }
+  }
+}
+@property --icon-tile-visibility {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
 .icon-tile:is(:any-link, button:enabled):active,
 .icon-tile:is([aria-pressed="true"], [data-touch-pressed]),
+.tile-layout--sign:is(:active, [data-touch-pressed]) .case-sign-arrow > .icon-tile,
 .dns-comparison-control:is(:active, [data-touch-pressed]) ~ .icon-tile {
   --icon-tile-leading: 5px;
   --icon-tile-trailing: 3px;
@@ -89,6 +135,18 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
 @media (prefers-reduced-motion: no-preference) {
   .icon-tile { transition: border-color 120ms ease; }
   .icon-tile::before { transition: background-color 120ms ease, filter 120ms ease; }
+  .icon-tile[data-icon-tile-startup="press"],
+  .icon-tile[data-icon-tile-startup="press"]::before { transition: none; }
+  @media (hover: hover) and (forced-colors: none) {
+    .icon-tile--secondary:not(:hover, [data-icon-tile-startup]) {
+      --icon-tile-light: 1;
+      --icon-tile-visibility: 0;
+      transition: --icon-tile-visibility var(--case-sign-startup-duration);
+    }
+    .icon-tile--secondary:not(:hover, [data-icon-tile-startup])::before {
+      transition: none;
+    }
+  }
 }
 @media (forced-colors: active) {
   .icon-tile { border-color: ButtonText; }
@@ -148,6 +206,12 @@ h3, .portfolio-profile-section > h2 {
   gap: 8px;
 }
 .portfolio-socials span { color: var(--color-muted); }
+.portfolio-socials [data-contact="telegram"] {
+  --contact-accent: var(--color-telegram);
+  --icon-tile-hum-delay: -3.2s;
+}
+.portfolio-socials [data-contact="email"] { --contact-accent: var(--color-gmail); }
+.portfolio-socials [data-contact="cv"] { --contact-accent: white; }
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
 .page:has(.projects[data-case-open]) > .portfolio-profile { display: none; }
@@ -167,11 +231,10 @@ h3, .portfolio-profile-section > h2 {
 }
 .case-tile {
   --sign-light: var(--color-accent);
-  max-inline-size: 680px;
 }
 .case-tile[data-section-id="project-dns"] { --sign-light: var(--color-dns-accent); }
 .case-tile[data-section-id="project-vseinstrumenti"] {
-  --sign-light: oklch(from var(--color-vi-brand) calc(l + .11) c h);
+  --sign-light: var(--color-vi-sign);
 }
 .tile-layout--sign {
   --tile-highlight: 0%;
@@ -182,7 +245,8 @@ h3, .portfolio-profile-section > h2 {
     inset 0 0 24px color-mix(in srgb, var(--sign-light) 30%, transparent);
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
   gap: var(--home-tile-gap);
   padding: var(--space-16);
   border-radius: 8px;
@@ -205,7 +269,7 @@ a.tile-layout--sign:focus-visible {
 .tile-layout--sign::after {
   border-color: color-mix(in srgb, var(--sign-light) var(--tile-highlight), var(--color-border));
 }
-a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover]) {
+a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover], [data-touch-pressed], [data-icon-tile-startup]) {
   --tile-highlight: 100%;
   --sign-glow: var(--sign-glow-lit);
 }
@@ -213,16 +277,16 @@ a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover]) {
   a.tile-layout--sign:hover {
     --tile-highlight: 100%;
     --sign-glow: var(--sign-glow-lit);
-    --sign-startup: case-sign-startup 600ms steps(1) 140ms;
-    --sign-startup-delay: 140ms;
+    --sign-startup: var(--case-sign-startup);
+    --sign-startup-delay: var(--case-sign-startup-delay);
   }
   .case-tile:has(> a.tile-layout--sign:hover) { clip-path: none; }
 }
-a.tile-layout--sign[data-visible-cover] {
-  --sign-startup: case-sign-startup 600ms steps(1) 140ms;
-  --sign-startup-delay: 140ms;
+a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
+  --sign-startup: var(--case-sign-startup);
+  --sign-startup-delay: var(--case-sign-startup-delay);
 }
-.case-tile:has(> a.tile-layout--sign[data-visible-cover]) { clip-path: none; }
+.case-tile:has(> a.tile-layout--sign:is([data-visible-cover], [data-touch-pressed], [data-icon-tile-startup])) { clip-path: none; }
 @media (prefers-reduced-motion: no-preference) {
   .tile-layout--sign::after { transition: border-color 400ms, box-shadow 500ms; }
   .case-sign-arrow::after { transition: border-color 300ms, box-shadow 300ms; }
@@ -231,16 +295,22 @@ a.tile-layout--sign[data-visible-cover] {
   a.tile-layout--sign::after,
   .tile-layout--sign .case-sign-arrow::after,
   .tile-layout--sign .case-sign-arrow svg {
-    animation: var(--sign-startup, none);
+    animation: var(--sign-startup, none) forwards;
+    opacity: var(--case-sign-light-opacity);
   }
   a.tile-layout--sign::after,
   .tile-layout--sign .case-sign-brand { transition-delay: var(--sign-startup-delay, 0ms); }
 }
+@property --case-sign-light-opacity {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
 @keyframes case-sign-startup {
-  0% { opacity: .4; }
-  12%, 34%, 62%, 100% { opacity: 1; }
-  22% { opacity: .5; }
-  56% { opacity: .8; }
+  0% { --case-sign-light-opacity: .4; }
+  12%, 34%, 62%, 100% { --case-sign-light-opacity: 1; }
+  22% { --case-sign-light-opacity: .5; }
+  56% { --case-sign-light-opacity: .8; }
 }
 .case-sign-heading {
   display: grid;
@@ -256,11 +326,18 @@ a.tile-layout--sign[data-visible-cover] {
   color: var(--color-muted);
 }
 .case-sign-brand {
+  --case-label-accent: var(--sign-light);
+  --case-label-light: var(--tile-highlight);
+  --case-label-rest: var(--color-muted);
   align-self: start;
-  color: color-mix(in srgb, color-mix(in srgb, var(--sign-light) 35%, white) var(--tile-highlight), var(--color-muted));
+}
+.case-sign-brand,
+.icon-tile--lit .icon-tile-label {
+  --case-label-glow: color-mix(in srgb, var(--case-label-accent) var(--case-label-light), transparent);
+  color: color-mix(in srgb, color-mix(in srgb, var(--case-label-accent) 35%, white) var(--case-label-light), var(--case-label-rest, var(--color-text)));
   text-shadow:
-    0 0 6px color-mix(in srgb, var(--sign-light) var(--tile-highlight), transparent),
-    0 0 18px color-mix(in srgb, var(--sign-light) calc(var(--tile-highlight) * .7), transparent);
+    0 0 6px var(--case-label-glow),
+    0 0 18px color-mix(in srgb, var(--case-label-accent) calc(var(--case-label-light) * .7), transparent);
 }
 .tile-layout--sign > .case-cover {
   border-radius: 4px;
@@ -298,9 +375,6 @@ a.tile-layout--sign[data-visible-cover] {
   position: relative;
   border-radius: calc(var(--radius-card) - 4px);
 }
-.case-sign-arrow::after {
-  border-width: 1px;
-}
 .case-sign-arrow svg {
   color: color-mix(in srgb, var(--sign-light) var(--tile-highlight), var(--color-text));
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--sign-light) var(--tile-highlight), transparent));
@@ -314,7 +388,7 @@ a.tile-layout--sign[data-visible-cover] {
   display: block;
   aspect-ratio: 16 / 9;
   overflow: clip;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: var(--cover, #282828);
 }
 .case-cover:not([data-expanded]) { aspect-ratio: var(--case-preview-aspect-ratio, 16 / 9); }
@@ -493,11 +567,11 @@ a.tile-layout--sign[data-visible-cover] {
   display: block;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: transparent;
   cursor: zoom-in;
 }
-.gallery-media { display: block; aspect-ratio: 16 / 9; border-radius: var(--radius-card); background: var(--media, var(--color-skeleton)); }
+.gallery-media { display: block; aspect-ratio: 16 / 9; border-radius: var(--radius-case-tile); background: var(--media, var(--color-skeleton)); }
 .gallery-media[data-media="2"] { --media: #303030; }
 html:has(.case-dialog[open]) { overflow: hidden; }
 .case-dialog[open] {
@@ -756,11 +830,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-layout[data-section-id="project-dns"] { --case-accent: var(--color-dns-accent); }
 .dns-case-layout[data-section-id="project-vseinstrumenti"] {
   --case-accent: var(--color-vi-accent);
-  --case-button-face: var(--color-vi-brand-soft);
-  --case-button-text: var(--color-vi-on-brand);
-  --case-button-shadow: color-mix(in srgb, var(--case-button-face), black 16%);
-  --case-button-depth: color-mix(in srgb, var(--case-button-face), black 30%);
-  --case-button-hover-brightness: .96;
+  --case-sign-accent: var(--color-vi-sign);
 }
 .dns-case-layout .case-covers {
   --case-gallery-inset: max(var(--case-page-gutter), calc((100vw - var(--dns-case-reading-width)) / 2));
@@ -922,7 +992,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   outline-offset: 4px;
 }
 .dns-case-body {
-  --dns-case-section-gap: var(--space-60);
+  --dns-case-section-gap: var(--space-80);
   --dns-meta-gap: var(--space-40);
   --dns-summary-padding: var(--space-16);
   grid-area: 2 / 2 / 3 / -1;
@@ -932,7 +1002,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 /* Keep icon controls clickable where the mascot's hit area extends over them. */
 .dns-case-body .icon-tile:is(a[href], button) { z-index: 3; }
 .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body {
-  --case-section-heading-gap: var(--dns-case-section-gap);
   --dns-meta-gap: var(--space-32);
 }
 .dns-case-body :is(h1, h2, h3, h4)[tabindex] { scroll-margin-top: var(--dns-case-heading-offset); }
@@ -1095,7 +1164,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-meta dd, .dns-case-summary dd { margin: 0; }
 .dns-case-summary {
   padding: var(--dns-summary-padding);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: var(--color-surface);
 }
 .dns-case-layout[data-section-id="project-dns"] .dns-case-summary { --dns-summary-padding: var(--space-20); }
@@ -1114,20 +1183,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   margin-block-start: var(--space-28);
 }
 .dns-summary-configurator { margin-inline-start: auto; }
-.dns-brand-button {
-  --icon-tile-edge: var(--case-button-shadow, var(--color-dns-button-shadow));
-  --icon-tile-depth: var(--case-button-depth, var(--color-dns-button-depth));
-  color: var(--case-button-text, var(--color-background));
-}
-.dns-brand-button::before {
-  background: var(--case-button-face, var(--color-dns-button-face));
-}
-@media (hover: hover) and (forced-colors: none) {
-  .dns-brand-button:is(:any-link, :enabled):hover::before {
-    filter: brightness(var(--case-button-hover-brightness, 1.1));
-  }
-}
-.dns-brand-button-label {
+.icon-tile-label {
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
@@ -1137,16 +1193,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   -webkit-text-stroke: .2px currentColor;
   translate: var(--icon-tile-icon-offset) var(--icon-tile-icon-offset);
 }
-@media (forced-colors: active) {
-  .dns-brand-button::before {
-    forced-color-adjust: none;
-    background: ButtonFace;
-  }
-  .dns-brand-button::after {
-    forced-color-adjust: none;
-    background: ButtonText;
-  }
-}
 .dns-case-section,
 .dns-case-subsections,
 .dns-case-group,
@@ -1155,10 +1201,10 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   grid-template-columns: minmax(0, 1fr);
 }
 .dns-case-section { gap: var(--space-32); }
-.case-section--divider { gap: var(--case-section-heading-gap, var(--space-40)); }
+.case-section--divider,
+.dns-case-subsections { gap: var(--dns-case-section-gap); }
 .dns-case-subsections > .case-section--labeled { gap: var(--space-20); }
-.dns-case-subsections { gap: var(--space-60); }
-.dns-case-group { gap: var(--space-24); }
+.dns-case-group { gap: var(--space-32); }
 .dns-case-block { gap: var(--space-12); }
 .dns-decision-copy {
   display: grid;
@@ -1192,6 +1238,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-block > :is(p, blockquote), .case-decision-card { max-inline-size: 80ch; }
 .case-test-accounting {
+  --icon-tile-hum-delay: -2.6s;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -1203,7 +1250,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .case-decision-card {
   margin: 0;
   padding: var(--space-12);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: var(--color-surface);
 }
 .case-decision-card > blockquote { margin: 0; }
@@ -1221,6 +1268,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   max-inline-size: 64ch;
 }
 .case-evidence-toggle {
+  --icon-tile-hum-delay: -1.3s;
   flex: none;
   margin-inline-start: auto;
 }
@@ -1312,7 +1360,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-content: space-between;
   gap: var(--space-6);
   padding: var(--space-12);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: var(--color-surface);
   color: var(--color-muted);
 }
@@ -1364,9 +1412,10 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 @media (prefers-reduced-motion: no-preference) {
   [data-mascot-highlighted] > .case-fact-highlight {
-    animation: case-sign-startup 600ms steps(1) 140ms backwards;
+    animation: var(--case-sign-startup) backwards;
+    opacity: calc(var(--case-sign-light-opacity) * var(--case-fact-glow-opacity));
   }
-  [data-mascot-highlighted] { animation: case-fact-hum 4s steps(1) infinite; }
+  [data-mascot-highlighted] { animation: var(--case-fact-hum); }
 }
 @keyframes case-fact-hum {
   0%, 86.5%, 91%, 100% { --case-fact-glow-opacity: 1; }
@@ -1479,6 +1528,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     --case-page-gutter: 20px;
     --case-cover-height: calc((min(100vw - 40px, 720px) - 24px) * .3);
   }
+  .tile-layout--sign { grid-template-columns: minmax(0, 1fr); }
   .case-tile-placeholder { display: none; }
 }
 

@@ -6,12 +6,13 @@ export function ContactButtons() {
   return (
     <ul className="portfolio-socials" aria-label="Контакты и резюме">
       {site.profile.socialLinks.map(({ id, label, href }) => {
+        const className = `icon-tile ${id === 'telegram' ? 'icon-tile--lit' : 'icon-tile--secondary'}`;
         const icon = <GridIcon name={id} />;
         return (
-          <li key={id}>
+          <li key={id} data-contact={id}>
             {href
-              ? <a className="icon-tile" {...iconTilePress} href={href} aria-label={label} title={label}>{icon}</a>
-              : <button type="button" className="icon-tile" {...iconTilePress} aria-label={label}
+              ? <a className={className} {...iconTilePress} href={href} aria-label={label} title={label}>{icon}</a>
+              : <button type="button" className={className} {...iconTilePress} aria-label={label}
                   title={`${label} — ссылка пока не указана`}>{icon}</button>}
           </li>
         );

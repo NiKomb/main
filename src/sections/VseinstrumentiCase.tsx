@@ -67,15 +67,15 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
           <div className="dns-summary-actions">
-            <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('vi-solutions')}>
-              <span className="dns-brand-button-label">К решениям</span>
+            <button className="icon-tile icon-tile--labeled icon-tile--secondary" {...iconTilePress} type="button" onClick={() => jumpToHeading('vi-solutions')}>
+              <span className="icon-tile-label">К решениям</span>
             </button>
-            <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('vi-test')}>
-              <span className="dns-brand-button-label">К результатам UX-теста</span>
+            <button className="icon-tile icon-tile--labeled icon-tile--secondary" {...iconTilePress} type="button" onClick={() => jumpToHeading('vi-test')}>
+              <span className="icon-tile-label">К результатам UX-теста</span>
             </button>
-            <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
+            <a className="icon-tile icon-tile--labeled icon-tile--lit dns-summary-configurator" {...iconTilePress}
               href={viAfterLink.href} target="_blank" rel="noopener" data-track-id={viAfterLink.id}>
-              <span className="dns-brand-button-label">{viPrototypeLink.label}<GridIcon name="link" /></span>
+              <span className="icon-tile-label">{viPrototypeLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
         </CaseCard>

@@ -1,7 +1,7 @@
 .gallery-media-full:has(> [data-gallery-outgoing]) {
   position: relative;
   overflow: clip;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-case-tile);
   background: var(--color-cover-matte);
 }
 

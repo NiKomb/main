@@ -19,11 +19,12 @@
   --color-dns-accent: #ff9b49;
   --color-dns-button-face: #ffa218;
   --color-dns-button-shadow: #fc8507;
-  --color-dns-button-depth: #d97006;
   --color-vi-brand: #d60000;
   --color-vi-on-brand: #fff;
-  --color-vi-brand-soft: color-mix(in srgb, var(--color-vi-brand), var(--color-vi-on-brand) 18%);
   --color-vi-accent: color-mix(in srgb, var(--color-vi-brand), var(--color-vi-on-brand) 25%);
+  --color-vi-sign: oklch(from var(--color-vi-brand) calc(l + .11) c h);
+  --color-telegram: #2aabee;
+  --color-gmail: #ea4335;
   --color-cover-matte: #f2f2f2;
   --font-body: Geist, system-ui, sans-serif;
   --font-accent: "Departure Mono", ui-monospace, monospace;
@@ -48,9 +49,14 @@
   --space-60: 60px;
   --space-80: 80px;
   --radius-card: 12px;
+  --radius-case-tile: 8px;
   --size-icon-tile: 40px;
   --content-width: 1280px;
   --home-content-width: 1200px;
   --home-tile-gap: 16px;
   --case-text-width: 740px;
+  --case-sign-startup-delay: 140ms;
+  --case-sign-startup-duration: 600ms;
+  --case-sign-startup: case-sign-startup var(--case-sign-startup-duration) steps(1) var(--case-sign-startup-delay);
+  --case-fact-hum: case-fact-hum 4s steps(1) infinite;
 }

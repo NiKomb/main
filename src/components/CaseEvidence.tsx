@@ -83,7 +83,7 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
         {heading}
         <div className="case-evidence-intro">
           <p>{introduction}</p>
-          <button ref={toggleRef} className="icon-tile dns-brand-button case-evidence-toggle" {...iconTilePress} type="button"
+          <button ref={toggleRef} className="icon-tile icon-tile--lit case-evidence-toggle" {...iconTilePress} type="button"
             aria-label={panelTitle} aria-expanded={open} aria-controls={panelId} data-mascot-finish-button=""
             onClick={() => open ? close() : setOpen(true)}>
             <GridIcon name={open ? 'left' : 'right'} />

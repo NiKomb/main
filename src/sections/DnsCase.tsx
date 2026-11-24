@@ -159,15 +159,15 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <div><dt>Ограничения</dt><dd>{summary.limits}</dd></div>
           </dl>
           <div className="dns-summary-actions">
-            <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
-              <span className="dns-brand-button-label">К решениям</span>
+            <button className="icon-tile icon-tile--labeled icon-tile--secondary" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
+              <span className="icon-tile-label">К решениям</span>
             </button>
-            <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
-              <span className="dns-brand-button-label">К результатам UX-теста</span>
+            <button className="icon-tile icon-tile--labeled icon-tile--secondary" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
+              <span className="icon-tile-label">К результатам UX-теста</span>
             </button>
-            <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
+            <a className="icon-tile icon-tile--labeled icon-tile--lit dns-summary-configurator" {...iconTilePress}
               href={dnsDemoLink.href} target="_blank" rel="noopener" data-track-id={dnsDemoLink.id}>
-              <span className="dns-brand-button-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
+              <span className="icon-tile-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
         </CaseCard>

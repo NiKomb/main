@@ -5,9 +5,9 @@ export function CaseTestAccounting({ text, journalHref }: { text: string; journa
   return (
     <div className="case-test-accounting">
       <p>{text}</p>
-      <a className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress}
+      <a className="icon-tile icon-tile--labeled icon-tile--lit" {...iconTilePress}
         href={journalHref} target="_blank" rel="noopener">
-        <span className="dns-brand-button-label">Журнал<GridIcon name="link" /></span>
+        <span className="icon-tile-label">Журнал<GridIcon name="link" /></span>
       </a>
     </div>
   );

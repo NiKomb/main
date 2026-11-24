@@ -660,7 +660,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
           </GalleryStrip>
           <div className="case-layout">
             <nav className="case-nav" data-dns-contents={detailedContents ? '' : undefined} aria-label="Навигация по кейсу">
-              <a ref={caseBack} className="icon-tile case-back" {...iconTilePress} href="#projects" aria-label="К кейсам" onClick={(event) => {
+              <a ref={caseBack} className="icon-tile icon-tile--secondary case-back" {...iconTilePress} href="#projects" aria-label="К кейсам" onClick={(event) => {
                 if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault();
                 if (history.state?.fromCaseList) history.back();
@@ -753,7 +753,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
           <div className="case-grid">
             {projects.map((entry) => (
               <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <a className="tile-layout--sign" href={`#case-${entry.id}`} onClick={(event) => {
+                <a className="tile-layout--sign" {...iconTilePress} href={`#case-${entry.id}`} onClick={(event) => {
                   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   event.preventDefault();
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
