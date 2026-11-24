@@ -221,17 +221,22 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     motion.onfinish = finish;
   }
 
-  function dashAndReturn(start: Point, surface: Surface, pointerX: number | undefined, finish: () => void) {
+  function dashAndReturn(start: Point, surface: Surface, pointerX: number | undefined, finish: () => void,
+    { allowStationary = false } = {}) {
     const bounds = layer.getBoundingClientRect();
     const offset = pointerX === undefined ? 0 : pointerX - (bounds.left + bounds.width / 2);
     const moreRoomOnRight = surface.right - start.x > start.x - surface.left;
     const toRight = Math.abs(offset) < 2 ? moreRoomOnRight : offset < 0;
     const endX = onSurface(start.x + (toRight ? 1 : -1) * surface.dashDistance, surface);
-    if (endX === start.x || !dashAlongCover(start, endX, () => {
-      moveHorizontally({ x: endX, y: start.y }, start.x, () => {
+    const stationary = endX === start.x;
+    if (stationary && !allowStationary) return false;
+    if (!dashAlongCover(start, endX, () => {
+      const done = () => {
         activeSurface = undefined;
         finish();
-      });
+      };
+      if (stationary) done();
+      else moveHorizontally({ x: endX, y: start.y }, start.x, done);
     })) return false;
     activeSurface = surface;
     return true;

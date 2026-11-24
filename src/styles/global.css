@@ -932,6 +932,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   gap: var(--dns-case-section-gap);
 }
 .dns-case-body p { text-wrap: pretty; }
+/* Keep icon controls clickable where the mascot's hit area extends over them. */
+.dns-case-body .icon-tile:is(a[href], button) { z-index: 3; }
 .dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-body {
   --case-section-heading-gap: var(--dns-case-section-gap);
   --dns-meta-gap: var(--space-32);
@@ -1460,7 +1462,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 @media (prefers-reduced-motion: no-preference) {
   .case-tile .case-cover { transition: transform 140ms ease; }
   .case-cover-secondary { animation: case-cover-arrive 390ms both cubic-bezier(.22, 1, .36, 1); }
-  .case-body[data-arrived="true"] > * { animation: case-arrive 230ms both ease-out; }
+  .case-body[data-arrived="true"] > * { animation: case-arrive 230ms backwards ease-out; }
   .case-body[data-arrived="true"] > :nth-child(2) { animation-delay: 45ms; }
   .case-body[data-arrived="true"] > :nth-child(3) { animation-delay: 90ms; }
 }

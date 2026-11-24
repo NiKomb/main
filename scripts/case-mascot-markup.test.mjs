@@ -7,6 +7,19 @@ import { runnerImport } from 'vite';
 const { module: { CaseCard } } = await runnerImport('./src/components/CaseCard.tsx');
 const { module: { CaseCardList, CaseResults } } = await runnerImport('./src/components/CaseCardList.tsx');
 const { module: { CaseDecisionCopy } } = await runnerImport('./src/components/CaseDecisionCopy.tsx');
+const { module: { CaseEvidence } } = await runnerImport('./src/components/CaseEvidence.tsx');
+
+test('the shared evidence toggle is marked as a row finish outside the ordinary surfaces', () => {
+  const markup = renderToStaticMarkup(createElement(CaseEvidence, {
+    headingId: 'research', heading: 'Research', introduction: 'Interviews',
+    panelId: 'quotes', panelTitle: 'Quotes', evidence: 'Interview quotes',
+  }));
+
+  assert.match(markup, /<section[^>]*data-mascot-finish-group=""/);
+  assert.match(markup, /<button[^>]*aria-expanded="false"[^>]*aria-controls="quotes"[^>]*data-mascot-finish-button=""/);
+  assert.doesNotMatch(markup, /<button[^>]*data-mascot-surface/);
+});
+
 test('decision cards mark both surfaces through their shared component', () => {
   const markup = renderToStaticMarkup(createElement(CaseDecisionCopy, {
     hypothesisNumber: 1,

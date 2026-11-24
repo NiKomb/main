@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
-import { caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight,
+import { caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowRoute, caseSurfacesInJumpRange,
+  nextCaseSurfaceToRight, recordCaseScrollStep,
   rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechAvoidanceOffset, speechPlacement, speechPosition, speechSides, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
@@ -127,33 +128,56 @@ test('a case comment follows the current stop and its closest marked group', () 
   );
 });
 
-test('the case route uses five percent of the viewport per edge and leaves room for the contents', () => {
-  assert.deepEqual(caseRouteViewportLimits(900), { top: 45, bottom: 855 });
-  assert.deepEqual(caseRouteViewportLimits(2160), { top: 108, bottom: 2052 });
-  assert.deepEqual(caseRouteViewportLimits(844, 168), { top: 168, bottom: 801.8 });
+test('the case route uses the middle seventy percent of the viewport and leaves room for the contents', () => {
+  assert.deepEqual(caseRouteViewportLimits(900), { top: 135, bottom: 765 });
+  assert.deepEqual(caseRouteViewportLimits(2160), { top: 324, bottom: 1836 });
+  assert.deepEqual(caseRouteViewportLimits(844, 168), { top: 168, bottom: 717.4 });
 });
 
-test('the top gallery can host the mascot when the tall viewport puts it inside the opening margin', () => {
-  assert.deepEqual(caseRouteViewportLimits(2160, 0, 80), { top: 80, bottom: 2052 });
-  assert.deepEqual(caseRouteViewportLimits(900, 0, 80), { top: 45, bottom: 855 });
+test('fast scroll exceeds half the viewport in either direction and discards stale steps or reversals', () => {
+  for (const direction of [-1, 1]) {
+    const steps = [];
+    assert.equal(recordCaseScrollStep(steps, direction * 225, 0, 900), false);
+    assert.equal(recordCaseScrollStep(steps, direction * 225, 140, 900), false);
+    assert.equal(recordCaseScrollStep(steps, direction * 224, 180, 900), false);
+    assert.equal(recordCaseScrollStep(steps, direction, 190, 900), false);
+    assert.equal(recordCaseScrollStep(steps, direction, 195, 900), true);
+    assert.equal(recordCaseScrollStep(steps, 0, 200, 900), false);
+    assert.equal(recordCaseScrollStep(steps, -direction * 225, 205, 900), false);
+    assert.equal(recordCaseScrollStep(steps, -direction * 226, 220, 900), true);
+    assert.equal(recordCaseScrollStep(steps, -direction * 451, 325, 900), true);
+  }
 });
 
-test('case movement selects a single row above the viewport midpoint', () => {
+test('vertical transitions can jump a wider horizontal gap than tiles on the same level', () => {
+  const gallery = { left: 942, right: 1042, y: 460 };
+  const row = { left: 575, right: 793, y: 168 };
+
+  assert.equal(caseSurfacesInJumpRange(gallery, row, 900), true);
+  assert.equal(caseSurfacesInJumpRange(row, gallery, 900), true);
+  assert.equal(caseSurfacesInJumpRange(gallery, { ...row, y: 460 }, 900), false);
+  assert.equal(caseSurfacesInJumpRange(gallery, { ...row, right: 781 }, 900), false);
+  assert.equal(caseSurfacesInJumpRange(gallery, row, 550), false);
+});
+
+test('case movement selects the topmost row in the band or holds its visible target', () => {
+  const limits = caseRouteViewportLimits(900);
   const group = {};
   const screen = { tile: {}, group, kind: 'screen', top: 360, left: 10, right: 280 };
   const adjacent = { tile: {}, group, kind: 'screen', top: 360.5, left: 304, right: 580 };
   const distant = { ...adjacent, left: 400, right: 650 };
-  const card = { tile: {}, group: {}, kind: 'card', top: 450, left: 10, right: 280 };
-  const upperCard = { ...card, top: 120 };
-  assert.equal(selectCaseSurface([card, screen], card, 900), screen);
-  assert.equal(selectCaseSurface([card, screen, upperCard], screen, 900), upperCard);
-  assert.equal(selectCaseSurface([upperCard, screen, card], screen, 900, true), card);
-  assert.equal(selectCaseSurface([screen, adjacent, card], adjacent, 900), adjacent);
+  const card = { tile: {}, group: {}, kind: 'card', top: 765, left: 10, right: 280 };
+  const upperCard = { ...card, top: 135 };
+  const aboveBand = { ...upperCard, top: 134 };
+  const belowBand = { ...card, top: 766 };
+  assert.equal(selectCaseSurface([card, screen], limits, card), screen);
+  assert.equal(selectCaseSurface([card, screen, upperCard], limits, screen), upperCard);
+  assert.equal(selectCaseSurface([aboveBand, card, belowBand], limits, aboveBand), card);
+  assert.equal(selectCaseSurface([aboveBand, belowBand], limits, aboveBand), aboveBand);
+  assert.equal(selectCaseSurface([aboveBand, belowBand], limits), undefined);
+  assert.equal(selectCaseSurface([screen, adjacent, card], limits, adjacent), adjacent);
   const labelled = { ...adjacent, hasOwnComment: true };
-  assert.equal(selectCaseSurface([screen, labelled, card], screen, 900), labelled);
-  assert.equal(selectCaseSurface([labelled, screen, card], screen, 900, true), card);
-  assert.equal(selectCaseSurface([{ ...screen, top: 451 }, card], undefined, 900), card);
-  assert.equal(selectCaseSurface([{ ...screen, top: 451 }], undefined, 900), undefined);
+  assert.equal(selectCaseSurface([screen, labelled, card], limits, screen), labelled);
   assert.equal(sameCaseRow(screen, adjacent), true);
   assert.equal(sameCaseRow(screen, { ...adjacent, top: 390 }), false);
   assert.equal(nextCaseSurfaceToRight(screen, [card, distant, adjacent]), adjacent);
@@ -188,7 +212,7 @@ test('a full row keeps the chosen comment and progresses to the last card on the
   const wrapped = tile(320, 340);
   const tiles = [first, commented, last, wrapped];
 
-  assert.equal(selectCaseSurface(tiles, last, 900), commented);
+  assert.equal(selectCaseSurface(tiles, caseRouteViewportLimits(900), last), commented);
   assert.deepEqual(caseRowRoute(commented, tiles, last), {
     current: last, finish: last, comment: commented.tile, stopAtComment: false,
   });

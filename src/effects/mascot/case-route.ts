@@ -9,6 +9,28 @@ export type CaseSurface = {
 };
 
 export type ParkingSide = 'left' | 'right';
+export type CaseScrollStep = { time: number; delta: number };
+
+const scrollSpeedWindow = 100;
+const sameLevelGap = 72;
+const diagonalGap = 160;
+
+export function recordCaseScrollStep(steps: CaseScrollStep[], delta: number, time: number, viewportHeight: number) {
+  if (!delta) return false;
+  const previous = steps.at(-1);
+  if (previous && Math.sign(previous.delta) !== Math.sign(delta)) steps.length = 0;
+  while (steps[0] && time - steps[0].time > scrollSpeedWindow) steps.shift();
+  steps.push({ time, delta });
+  return Math.abs(steps.reduce((distance, step) => distance + step.delta, 0)) > viewportHeight / 2;
+}
+
+type JumpSurface = { left: number; right: number; y: number };
+
+export function caseSurfacesInJumpRange(from: JumpSurface, into: JumpSurface, viewportHeight: number) {
+  const rise = Math.abs(from.y - into.y);
+  const gap = Math.max(0, from.left - into.right, into.left - from.right);
+  return rise <= Math.min(400, viewportHeight / 2) && gap <= (rise > 0 ? diagonalGap : sameLevelGap);
+}
 
 export function caseMascotDropZone(x: number, y: number, column: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>) {
   if (x < column.left) return 'left';
@@ -40,25 +62,24 @@ export function caseMascotParking(side: ParkingSide, column: Pick<DOMRect, 'left
   return { point: { x, y }, step: room >= 4 ? Math.min(8, Math.floor(room)) : 0 };
 }
 
-export function caseRouteViewportLimits(viewportHeight: number, contentsBottom = 0, openingGalleryTop?: number) {
-  const edgeInset = viewportHeight * .05;
+export function caseRouteViewportLimits(viewportHeight: number, contentsBottom = 0) {
+  const edgeInset = viewportHeight * .15;
   return {
-    top: Math.max(Math.min(edgeInset, openingGalleryTop ?? edgeInset), contentsBottom),
+    top: Math.max(edgeInset, contentsBottom),
     bottom: viewportHeight - edgeInset,
   };
 }
 
-export function selectCaseSurface<T extends CaseSurface>(surfaces: readonly T[], current: T | undefined,
-  viewportHeight: number, movingUp = false): T | undefined {
-  const middle = viewportHeight / 2;
+export function selectCaseSurface<T extends CaseSurface>(surfaces: readonly T[], limits: { top: number; bottom: number }, current?: T): T | undefined {
   let best: T | undefined;
   for (const surface of surfaces) {
-    if (surface.top > middle) continue;
+    if (surface.top < limits.top || surface.top > limits.bottom) continue;
     if (!best || (sameCaseRow(surface, best)
       ? surface.hasOwnComment && !best.hasOwnComment
-      : movingUp ? surface.top > best.top : surface.top < best.top)) best = surface;
+      : surface.top < best.top)) best = surface;
   }
-  return current && current.top <= middle && best && sameCaseRow(current, best) &&
+  if (!best) return current;
+  return current && current.top >= limits.top && current.top <= limits.bottom && sameCaseRow(current, best) &&
     (!best.hasOwnComment || current.hasOwnComment) ? current : best;
 }
 
@@ -87,26 +108,53 @@ export function nextCaseSurfaceToRight<T extends CaseSurface>(surface: T, surfac
   let next: T | undefined;
   for (const candidate of surfaces) {
     const gap = candidate.left - surface.right;
-    if (gap < 0 || gap > 72 || !sameCaseRow(candidate, surface)) continue;
+    if (gap < 0 || gap > sameLevelGap || !sameCaseRow(candidate, surface)) continue;
     if (!next || candidate.left < next.left) next = candidate;
   }
   return next;
 }
 
-export function caseFooterRoute<T extends Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>>(buttons: readonly T[],
+export function caseButtonX({ left, right }: Pick<DOMRect, 'left' | 'right'>, viewportWidth: number, spriteSize: number) {
+  return Math.max(0, Math.min(viewportWidth - spriteSize, (left + right - spriteSize) / 2));
+}
+
+type ButtonBounds = Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>;
+
+function visibleCaseButton({ left, right, top, bottom }: ButtonBounds, width: number, height: number, minTop: number) {
+  return left >= 0 && right <= width && top >= minTop && bottom <= height && right > left && bottom > top;
+}
+
+export function caseRowFinishButton<T extends ButtonBounds>(buttons: readonly T[], edge: { x: number; y: number },
+  viewport: { width: number; height: number; top: number }, spriteSize: number, maxGap: number) {
+  if (viewport.width <= spriteSize) return;
+
+  let closest: { button: T; buttonX: number } | undefined;
+  let distance = Infinity;
+  for (const button of buttons) {
+    if (!visibleCaseButton(button, viewport.width, viewport.height, Math.max(viewport.top, spriteSize))) continue;
+    const gapAbove = edge.y - button.bottom;
+    const buttonX = caseButtonX(button, viewport.width, spriteSize);
+    const gapAcross = Math.abs(edge.x - buttonX);
+    if (gapAbove < 0 || gapAbove > maxGap || gapAcross > maxGap) continue;
+    const jump = Math.hypot(gapAcross, edge.y - button.top);
+    if (jump >= distance) continue;
+    closest = { button, buttonX };
+    distance = jump;
+  }
+  return closest;
+}
+
+export function caseFooterRoute<T extends ButtonBounds>(buttons: readonly T[],
   width: number, height: number, textRight: number, spriteSize: number) {
   if (width <= spriteSize) return;
 
-  const rightEdge = width - spriteSize;
-  const visible = buttons.filter(({ left, right, top, bottom }) => (
-    left >= 0 && right <= width && top >= spriteSize && bottom <= height && right > left && bottom > top
-  )).map((button) => ({ button, center: (button.left + button.right) / 2 }));
+  const visible = buttons.filter((button) => visibleCaseButton(button, width, height, spriteSize));
   if (!visible.length) return;
 
-  const { button, center } = visible.reduce((best, next) => next.center > best.center ? next : best);
+  const button = visible.reduce((best, next) => next.left + next.right > best.left + best.right ? next : best);
   return {
     button,
-    buttonX: Math.max(0, Math.min(rightEdge, center - spriteSize / 2)),
+    buttonX: caseButtonX(button, width, spriteSize),
     rightFinish: { x: Math.max(0, Math.min(width, textRight) - spriteSize), y: height - spriteSize },
   };
 }

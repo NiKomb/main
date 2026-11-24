@@ -27,6 +27,53 @@ test('an opt-in dash still moves toward its endpoint just before the skid starts
   assert.ok(remainingDistance(225) > .225 && remainingDistance(225) < .25);
 });
 
+test('an opted-in dash animates a single-point stop and settles without a return run', (t) => {
+  const context = {
+    drawImage() {},
+    getImageData: () => ({ data: new Uint8ClampedArray(36 * 36 * 4) }),
+    createImageData: (width, height) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+    putImageData() {},
+  };
+  let frame;
+  globalThis.document = { createElement: () => ({ getContext: () => context }) };
+  globalThis.requestAnimationFrame = (callback) => { frame = callback; return 1; };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => {
+    delete globalThis.document;
+    delete globalThis.requestAnimationFrame;
+    delete globalThis.cancelAnimationFrame;
+  });
+
+  const canvas = {
+    parentElement: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 300 }) },
+    getContext: () => context,
+    style: {},
+    hidden: true,
+  };
+  const actor = { style: {}, dataset: {}, getBoundingClientRect: () => ({ left: 100, width: 72 }),
+    animate: () => assert.fail('a stationary dash has no return run') };
+  const movement = createMascotMovement(actor, canvas, null, { naturalWidth: 288 });
+  const point = { x: 100, y: 60 };
+  const surface = { left: point.x, right: point.x, dashDistance: 72 };
+  let completed = 0;
+  const finish = () => { completed++; movement.settle(point); };
+  movement.settle(point);
+
+  assert.equal(movement.dashAndReturn(point, surface, undefined, finish), false);
+  assert.equal(movement.dashAndReturn(point, surface, undefined, finish, { allowStationary: true }), true);
+  assert.equal(movement.phase, 'dash');
+  assert.equal(canvas.hidden, false);
+
+  const start = performance.now();
+  for (let i = 1; i <= 20; i++) {
+    frame(start + i * 25);
+    assert.equal(actor.style.transform, 'translate(100px, 60px)');
+  }
+  assert.equal(movement.phase, 'idle');
+  assert.equal(movement.activeSurface, undefined);
+  assert.equal(completed, 1);
+});
+
 test('the Blink canvas covers an avatar to the left of or above the case grid', (t) => {
   const context = {
     drawImage() {},

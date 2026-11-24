@@ -73,7 +73,7 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
   }
 
   return (
-    <section ref={blockRef} className="dns-case-group case-evidence" id={id} aria-labelledby={headingId}
+    <section ref={blockRef} className="dns-case-group case-evidence" id={id} aria-labelledby={headingId} data-mascot-finish-group=""
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || !open) return;
         event.stopPropagation();
@@ -84,7 +84,7 @@ export function CaseEvidence({ id, headingId, heading, introduction, panelId, pa
         <div className="case-evidence-intro">
           <p>{introduction}</p>
           <button ref={toggleRef} className="icon-tile dns-brand-button case-evidence-toggle" {...iconTilePress} type="button"
-            aria-label={panelTitle} aria-expanded={open} aria-controls={panelId}
+            aria-label={panelTitle} aria-expanded={open} aria-controls={panelId} data-mascot-finish-button=""
             onClick={() => open ? close() : setOpen(true)}>
             <GridIcon name={open ? 'left' : 'right'} />
           </button>

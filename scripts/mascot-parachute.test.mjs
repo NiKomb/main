@@ -43,6 +43,18 @@ test('a viewport-edge takeoff still finishes with the entire canopy in view', ()
   assert.deepEqual(clampParachute(track.hover, 320, 420), { x: 212, y: 340 });
 });
 
+test('a button takeoff pushes off from a single point and opens the parachute inside the viewport', () => {
+  for (const [x, width, contentRight] of [[1034, 1440, 1090], [314, 390, 370]]) {
+    const start = { x, y: 167 };
+    const track = createParachuteTrack(start, x + 36, width, 844, contentRight);
+
+    assert.deepEqual(track.frames[0], { hold: 56, column: 0, row: 0 });
+    assert.deepEqual(track.position(55), start);
+    assert.ok(track.position(120).y < start.y);
+    assert.ok(track.hover.x - 36 >= 0 && track.hover.x + 108 <= width);
+  }
+});
+
 test('one ordinary scroll produces a banked arc that continues after input stops', () => {
   const area = parachuteGlideArea(320, 1090, 1440, 900);
   const glide = createParachuteGlide();

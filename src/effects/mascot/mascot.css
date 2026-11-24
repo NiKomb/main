@@ -384,7 +384,12 @@
   content: '';
 }
 .mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: auto; }
-.mascot-case .mascot[data-over-control] .mascot__actor { pointer-events: none; }
+.mascot-case .mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: none; }
+.mascot-case .mascot[data-visible="true"][data-pose="idle"] .mascot__actor::after {
+  /* The feet are four pixels above the bottom of the sprite box. */
+  inset-block-end: 4px;
+  pointer-events: auto;
+}
 .mascot[data-pose="idle"][data-attacking] .mascot__sprite {
   animation: mascot-attack 560ms steps(8, end);
 }
