@@ -8,6 +8,24 @@ const { module: { playGroundMovement } } = await runnerImport(
 const { module: { createMascotMovement } } = await runnerImport(
   './src/effects/mascot/mascot-movement.ts', { configFile: false },
 );
+const { module: { default: movement } } = await runnerImport(
+  './src/effects/mascot/sprite-fusion-movement.ts', { configFile: false },
+);
+
+test('an opt-in dash still moves toward its endpoint just before the skid starts', () => {
+  function remainingDistance(dashExitSpeed) {
+    let position;
+    const dash = movement({
+      kind: 'dash', x: 0, y: 0, distance: 200, time: .27, dashExitSpeed,
+      cue: (name, point) => { if (name === 'move') position = point.x; },
+    });
+    dash.update(.389);
+    return 200 - position;
+  }
+
+  assert.ok(remainingDistance() < .05);
+  assert.ok(remainingDistance(225) > .225 && remainingDistance(225) < .25);
+});
 
 test('the Blink canvas covers an avatar to the left of or above the case grid', (t) => {
   const context = {
@@ -46,6 +64,60 @@ test('the Blink canvas covers an avatar to the left of or above the case grid', 
   }
 });
 
+test('a drag release draws the tucked sprite until it vanishes, then reveals the standing actor at the destination', (t) => {
+  const standing = { naturalWidth: 288 };
+  const tucked = { width: 56, height: 56 };
+  const pixels = new Uint32Array(tucked.width * tucked.height);
+  pixels[15 * tucked.width + 20] = 0xff1627be;
+  const capturedImages = [];
+  const source = {
+    drawImage(image) { capturedImages.push(image); },
+    getImageData: () => ({ data: new Uint8ClampedArray(36 * 36 * 4) }),
+  };
+  const drawnImages = [];
+  const context = {
+    createImageData: (width, height) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+    drawImage(image) { drawnImages.push(image); },
+    putImageData() {},
+  };
+  const canvas = {
+    parentElement: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 300 }) },
+    getContext: () => context,
+    style: {},
+  };
+  let frame;
+  globalThis.document = { createElement: () => ({ getContext: () => source }) };
+  globalThis.requestAnimationFrame = (callback) => { frame = callback; return 1; };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => {
+    delete globalThis.document;
+    delete globalThis.requestAnimationFrame;
+    delete globalThis.cancelAnimationFrame;
+  });
+
+  const changes = [];
+  const from = { x: 40, y: 60 };
+  const blink = playGroundMovement(canvas, standing, from, 120,
+    (x, opacity) => changes.push([x, opacity]), () => {},
+    { kind: 'blink', departureFrame: { sprite: tucked, inset: 10, pixels } });
+  assert.ok(blink);
+  assert.deepEqual(capturedImages, [standing]);
+  assert.deepEqual(drawnImages, [tucked]);
+
+  const start = performance.now();
+  for (let i = 1; i <= 8; i++) frame(start + i * 25);
+  assert.ok(drawnImages.length > 1 && drawnImages.every((image) => image === tucked));
+  assert.deepEqual(changes, []);
+
+  for (let i = 9; i <= 16; i++) frame(start + i * 25);
+  assert.deepEqual(changes, [[from.x, 0]]);
+  const drawnBeforeArrival = drawnImages.length;
+  for (let i = 17; i <= 38; i++) frame(start + i * 25);
+  assert.deepEqual(changes, [[from.x, 0], [120, 1]]);
+  assert.equal(drawnImages.length, drawnBeforeArrival);
+  blink.cancel();
+});
+
 test('travel announces takeoff when the run-up ends and the jump begins', () => {
   const animations = [];
   const layer = {
@@ -74,5 +146,52 @@ test('travel announces takeoff when the run-up ends and the jump begins', () => 
   assert.equal(takeoffs, 0);
   animations[0].onfinish();
   assert.equal(movement.phase, 'jump');
+  assert.equal(layer.dataset.pose, 'long-jump');
   assert.equal(takeoffs, 1);
+});
+
+test('jumps choose launch and landing poses from the horizontal and vertical offsets', (t) => {
+  let finishRecovery;
+  globalThis.window = {
+    setTimeout: (callback) => { finishRecovery = callback; },
+    clearTimeout: () => { finishRecovery = undefined; },
+  };
+  t.after(() => { delete globalThis.window; });
+
+  let animation;
+  const layer = {
+    style: { setProperty() {} },
+    dataset: {},
+    animate() {
+      animation = { cancel() {} };
+      return animation;
+    },
+  };
+  const movement = createMascotMovement(layer, null, null, {});
+  const start = { x: 150, y: 90 };
+
+  function jump(dx, dy, prefix = '', options) {
+    const end = { x: start.x + dx, y: start.y + dy };
+    movement.leap(start, end, () => movement.settle(end), options);
+    assert.equal(movement.phase, 'jump');
+    assert.equal(layer.dataset.pose, `${prefix}jump`);
+    animation.onfinish();
+    assert.equal(movement.phase, 'land');
+    assert.equal(layer.dataset.pose, `${prefix}land`);
+    finishRecovery();
+    assert.equal(layer.dataset.pose, 'idle');
+  }
+
+  jump(-73, 20, 'long-', { arcAcrossWideGap: true });
+  assert.equal(layer.dataset.direction, 'left');
+  jump(72, 0);
+  jump(48, 64, 'long-');
+  jump(56, -56, 'long-');
+  jump(32, -32);
+  jump(8, -140, 'up-');
+  jump(8, 140, 'down-');
+  jump(23, 120, 'down-');
+  jump(24, 120, 'long-');
+  jump(8, -119);
+  jump(72, 0, '', { carriedByDash: true });
 });

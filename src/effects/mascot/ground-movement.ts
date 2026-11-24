@@ -4,10 +4,13 @@ type Point = { x: number; y: number };
 const spriteSize = 36;
 const scale = 2;
 const foot = 68;
+export type BlinkDeparture = { sprite: HTMLCanvasElement; inset: number; pixels: Uint32Array };
 type GroundMovementOptions = {
   kind: 'dash' | 'blink' | 'blink-arrival' | 'blink-departure';
   facing?: 'left' | 'right';
   endY?: number;
+  dashExitSpeed?: number;
+  departureFrame?: BlinkDeparture;
 };
 
 export function playGroundMovement(
@@ -17,7 +20,7 @@ export function playGroundMovement(
   endX: number,
   move: (x: number, opacity: number) => void,
   finish: () => void,
-  { kind, facing: direction, endY = start.y }: GroundMovementOptions,
+  { kind, facing: direction, endY = start.y, dashExitSpeed, departureFrame }: GroundMovementOptions,
 ) {
   const context = canvas.getContext('2d');
   if (!context || !image.naturalWidth) return;
@@ -55,6 +58,13 @@ export function playGroundMovement(
   };
   const arrivalOnly = kind === 'blink-arrival';
   const departureOnly = kind === 'blink-departure';
+  const departureSprite = departureFrame?.sprite ?? (departureOnly ? sheet : undefined);
+  const inset = departureFrame?.inset ?? 0;
+  const departureX = Math.round(start.x / scale) - inset;
+  const departureY = Math.round(start.y / scale) - inset;
+  const departureSilhouette = departureFrame && {
+    x: departureX, y: departureY, w: departureFrame.sprite.width, h: departureFrame.sprite.height, data: departureFrame.pixels,
+  };
   const blink = kind !== 'dash';
   const centerX = start.x + spriteSize;
   const feetY = start.y + foot;
@@ -72,14 +82,17 @@ export function playGroundMovement(
     arrivalOnly,
     departureOnly,
     x: centerX, y: feetY, facing, distance: Math.abs(endX - start.x),
-    to: endX + spriteSize, toY: endY + foot, time: dashTime, ground: feetY,
+    to: endX + spriteSize, toY: endY + foot, time: dashTime, ground: feetY, dashExitSpeed,
     actor: {
       feet: () => [x + spriteSize, feetY],
-      silhouette: () => ({
+      silhouette: () => departureSilhouette ?? ({
         x: Math.round(x / scale), y: Math.round(start.y / scale),
         w: spriteSize, h: spriteSize, data: silhouette,
       }),
     },
+    arrivalSilhouette: departureFrame && (() => ({
+      x: departureX + inset, y: departureY + inset, w: spriteSize, h: spriteSize, data: silhouette,
+    })),
     cue(name, data) {
       if (name === 'move' && data?.x !== undefined) x = data.x - spriteSize;
       if (name === 'vanish') {
@@ -96,6 +109,13 @@ export function playGroundMovement(
     canvas.hidden = true;
   }
 
+  function drawDeparture() {
+    if (!departureSprite || vanished) return;
+    canvasContext.globalCompositeOperation = 'destination-over';
+    canvasContext.drawImage(departureSprite, departureX - ox, departureY - oy);
+    canvasContext.globalCompositeOperation = 'source-over';
+  }
+
   function draw(now: number) {
     const dt = Math.min(.05, (now - last) / 1000);
     last = now;
@@ -106,11 +126,7 @@ export function playGroundMovement(
     frame.light.fill(0);
     fx.draw(frame);
     canvasContext.putImageData(pixels, 0, 0);
-    if (departureOnly && !vanished) {
-      canvasContext.globalCompositeOperation = 'destination-over';
-      canvasContext.drawImage(sheet, Math.round(start.x / scale) - ox, Math.round(start.y / scale) - oy);
-      canvasContext.globalCompositeOperation = 'source-over';
-    }
+    drawDeparture();
     if (!departureOnly && elapsed >= moveEnd && !finished) {
       finished = true;
       move(endX, 1);
@@ -123,6 +139,7 @@ export function playGroundMovement(
 
   const canvasContext = context;
   canvas.hidden = false;
+  if (departureFrame) drawDeparture();
   raf = requestAnimationFrame(draw);
   return { cancel, kind: blink ? 'blink' : 'dash' };
 }

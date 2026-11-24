@@ -8,6 +8,38 @@ export type CaseSurface = {
   hasOwnComment?: boolean;
 };
 
+export type ParkingSide = 'left' | 'right';
+
+export function caseMascotDropZone(x: number, y: number, column: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>) {
+  if (x < column.left) return 'left';
+  if (x > column.right) return 'right';
+  if (y >= column.top && y <= column.bottom) return 'route';
+}
+
+export function caseMascotParking(side: ParkingSide, column: Pick<DOMRect, 'left' | 'right'>, width: number, height: number,
+  size: number, hitInset: number, contacts?: Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>) {
+  const left = side === 'left' ? 0 : Math.min(width, Math.max(0, column.right));
+  const right = side === 'right' ? width : Math.min(width, Math.max(0, column.left));
+  const fits = right - left >= size;
+  let x = fits ? Math.round((left + right - size) / 2) : side === 'left' ? 0 : Math.max(0, width - size);
+  let y = Math.max(0, height - size);
+  let contactClearance = Infinity;
+  if (contacts && contacts.bottom > contacts.top && y + size + hitInset > contacts.top && y - hitInset < contacts.bottom) {
+    const before = Math.floor(contacts.left - size - hitInset);
+    const after = Math.ceil(contacts.right + hitInset);
+    if (x > before && x < after) {
+      const canFitBefore = fits && before >= left;
+      const canFitAfter = fits && after <= right - size;
+      if (canFitBefore && (!canFitAfter || x - before <= after - x)) x = before;
+      else if (canFitAfter) x = after;
+      else y = Math.max(0, Math.floor(contacts.top - size - hitInset));
+    }
+    if (y + size + hitInset > contacts.top) contactClearance = x <= before ? before - x : x - after;
+  }
+  const room = fits ? Math.min(x - left, right - x - size, contactClearance) : 0;
+  return { point: { x, y }, step: room >= 4 ? Math.min(8, Math.floor(room)) : 0 };
+}
+
 export function caseRouteViewportLimits(viewportHeight: number, contentsBottom = 0, openingGalleryTop?: number) {
   const edgeInset = viewportHeight * .05;
   return {

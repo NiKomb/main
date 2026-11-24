@@ -1,10 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
-import { caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight,
+import { caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight,
   rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechAvoidanceOffset, speechPlacement, speechPosition, speechSides, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
+
+test('drop zones use both axes of the current case column', () => {
+  const column = { left: 240, right: 980, top: 240, bottom: 450 };
+  assert.equal(caseMascotDropZone(239, 100, column), 'left');
+  assert.equal(caseMascotDropZone(981, 800, column), 'right');
+  assert.equal(caseMascotDropZone(500, 345, column), 'route');
+  assert.equal(caseMascotDropZone(500, 239, column), undefined);
+  assert.equal(caseMascotDropZone(500, 451, column), undefined);
+  assert.equal(caseMascotDropZone(500, 239, { ...column, top: 100 }), 'route');
+});
+
+test('parking centers in wide fields and clears contacts when the left field is narrow', () => {
+  const desktop = { left: 240, right: 980 };
+  assert.deepEqual(caseMascotParking('left', desktop, 1220, 900, 72, 15), { point: { x: 84, y: 828 }, step: 8 });
+  assert.deepEqual(caseMascotParking('right', desktop, 1220, 900, 72, 15), { point: { x: 1064, y: 828 }, step: 8 });
+  const wideContacts = { left: 20, top: 840, right: 102, bottom: 880 };
+  assert.deepEqual(caseMascotParking('left', desktop, 1220, 900, 72, 15, wideContacts), { point: { x: 117, y: 828 }, step: 0 });
+  const mobile = { left: 20, right: 370 };
+  const contacts = { left: 20, top: 760, right: 60, bottom: 860 };
+  assert.deepEqual(caseMascotParking('left', mobile, 390, 880, 72, 15, contacts), { point: { x: 0, y: 673 }, step: 0 });
+  assert.deepEqual(caseMascotParking('right', mobile, 390, 880, 72, 15, contacts), { point: { x: 318, y: 808 }, step: 0 });
+});
 
 test('speech grows toward the grid from a mascot near the right edge', () => {
   const position = speechPosition({ x: 896, top: 510, bottom: 578 }, { top: 48, width: 944 }, 900);

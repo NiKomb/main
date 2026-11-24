@@ -1,24 +1,46 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import rider from './rider.png';
+import riderDrag from './rider-drag.png';
+import riderParachuteLaunch from './rider-parachute-launch.png';
+import riderParachute from './rider-parachute.png';
 import takeoff from './haste.png';
 import impact from './heavy-landing.png';
 import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll-trigger';
 import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment } from './case-comments';
-import { caseFooterRoute, caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
-import { playGroundMovement } from './ground-movement';
+import { caseFooterRoute, caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowRoute,
+  nextCaseSurfaceToRight, sameCaseRow, selectCaseSurface, type CaseSurface, type ParkingSide } from './case-route';
+import { dampDragReaction, dragPull, type DragSample } from './drag-reaction';
+import { playGroundMovement, type BlinkDeparture } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
+import { createParachuteGlide, createParachuteTrack, noteParachuteScrollInput, parachuteCelSize, parachuteChance, parachuteFrame,
+  parachuteGlideArea, parachuteSpriteOffset, stepParachuteGlide, visibleParachuteEdge,
+  type ParachuteGlide } from './parachute-flight';
 import { speechPosition, type SpeechPosition } from './speech-position';
 import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
 
 const unlitFact = '[data-mascot-highlight]:not([data-mascot-highlighted])';
+const dragThreshold = 5;
+const tuckedDragFrame = 4;
 type RouteSurface = CaseSurface & { surface: Surface };
 type Speech = SpeechPosition & { message: string; hidden?: boolean; paintTile?: Element };
 type CaseSurfaceGeometry = Surface & { routeEnd?: true };
 type CaseStop = Stop & { surface: CaseSurfaceGeometry };
+type Drag = {
+  pointerId: number; start: Point; active: boolean;
+  sample: DragSample; pull: Point; reaction: Point;
+};
+type ParachuteFlight = {
+  track: ReturnType<typeof createParachuteTrack>;
+  elapsed: number;
+  lastTime?: number;
+  hover?: ParachuteGlide;
+  area?: ReturnType<typeof parachuteGlideArea>;
+  reachedBottom: boolean;
+};
 
 function stop(surface: CaseSurfaceGeometry, edge: Stop['edge'], x: number): CaseStop {
   return { surface, edge, point: { x: onSurface(x, surface), y: surface.y } };
@@ -41,21 +63,33 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
   const { bubbleRef, interrupt, interruption } = useSpeechInterruption();
 
   useEffect(() => {
-    const layer = route.current;
-    const article = layer?.closest('article');
-    const actor = actorRef.current;
-    const control = actor?.querySelector<HTMLButtonElement>('.mascot__actor');
-    if (!layer || !article || !actor || !control) return;
+    const routeLayer = route.current;
+    const article = routeLayer?.closest('article');
+    const mascot = actorRef.current;
+    const mascotButton = mascot?.querySelector<HTMLButtonElement>('.mascot__actor');
+    const parachuteSprite = mascotButton?.querySelector<HTMLElement>('.mascot__parachute');
+    if (!routeLayer || !article || !mascot || !mascotButton || !parachuteSprite) return;
+    const layer = routeLayer;
+    const actor = mascot;
+    const control = mascotButton;
+    const sprite = control.querySelector<HTMLElement>('.mascot__sprite');
+    const chute = parachuteSprite;
 
     const image = new Image();
+    const dragImage = new Image();
+    const launchImage = new Image();
+    const parachuteImage = new Image();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const movement = createMascotMovement(actor, canvas.current, lift.current, image);
     const openingGallery = article.querySelector('.case-covers');
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const caseFooter = article.querySelector('.dns-case-footer');
-    const textColumn = article.querySelector('.dns-case-body > .case-text');
+    const body = article.querySelector('.dns-case-body');
+    const textColumn = body?.querySelector(':scope > .case-text');
     const caseControls = [...article.querySelectorAll('.dns-case-body .icon-tile:is(button, a[href])')];
+    const commentBlocks = [...article.querySelectorAll('[data-mascot-comment]')];
     const hitInset = Number.parseFloat(getComputedStyle(control).getPropertyValue('--mascot-hit-inset'));
+    const [dragGripX, dragGripY] = getComputedStyle(layer).getPropertyValue('--mascot-drag-grip').trim().split(/\s+/).map(Number.parseFloat);
     const tiles = Array.from(article.querySelectorAll<HTMLElement>(
       '[data-mascot-surface]:not([data-mascot-surface] *, [data-mascot-skip], [data-mascot-skip] *)',
     ), (tile) => {
@@ -83,6 +117,32 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let departure: ReturnType<typeof playGroundMovement>;
     let shotCaption: HTMLElement | undefined;
     let gestureTile: Element | undefined;
+    let parking: ParkingSide | undefined;
+    let parkStepTimer = 0;
+    let drag: Drag | undefined;
+    let dragFrame = 0;
+    let lastDragFrame = 0;
+    let suppressClick = false;
+    let finishManualMove: (() => void) | undefined;
+    let routeReleaseScroll: number | undefined;
+    let parachuteUsed = false;
+    let flight: ParachuteFlight | undefined;
+
+    function readSurfaces(bounds: DOMRect, viewportBottom?: number): RouteSurface[] {
+      return tiles.flatMap(({ tile, kind, group, clip }) => {
+        const box = tile.getBoundingClientRect();
+        if (!box.height || (viewportBottom !== undefined && (box.top < 0 || box.top > viewportBottom))) return [];
+        const clipBox = clip?.getBoundingClientRect();
+        const left = Math.max(box.left, clipBox?.left ?? 0, 0);
+        const right = Math.min(box.right, clipBox?.right ?? innerWidth, innerWidth);
+        if (right - left < spriteWidth) return [];
+        const surface = readSurface(tile, bounds, new DOMRect(left, box.top, right - left, box.height),
+          minDashDistance, kind === 'screen');
+        surface.left = Math.max(surface.left, Math.ceil(-bounds.left));
+        surface.right = Math.min(surface.right, Math.floor(innerWidth - bounds.left - spriteWidth));
+        return [{ tile, group, kind, top: box.top, left, right, surface, hasOwnComment: tile.hasAttribute('data-mascot-comment') }];
+      });
+    }
 
     const rememberActor = (bounds = layer.getBoundingClientRect()) => {
       if (actor.hidden || actor.style.opacity === '0') return;
@@ -105,13 +165,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const origin = visibleActor;
       const effects = departureCanvas.current;
       visibleActor = undefined;
-      if (motion.matches || actor.hidden || actor.style.opacity === '0' || !origin || !effects) return false;
+      if (motion.matches || actor.hidden || actor.style.opacity === '0' || !origin || !effects) return;
       const top = origin.y + bounds.top;
-      if (top + spriteWidth <= 0 || top >= innerHeight) return false;
+      if (top + spriteWidth <= 0 || top >= innerHeight) return;
       departure?.cancel();
       departure = playGroundMovement(effects, image, origin, origin.x, () => {}, () => {},
         { kind: 'blink-departure', facing: origin.facing });
-      return !!departure;
     };
 
     function settle(next: Point) {
@@ -239,13 +298,434 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       delete actor.dataset.attacking;
     };
 
+    function stopParkStep() {
+      window.clearTimeout(parkStepTimer);
+      parkStepTimer = 0;
+      actor.removeAttribute('data-park-step');
+    }
+
+    function scheduleParkStep() {
+      if (parkStepTimer || actor.hasAttribute('data-park-step')) return;
+      parkStepTimer = window.setTimeout(() => {
+        parkStepTimer = 0;
+        if (drag || finishManualMove || suspended || document.hidden) return;
+        actor.setAttribute('data-park-step', '');
+      }, 4000 + Math.random() * 8000);
+    }
+
+    const readingColumn = textColumn ?? article;
+    const columnBounds = () => {
+      const { left, right } = readingColumn.getBoundingClientRect();
+      const { top, bottom } = (body ?? article).getBoundingClientRect();
+      return { left, right, top: openingGallery?.getBoundingClientRect().top ?? top, bottom };
+    };
+
+    const parkingGeometry = (side: ParkingSide) => caseMascotParking(side, columnBounds(), document.documentElement.clientWidth,
+      innerHeight, spriteWidth, hitInset, footerActions?.getBoundingClientRect());
+
+    function renderParking(side: ParkingSide) {
+      const { point, step } = parkingGeometry(side);
+      actor.style.setProperty('--mascot-park-step', `${step}px`);
+      control.inert = false;
+      movement.settle(point);
+      if (step && !motion.matches) scheduleParkStep();
+      else stopParkStep();
+    }
+
+    function beginManualMove() {
+      movement.cancel();
+      departure?.cancel();
+      stopParkStep();
+      clearGesture();
+      visibleActor = undefined;
+      shotCaption = undefined;
+      destination = undefined;
+      teleportingFromJump = false;
+      hideSpeech();
+      control.inert = false;
+      actor.removeAttribute('data-over-control');
+      layer.setAttribute('data-manual', '');
+    }
+
+    function manualBlink(from: Point, to: Point, finish: () => void, departureFrame?: BlinkDeparture) {
+      const arrive = () => {
+        finishManualMove = undefined;
+        finish();
+      };
+      finishManualMove = arrive;
+      if (motion.matches) arrive();
+      else movement.blink(from, to, arrive, departureFrame);
+    }
+
+    function park(side: ParkingSide, from: Point, departureFrame?: BlinkDeparture) {
+      clearParachute();
+      beginManualMove();
+      parking = side;
+      routeReleaseScroll = undefined;
+      control.setAttribute('aria-label', 'Маскот на парковке. Пробел — реплика, Enter — вернуться на маршрут');
+      manualBlink(from, parkingGeometry(side).point, () => renderParking(side), departureFrame);
+    }
+
+    function scrollRemaining() {
+      const page = document.scrollingElement;
+      return page ? page.scrollHeight - page.clientHeight - page.scrollTop : 0;
+    }
+
+    function parachuteTrack(origin: CaseStop) {
+      if (parachuteUsed || !launchImage.naturalWidth || !parachuteImage.naturalWidth || scrollRemaining() <= 1) return;
+      const source = tiles.find(({ tile }) => tile === origin.surface.tile);
+      if (!source) return;
+      const finish = routeFinish?.surface.tile;
+      if (finish && finish !== source.tile && source.group.hasAttribute('data-mascot-row') && source.group.contains(finish)) return;
+      const { clientWidth: width, clientHeight: height } = document.documentElement;
+      const tile = source.tile.getBoundingClientRect();
+      const edge = visibleParachuteEdge(tile, source.clip?.getBoundingClientRect(), width, height);
+      if (edge === undefined) return;
+      const { left: x, top: y } = actor.getBoundingClientRect();
+      if (Math.abs(y + footOffset - tile.top) > 2) return;
+      return createParachuteTrack({ x, y }, edge, width, height, readingColumn.getBoundingClientRect().right);
+    }
+
+    function launchParachute(track: ParachuteFlight['track']) {
+      beginManualMove();
+      parachuteUsed = true;
+      current = undefined;
+      routeReleaseScroll = undefined;
+      flight = { track, elapsed: 0, reachedBottom: false };
+      actor.dataset.direction = 'right';
+      control.setAttribute('aria-label', 'Маскот на парашюте. Стрелки влево и вправо — парковка');
+      movement.settle(track.start);
+      queue();
+    }
+
+    function clearParachute() {
+      if (!flight) return;
+      flight = undefined;
+      delete actor.dataset.parachute;
+      chute.style.removeProperty('background-position');
+      chute.style.removeProperty('--mascot-parachute-tilt');
+      control.setAttribute('aria-label', 'Рывок маскота');
+    }
+
+    function parachuteDeparture(): BlinkDeparture | undefined {
+      if (motion.matches) return;
+      const scale = 2;
+      const size = parachuteCelSize / scale;
+      const inset = -parachuteSpriteOffset.y / scale + 8;
+      const column = Math.round(-Number.parseFloat(getComputedStyle(chute).backgroundPositionX) / parachuteCelSize);
+      const frame = document.createElement('canvas');
+      frame.width = frame.height = spriteWidth / scale + inset * 2;
+      const ctx = frame.getContext('2d');
+      if (!ctx) return;
+      const tilt = Number.parseFloat(chute.style.getPropertyValue('--mascot-parachute-tilt')) || 0;
+      ctx.translate(inset + parachuteSpriteOffset.x / scale + size / 2, inset + parachuteSpriteOffset.y / scale + size / 2);
+      ctx.rotate(tilt * Math.PI / 180);
+      ctx.drawImage(parachuteImage, column * size, 0, size, size, -size / 2, -size / 2, size, size);
+      return { sprite: frame, inset, pixels: new Uint32Array(ctx.getImageData(0, 0, frame.width, frame.height).data.buffer) };
+    }
+
+    function renderParachute(active: ParachuteFlight, delta: number) {
+      const now = performance.now();
+      const elapsed = Math.min(50, now - (active.lastTime ?? now));
+      active.lastTime = now;
+      if (!active.hover && !motion.matches) {
+        active.elapsed += elapsed;
+        const cel = parachuteFrame(active.track, active.elapsed);
+        if (cel) {
+          actor.hidden = false;
+          actor.dataset.parachute = 'launch';
+          chute.style.backgroundPosition = `${-cel.column * parachuteCelSize}px ${-cel.row * parachuteCelSize}px`;
+          movement.place({ x: Math.round(cel.x), y: Math.round(cel.y) });
+          queue();
+          return;
+        }
+      }
+
+      if (!active.area) {
+        const { clientWidth: width, clientHeight: height } = document.documentElement;
+        active.area = parachuteGlideArea(active.track.hover.y, readingColumn.getBoundingClientRect().right, width, height);
+      }
+      active.hover ??= createParachuteGlide();
+      if (actor.hidden) actor.hidden = false;
+      if (actor.dataset.parachute !== 'hover') {
+        actor.dataset.parachute = 'hover';
+        chute.style.removeProperty('background-position');
+      }
+      const reachedBottom = active.reachedBottom && scrollRemaining() <= 1;
+      const glide = motion.matches ? undefined : stepParachuteGlide(active.hover, active.area, reachedBottom ? 0 : delta, elapsed);
+      const position = glide ?? active.area.center;
+      chute.style.setProperty('--mascot-parachute-tilt', `${glide?.tilt.toFixed(2) ?? 0}deg`);
+      movement.place(position);
+      if (reachedBottom) {
+        park('right', position, parachuteDeparture());
+      } else if (!motion.matches) {
+        queue();
+      }
+    }
+
+    function nearestRouteStop(pointer: Point) {
+      let closest: CaseStop | undefined;
+      let distance = Infinity;
+      const bounds = layer.getBoundingClientRect();
+      const localX = pointer.x - bounds.left - spriteWidth / 2;
+      for (const { surface } of readSurfaces(bounds)) {
+        const candidate = stop(surface, 'landing', localX);
+        const gap = Math.hypot(candidate.point.x - localX, bounds.top + candidate.point.y + footOffset - pointer.y);
+        if (gap >= distance) continue;
+        closest = candidate;
+        distance = gap;
+      }
+      return closest;
+    }
+
+    function attachToRoute(target: CaseStop, from: Point, departureFrame?: BlinkDeparture) {
+      const bounds = layer.getBoundingClientRect();
+      const releaseScroll = scrollY;
+      parking = undefined;
+      control.setAttribute('aria-label', 'Рывок маскота');
+      manualBlink(from, target.point, () => {
+        movement.cancel();
+        layer.removeAttribute('data-manual');
+        const routeBounds = layer.getBoundingClientRect();
+        const surface = readSurfaces(routeBounds).find(({ tile }) => tile === target.surface.tile)?.surface;
+        current = surface && stop(surface, 'landing', target.point.x + bounds.left - routeBounds.left);
+        visibleActor = undefined;
+        if (current) {
+          settle(current.point);
+          const top = routeBounds.top + current.point.y;
+          actor.hidden = top >= innerHeight || top + spriteWidth <= 0;
+        } else actor.hidden = true;
+        lastScroll = releaseScroll;
+        scrollPending = scrollY !== releaseScroll;
+        routeReleaseScroll = current && !scrollPending ? releaseScroll : undefined;
+        if (routeReleaseScroll === undefined) queue();
+      }, departureFrame);
+    }
+
+    function restoreAfterDrag(from: Point, departureFrame?: BlinkDeparture) {
+      if (parking) {
+        park(parking, from, departureFrame);
+        return;
+      }
+      layer.removeAttribute('data-manual');
+      if (current) settle(current.point);
+      else actor.hidden = true;
+      queue();
+    }
+
+    function clearDragReaction() {
+      cancelAnimationFrame(dragFrame);
+      dragFrame = 0;
+      actor.style.removeProperty('--mascot-drag-tilt');
+      actor.style.removeProperty('--mascot-drag-stretch');
+      if (drag) drag.reaction = { x: 0, y: 0 };
+    }
+
+    function drawDragReaction(now: number) {
+      dragFrame = 0;
+      if (!drag?.active || motion.matches) return;
+      const reaction = dampDragReaction(drag.reaction, drag.pull, now - drag.sample.time, now - lastDragFrame);
+      if (!reaction) {
+        clearDragReaction();
+        return;
+      }
+      const { x, y } = drag.reaction = reaction;
+      lastDragFrame = now;
+      actor.style.setProperty('--mascot-drag-tilt', `${(-20 * x).toFixed(2)}deg`);
+      actor.style.setProperty('--mascot-drag-stretch', (1 + .16 * y).toFixed(3));
+      dragFrame = requestAnimationFrame(drawDragReaction);
+    }
+
+    function releaseDrag() {
+      const released = drag;
+      if (!released) return;
+      drag = undefined;
+      layer.removeAttribute('data-dragging');
+      clearDragReaction();
+      if (control.hasPointerCapture(released.pointerId)) control.releasePointerCapture(released.pointerId);
+      return released;
+    }
+
+    const dragPosition = (x: number, y: number) => ({
+      x: x - (actor.dataset.direction === 'left' ? spriteWidth - dragGripX : dragGripX),
+      y: y - dragGripY,
+    });
+
+    const startDrag = (event: PointerEvent) => {
+      if (!event.isPrimary || event.button !== 0 || drag || finishManualMove || actor.hidden ||
+        movement.phase !== 'idle' || (flight && !flight.hover)) return;
+      const start = { x: event.clientX, y: event.clientY };
+      suppressClick = false;
+      drag = {
+        pointerId: event.pointerId, start, active: false,
+        sample: { ...start, time: performance.now() }, pull: { x: 0, y: 0 }, reaction: { x: 0, y: 0 },
+      };
+      control.setPointerCapture(event.pointerId);
+    };
+
+    const moveDrag = (event: PointerEvent) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const sample = { x: event.clientX, y: event.clientY, time: performance.now() };
+      const previous = drag.sample;
+      drag.sample = sample;
+      if (!drag.active) {
+        if (Math.hypot(sample.x - drag.start.x, sample.y - drag.start.y) < dragThreshold) return;
+        drag.active = true;
+        suppressClick = true;
+        clearParachute();
+        beginManualMove();
+        layer.setAttribute('data-dragging', '');
+      }
+      movement.settle(dragPosition(sample.x, sample.y));
+      if (motion.matches) return;
+      drag.pull = dragPull(previous, sample);
+      if (!dragFrame) {
+        lastDragFrame = sample.time - 16;
+        dragFrame = requestAnimationFrame(drawDragReaction);
+      }
+    };
+
+    function dragDeparture(): BlinkDeparture | undefined {
+      if (motion.matches || !sprite || !layer.hasAttribute('data-drag-sprite-ready')) return;
+      const scale = 2;
+      const size = spriteWidth / scale;
+      const inset = 10;
+      const frame = document.createElement('canvas');
+      frame.width = frame.height = size + inset * 2;
+      const ctx = frame.getContext('2d');
+      if (!ctx) return;
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(inset, inset);
+      if (actor.dataset.direction === 'left') {
+        ctx.translate(size, 0);
+        ctx.scale(-1, 1);
+      }
+      const transform = getComputedStyle(sprite).transform;
+      if (transform !== 'none') {
+        const matrix = new DOMMatrixReadOnly(transform);
+        const x = dragGripX / scale;
+        const y = dragGripY / scale;
+        ctx.translate(x, y);
+        ctx.transform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e / scale, matrix.f / scale);
+        ctx.translate(-x, -y);
+      }
+      ctx.drawImage(dragImage, tuckedDragFrame * size, 0, size, size, 0, 0, size, size);
+      return { sprite: frame, inset, pixels: new Uint32Array(ctx.getImageData(0, 0, frame.width, frame.height).data.buffer) };
+    }
+
+    const drop = (event: PointerEvent) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const departureFrame = drag.active ? dragDeparture() : undefined;
+      const released = releaseDrag();
+      if (!released?.active) {
+        queue();
+        return;
+      }
+      const { clientX: x, clientY: y } = event;
+      const from = dragPosition(x, y);
+      const zone = caseMascotDropZone(x, y, columnBounds());
+      if (zone === 'left' || zone === 'right') park(zone, from, departureFrame);
+      else {
+        const target = zone === 'route' ? nearestRouteStop({ x, y }) : undefined;
+        if (target) attachToRoute(target, from, departureFrame);
+        else restoreAfterDrag(from, departureFrame);
+      }
+    };
+
+    function cancelDrag(event?: PointerEvent) {
+      if (!drag || (event && event.pointerId !== drag.pointerId)) return;
+      const box = actor.getBoundingClientRect();
+      suppressClick = true;
+      if (releaseDrag()?.active) restoreAfterDrag({ x: box.left, y: box.top });
+      else queue();
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && drag) {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDrag();
+        return;
+      }
+      if (event.target !== control || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+        drag || finishManualMove || actor.hidden || movement.phase !== 'idle' || (flight && !flight.hover)) return;
+      const box = actor.getBoundingClientRect();
+      const from = { x: box.left, y: box.top };
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        park(event.key === 'ArrowLeft' ? 'left' : 'right', from, flight && parachuteDeparture());
+      } else if (event.key === 'Enter' && parking) {
+        event.preventDefault();
+        const column = columnBounds();
+        const target = nearestRouteStop({ x: (column.left + column.right) / 2, y: innerHeight / 2 });
+        if (target) {
+          beginManualMove();
+          attachToRoute(target, from);
+        }
+      }
+    }
+
+    function parkingComment() {
+      let message = mascotAttackMessage;
+      let distance = Infinity;
+      for (const block of commentBlocks) {
+        const { top, bottom, left, right } = block.getBoundingClientRect();
+        const visibleTop = Math.max(0, top);
+        const visibleBottom = Math.min(innerHeight, bottom);
+        if (visibleBottom <= visibleTop || right <= 0 || left >= innerWidth) continue;
+        const gap = Math.abs((visibleTop + visibleBottom) / 2 - innerHeight / 2);
+        if (gap >= distance) continue;
+        const comment = caseRouteComment(block, comments);
+        if (!comment) continue;
+        message = comment;
+        distance = gap;
+      }
+      return message;
+    }
+
+    function reactInParking(side: ParkingSide) {
+      stopParkStep();
+      hideSpeech();
+      const { point } = parkingGeometry(side);
+      const arrive = () => {
+        finishManualMove = undefined;
+        renderParking(side);
+        const bounds = layer.getBoundingClientRect();
+        const box = actor.getBoundingClientRect();
+        const position = speechPosition({ x: box.left + spriteWidth / 2, top: box.top, bottom: box.top + footOffset }, bounds, innerHeight);
+        if (position) {
+          replaySpeech();
+          setSpeech({ ...position, message: parkingComment() });
+        }
+      };
+      const surface = { tile: layer, left: 0, right: document.documentElement.clientWidth - spriteWidth,
+        y: point.y, canDash: true, dashDistance: 48 };
+      finishManualMove = arrive;
+      if (motion.matches || !movement.dashAndReturn(point, surface, undefined, arrive)) arrive();
+    }
+
     const activate = (event: MouseEvent) => {
+      if (event.detail && suppressClick) {
+        suppressClick = false;
+        return;
+      }
+      if (drag || flight || finishManualMove || actor.hidden || actor.dataset.visible !== 'true' || movement.phase !== 'idle') return;
+      if (parking) {
+        reactInParking(parking);
+        return;
+      }
       const origin = current;
-      if (!origin || actor.hidden || actor.dataset.visible !== 'true' || movement.phase !== 'idle' || actor.hasAttribute('data-attacking')) return;
+      if (!origin || origin.surface.routeEnd || actor.hasAttribute('data-attacking')) return;
       const { point, surface } = origin;
       const pointerX = event.detail && point.x > surface.left && point.x < surface.right ? event.clientX : undefined;
       clearGesture();
-      if (Math.random() < mascotAttackChance) {
+      const track = parachuteTrack(origin);
+      const roll = Math.random();
+      if (track && roll < parachuteChance) {
+        launchParachute(track);
+        return;
+      }
+      if (roll < mascotAttackChance + (track ? parachuteChance : 0)) {
         gestureTile = surface.tile;
         if (!motion.matches) actor.dataset.attacking = '';
       } else if (!motion.matches && movement.dashAndReturn(point, surface, pointerX, () => {
@@ -259,12 +739,16 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       drawSpeech(layer.getBoundingClientRect());
     };
 
-    const endAttack = (event: AnimationEvent) => {
+    const endAnimation = (event: AnimationEvent) => {
       if (event.animationName === 'mascot-attack') delete actor.dataset.attacking;
+      if (event.animationName === 'mascot-park-step' && actor.hasAttribute('data-park-step')) {
+        stopParkStep();
+        queue();
+      }
     };
 
     const onCaptionHit = (event: Event) => {
-      if (!(event instanceof CustomEvent) || !(event.detail instanceof HTMLElement)) return;
+      if (layer.hasAttribute('data-manual') || !(event instanceof CustomEvent) || !(event.detail instanceof HTMLElement)) return;
       shotCaption = event.detail;
       queue();
     };
@@ -274,9 +758,24 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const fromScroll = scrollPending;
       scrollPending = false;
       const enabled = !suspended && !document.hidden;
-      actor.dataset.visible = String(enabled);
+      if (actor.dataset.visible !== String(enabled)) actor.dataset.visible = String(enabled);
       if (!enabled || motion.matches) departure?.cancel();
       if (!enabled) {
+        releaseDrag();
+        if (flight) {
+          flight.lastTime = undefined;
+          if (flight.hover) {
+            flight.hover.input = undefined;
+            flight.hover.burst = undefined;
+          }
+          actor.hidden = true;
+          lastScroll = scrollY;
+          return;
+        }
+        stopParkStep();
+        finishManualMove = undefined;
+        routeReleaseScroll = undefined;
+        layer.toggleAttribute('data-manual', parking !== undefined);
         movement.cancel();
         clearGesture();
         actor.hidden = true;
@@ -289,8 +788,31 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         direction = 0;
         return;
       }
-      const bounds = layer.getBoundingClientRect();
+      const delta = scrollY - lastScroll;
+      if (delta !== 0) direction = Math.sign(delta);
+      lastScroll = scrollY;
+      if (flight && delta !== 0) flight.reachedBottom = scrollRemaining() <= 1;
+      if (drag) return;
+      if (flight) {
+        renderParachute(flight, delta);
+        return;
+      }
+      if (finishManualMove) {
+        if (motion.matches) {
+          movement.cancel();
+          finishManualMove();
+        }
+        return;
+      }
+      if (parking) {
+        renderParking(parking);
+        if (fromScroll) hideSpeech();
+        return;
+      }
+      if (routeReleaseScroll === scrollY && !fromScroll) return;
+      routeReleaseScroll = undefined;
       if (!motion.matches && !image.complete) return;
+      const bounds = layer.getBoundingClientRect();
       if (shotCaption && !shotCaptionVisible(shotCaption.getBoundingClientRect(), innerHeight)) shotCaption = undefined;
       const departing = departureCanvas.current;
       if (departing && !departing.hidden) {
@@ -298,12 +820,12 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         if (box.bottom <= 0 || box.top >= innerHeight) departure?.cancel();
       }
 
-      const delta = scrollY - lastScroll;
       rememberActor(bounds);
       const canFollow = delta <= innerHeight / 3;
-      if (delta !== 0) direction = Math.sign(delta);
-      lastScroll = scrollY;
-      if (teleportingFromJump && !motion.matches) return;
+      if (teleportingFromJump && !motion.matches && current) {
+        const top = bounds.top + current.point.y;
+        if (top + spriteWidth > 0 && top < innerHeight) return;
+      }
       teleportingFromJump = false;
 
       const contents = innerWidth < 1200 ? article.querySelector('.case-nav[data-dns-contents] ul') : null;
@@ -319,20 +841,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return box.width >= spriteWidth && box.top >= limits.top && box.top <= innerHeight / 2;
       });
       const routeEnd = factBeforeFooter ? undefined : footerRoute;
-      control.inert = !!routeEnd;
-      const surfaces: RouteSurface[] = routeEnd ? [] : tiles.flatMap(({ tile, kind, group, clip }) => {
-        const box = tile.getBoundingClientRect();
-        if (!box.height || box.top < 0 || box.top > limits.bottom) return [];
-        const clipBox = clip?.getBoundingClientRect();
-        const left = Math.max(box.left, clipBox?.left ?? 0, 0);
-        const right = Math.min(box.right, clipBox?.right ?? innerWidth, innerWidth);
-        if (right - left < spriteWidth) return [];
-        const surface = readSurface(tile, bounds, new DOMRect(left, box.top, right - left, box.height),
-          minDashDistance, kind === 'screen');
-        surface.left = Math.max(surface.left, Math.ceil(-bounds.left));
-        surface.right = Math.min(surface.right, Math.floor(innerWidth - bounds.left - spriteWidth));
-        return [{ tile, group, kind, top: box.top, left, right, surface, hasOwnComment: tile.hasAttribute('data-mascot-comment') }];
-      });
+      control.inert = !!routeEnd && (current?.surface.tile !== footerActions || movement.phase !== 'idle');
+      const surfaces = routeEnd ? [] : readSurfaces(bounds, limits.bottom);
       const upperSurfaces = surfaces.filter(({ top }) => top >= limits.top);
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const selected = selectCaseSurface(upperSurfaces, upperSurfaces.find(({ tile }) => tile === current?.surface.tile),
@@ -346,6 +856,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       routeComment = row?.comment;
       const rowFinish = row && stop(row.finish.surface, 'finish', row.finish.surface.right);
       routeFinish = routeEnd?.rightFinish ?? rowFinish;
+
       if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
 
       const crossingRouteEnd = !!target?.routeEnd !== !!routeEnd;
@@ -431,14 +942,10 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
             destination = entry;
             movement.blink(origin, entry.point, () => finish(entry));
           } else {
-            const leftWithBlink = playDeparture(bounds);
-            const reveal = scrolledInJump || crossingRouteEnd || !!routeEnd || leftWithBlink || !appeared || actor.hidden ||
-              Math.abs(delta) > innerHeight / 3;
+            playDeparture(bounds);
             settle(entry.point);
-            if (reveal) {
-              actor.dataset.direction = 'left';
-              movement.appear(entry.point, 'left', () => finish(entry));
-            }
+            actor.dataset.direction = 'left';
+            movement.appear(entry.point, 'left', () => finish(entry));
           }
           appeared = true;
           queue();
@@ -474,6 +981,19 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       queue();
     };
 
+    const onWheel = (event: WheelEvent) => {
+      const hover = flight?.hover;
+      if (!hover || motion.matches || event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const isStep = event.deltaMode !== 0 || Math.abs(event.deltaY) >= 100;
+      noteParachuteScrollInput(hover, isStep ? 'wheel-step' : 'pixel-wheel');
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (flight?.hover && !drag && !motion.matches && event.touches.length === 1) {
+        noteParachuteScrollInput(flight.hover, 'touch');
+      }
+    };
+
     function updateVisibility() {
       if (!document.hidden) {
         queue();
@@ -483,8 +1003,13 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       update();
     }
 
-    const resize = new ResizeObserver(queue);
+    const onResize = () => {
+      if (flight) flight.area = undefined;
+      queue();
+    };
+    const resize = new ResizeObserver(onResize);
     resize.observe(article);
+    if (textColumn) resize.observe(textColumn);
     for (const element of caseControls) resize.observe(element);
     const footerChanges = new MutationObserver(queue);
     if (footerActions) {
@@ -494,14 +1019,30 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         attributeFilter: ['class', 'style', 'hidden', 'disabled', 'href', 'aria-disabled', 'aria-hidden', 'inert'],
       });
     }
-    const scrollOptions = { passive: true, capture: true };
-    window.addEventListener('scroll', onScroll, scrollOptions);
-    window.addEventListener('resize', queue);
+    const passiveCapture = { passive: true, capture: true };
+    window.addEventListener('scroll', onScroll, passiveCapture);
+    window.addEventListener('wheel', onWheel, passiveCapture);
+    window.addEventListener('touchmove', onTouchMove, passiveCapture);
+    window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', updateVisibility);
-    motion.addEventListener('change', queue);
+    const onMotionChange = () => {
+      if (motion.matches) clearDragReaction();
+      if (flight?.hover) {
+        flight.hover = createParachuteGlide();
+        flight.lastTime = undefined;
+      }
+      queue();
+    };
+    motion.addEventListener('change', onMotionChange);
+    window.addEventListener('keydown', onKeyDown, true);
     control.addEventListener('click', activate);
-    control.addEventListener('animationend', endAttack);
-    control.addEventListener('animationcancel', endAttack);
+    control.addEventListener('pointerdown', startDrag);
+    control.addEventListener('pointermove', moveDrag);
+    control.addEventListener('pointerup', drop);
+    control.addEventListener('pointercancel', cancelDrag);
+    control.addEventListener('lostpointercapture', cancelDrag);
+    control.addEventListener('animationend', endAnimation);
+    control.addEventListener('animationcancel', endAnimation);
     if (shotComment) actor.addEventListener(rocketCaptionHitEvent, onCaptionHit);
     setPaused.current = (value) => {
       suspended = value;
@@ -510,27 +1051,52 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     image.addEventListener('load', queue);
     image.addEventListener('error', queue);
     image.src = rider;
+    launchImage.src = riderParachuteLaunch;
+    parachuteImage.src = riderParachute;
+    const showDragFrames = () => {
+      layer.style.setProperty('--mascot-drag-image', `url("${riderDrag}")`);
+      layer.setAttribute('data-drag-sprite-ready', '');
+    };
+    dragImage.addEventListener('load', showDragFrames);
+    dragImage.src = riderDrag;
     queue();
 
     return () => {
       setPaused.current = undefined;
       control.inert = false;
       actor.removeAttribute('data-over-control');
+      releaseDrag();
+      clearParachute();
+      stopParkStep();
+      actor.style.removeProperty('--mascot-park-step');
       cancelAnimationFrame(frame);
       departure?.cancel();
       movement.cancel();
       resize.disconnect();
       footerChanges.disconnect();
       window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', queue);
+      window.removeEventListener('wheel', onWheel, true);
+      window.removeEventListener('touchmove', onTouchMove, true);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('visibilitychange', updateVisibility);
       control.removeEventListener('click', activate);
-      control.removeEventListener('animationend', endAttack);
-      control.removeEventListener('animationcancel', endAttack);
+      control.removeEventListener('pointerdown', startDrag);
+      control.removeEventListener('pointermove', moveDrag);
+      control.removeEventListener('pointerup', drop);
+      control.removeEventListener('pointercancel', cancelDrag);
+      control.removeEventListener('lostpointercapture', cancelDrag);
+      control.removeEventListener('animationend', endAnimation);
+      control.removeEventListener('animationcancel', endAnimation);
+      layer.removeAttribute('data-manual');
+      control.setAttribute('aria-label', 'Рывок маскота');
       if (shotComment) actor.removeEventListener(rocketCaptionHitEvent, onCaptionHit);
       image.removeEventListener('load', queue);
       image.removeEventListener('error', queue);
-      motion.removeEventListener('change', queue);
+      dragImage.removeEventListener('load', showDragFrames);
+      layer.removeAttribute('data-drag-sprite-ready');
+      layer.style.removeProperty('--mascot-drag-image');
+      motion.removeEventListener('change', onMotionChange);
     };
   }, [actorRef, comments, shotComment, interrupt]);
 
@@ -554,9 +1120,10 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       </div>
       <span className="mascot__fx mascot__takeoff" ref={lift} aria-hidden="true" style={{ backgroundImage: `url(${takeoff})` }} />
       <span className="mascot" ref={actorRef} hidden>
-        <button className="mascot__actor" type="button" aria-label="Рывок маскота">
+        <button className="mascot__actor" type="button" aria-label="Рывок маскота" aria-keyshortcuts="ArrowLeft ArrowRight">
           <span className="mascot__facing" aria-hidden="true">
             <span className="mascot__sprite" />
+            <span className="mascot__parachute" />
             <span className="mascot__fx mascot__impact" style={{ backgroundImage: `url(${impact})` }} />
           </span>
         </button>

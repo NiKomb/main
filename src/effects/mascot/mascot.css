@@ -45,7 +45,59 @@
   transform-origin: center 68px;
 }
 
-.mascot[data-pose="land"] .mascot__impact { animation: mascot-impact 340ms steps(8, end); }
+.mascot:is(
+  [data-pose="land"],
+  [data-pose="long-land"],
+  [data-pose="up-land"],
+  [data-pose="down-land"]
+) .mascot__impact {
+  animation: mascot-impact 340ms steps(8, end);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mascot:is([data-pose="long-jump"], [data-pose="long-land"]) .mascot__sprite {
+    background-image: url('./rider-long-jump.png');
+    background-size: 864px 72px;
+  }
+
+  .mascot:is(
+    [data-pose="up-jump"],
+    [data-pose="up-land"],
+    [data-pose="down-jump"],
+    [data-pose="down-land"]
+  ) .mascot__sprite {
+    background-image: url('./rider-vertical-jumps.png?inline');
+    background-size: 864px 144px;
+  }
+
+  .mascot:is([data-pose="down-jump"], [data-pose="down-land"]) .mascot__sprite {
+    background-position-y: -72px;
+  }
+
+  .mascot:is([data-pose="long-jump"], [data-pose="up-jump"], [data-pose="down-jump"]) .mascot__sprite {
+    animation: mascot-long-push 95ms steps(3, jump-none),
+      mascot-long-flight calc(var(--jump-duration) - 95ms) steps(5, jump-none) 95ms forwards;
+  }
+
+  .mascot:is([data-pose="long-land"], [data-pose="up-land"], [data-pose="down-land"]) .mascot__sprite {
+    animation: mascot-long-land 160ms steps(4, jump-none) forwards;
+  }
+}
+
+@keyframes mascot-long-push {
+  from { background-position-x: 0; }
+  to { background-position-x: -144px; }
+}
+
+@keyframes mascot-long-flight {
+  from { background-position-x: -216px; }
+  to { background-position-x: -504px; }
+}
+
+@keyframes mascot-long-land {
+  from { background-position-x: -576px; }
+  to { background-position-x: -792px; }
+}
 
 @keyframes mascot-idle {
   /* Four slow breaths, then a brief look down. */
@@ -209,11 +261,89 @@
 }
 
 .mascot-case {
+  --mascot-drag-grip: 42px 12px;
   position: absolute;
   inset: -72px calc((100% - 100vw) / 2) calc(-1 * var(--dns-case-page-padding, 0px));
   z-index: 3;
   overflow: clip;
   pointer-events: none;
+}
+
+.mascot-case[data-manual] {
+  position: fixed;
+  inset: 0;
+}
+
+.mascot-case .mascot__actor { cursor: grab; touch-action: none; }
+.mascot-case[data-dragging] .mascot__actor { cursor: grabbing; user-select: none; }
+
+.mascot-case .mascot__parachute {
+  display: none;
+  position: absolute;
+  inset: -64px auto auto -36px;
+  width: 144px;
+  height: 144px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: url('./rider-parachute-launch.png') no-repeat 0 0 / 1152px 720px;
+}
+
+.mascot-case [data-parachute] .mascot__sprite { visibility: hidden; }
+.mascot-case [data-parachute] .mascot__parachute { display: block; }
+.mascot-case [data-parachute="hover"] .mascot__parachute {
+  background: url('./rider-parachute.png') no-repeat 0 0 / 1152px 144px;
+  transform: rotate(var(--mascot-parachute-tilt, 0deg));
+}
+
+.mascot-case [data-parachute="hover"] .mascot__actor::after { inset: -56px -28px 4px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-case [data-parachute="hover"] .mascot__parachute {
+    animation: mascot-parachute-cels 1040ms steps(8, end) infinite;
+  }
+}
+
+@keyframes mascot-parachute-cels {
+  to { background-position-x: -1152px; }
+}
+
+.mascot-case[data-dragging] .mascot[data-pose] .mascot__sprite {
+  animation: none;
+}
+
+.mascot-case[data-dragging][data-drag-sprite-ready] .mascot[data-pose] .mascot__sprite {
+  background: var(--mascot-drag-image) no-repeat 0 0 / 576px 72px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-case[data-dragging] .mascot[data-pose] .mascot__sprite {
+    --mascot-drag-direction: 1;
+    transform-origin: var(--mascot-drag-grip);
+    transform: rotate(calc(var(--mascot-drag-direction) * var(--mascot-drag-tilt, 0deg)))
+      scaleY(var(--mascot-drag-stretch, 1));
+  }
+  .mascot-case[data-dragging] .mascot[data-direction="left"] .mascot__sprite { --mascot-drag-direction: -1; }
+  .mascot-case[data-dragging][data-drag-sprite-ready] .mascot[data-pose] .mascot__sprite {
+    animation: mascot-drag-cels 800ms steps(8, end) infinite;
+  }
+
+  .mascot-case [data-park-step] .mascot__actor { animation: mascot-park-step 960ms linear; }
+  .mascot-case [data-park-step] .mascot__facing { animation: mascot-park-turn 960ms steps(1, end); }
+  .mascot-case .mascot[data-park-step][data-pose="idle"] .mascot__sprite { animation: mascot-run-cels 480ms steps(8, end) infinite; }
+}
+
+@keyframes mascot-drag-cels {
+  to { background-position-x: -576px; }
+}
+
+@keyframes mascot-park-step {
+  25% { translate: var(--mascot-park-step) 0; }
+  75% { translate: calc(-1 * var(--mascot-park-step)) 0; }
+}
+
+@keyframes mascot-park-turn {
+  0%, 75% { transform: scaleX(1); }
+  25% { transform: scaleX(-1); }
 }
 
 .mascot-case .mascot-speech:not(.mascot-speech--interrupted) {

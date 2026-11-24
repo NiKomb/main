@@ -9,11 +9,13 @@ export interface Options {
   arrivalOnly?: boolean;
   departureOnly?: boolean;
   actor?: Actor;
+  arrivalSilhouette?: Actor["silhouette"];
   x?: number;
   y?: number;
   facing?: number;
   distance?: number;
   time?: number;
+  dashExitSpeed?: number;
   to?: number;
   toY?: number;
   colors?: readonly number[];
@@ -56,7 +58,11 @@ function dash(e: Env): Kit {
   const DX0 = o.x ?? e.feet()[0], F = o.facing ?? 1, DIST = o.distance ?? 400;
   const D0 = 0.12, D1 = D0 + (o.time ?? 0.2), DX1 = DX0 + F * DIST;
   const G = e.groundAt(DX0), gy = G / PX;
-  const dashX = (t: number) => (t < D0 ? DX0 : t < D1 ? DX0 + F * DIST * (1 - (1 - (t - D0) / (D1 - D0)) ** 1.6) : DX1);
+  const carry = Math.min(1, Math.max(0, (o.dashExitSpeed ?? 0) * (D1 - D0) / Math.max(1, DIST)));
+  const dashX = (t: number) => {
+    const progress = Math.min(1, Math.max(0, (t - D0) / (D1 - D0)));
+    return DX0 + F * DIST * lerp(1 - (1 - progress) ** 1.6, progress, carry);
+  };
   const ghosts: { x0: number; y0: number; w: number; h: number; m: Uint8Array; t: number }[] = [];
   const lines: { x: number; y: number; l: number; t: number }[] = [];
   const capture = (x: number, t: number) => {
@@ -134,7 +140,7 @@ function blink(e: Env): Kit {
   const OUT = 0.3, IN = o.departureOnly ? Infinity : o.arrivalOnly ? 0.12 : 0.55, ARRIVE = IN + 0.35;
   const COLS = [WHITE, C[1]!, C[2]!, A[1]!, A[2]!, C[3]!];
   const lights: Light[] = [];
-  let sil: Sil | null = null, out = Boolean(o.arrivalOnly), unhid = false, arrived = false;
+  let sil: Sil | null = null, entering: Sil | null = null, out = Boolean(o.arrivalOnly), unhid = false, arrived = false;
   const bits: { x: number; y: number; vx: number; vy: number; life: number; max: number; c: number; d: number }[] = [];
   const inbound: { tx: number; ty: number; ox: number; oy: number; t0: number; c: number }[] = [];
   const box = { x0: Math.round(AX / PX) - 20, y0: Math.round(FY / PX) - 48, w: 48, h: 50 };
@@ -143,7 +149,10 @@ function blink(e: Env): Kit {
   return {
     done: (t) => t > (o.departureOnly ? OUT + 0.9 : ARRIVE + 0.5) && bits.length === 0,
     update(t, dt) {
-      if (t < (o.arrivalOnly ? IN : OUT)) sil = grab(o.actor?.silhouette?.() ?? null, box.x0, box.y0, box.w, box.h) ?? sil;
+      if (t < (o.arrivalOnly ? IN : OUT)) {
+        const source = o.actor?.silhouette?.();
+        if (source) sil = o.arrivalSilhouette ? grab(source, source.x, source.y, source.w, source.h) : grab(source, box.x0, box.y0, box.w, box.h);
+      }
       if (!o.arrivalOnly && t < OUT && R.chance(0.6)) {
         const a = R.range(0, TAU), d = R.range(40, 80);
         ps.spawn(K.PLASMA, AX + Math.cos(a) * d, FY - 36 + Math.sin(a) * d, -Math.cos(a) * d * 5, -Math.sin(a) * d * 5, R.range(0.14, 0.2));
@@ -163,13 +172,14 @@ function blink(e: Env): Kit {
       }
       if (t >= IN && !unhid) {
         unhid = true;
+        entering = grab(o.arrivalSilhouette?.() ?? null, box.x0, box.y0, box.w, box.h) ?? sil;
         o.cue?.("appear", { x: BX, y: BY });
-        if (sil)
-          for (let y = 0; y < sil.h; y++)
-            for (let x = 0; x < sil.w; x++) {
-              if (!sil.px[y * sil.w + x] || R.chance(0.2)) continue;
+        if (entering)
+          for (let y = 0; y < entering.h; y++)
+            for (let x = 0; x < entering.w; x++) {
+              if (!entering.px[y * entering.w + x] || R.chance(0.2)) continue;
               const a = R.range(0, TAU), d = R.range(14, 34);
-              inbound.push({ tx: sil.x0 + x + shift, ty: sil.y0 + y + shiftY, ox: Math.cos(a) * d, oy: Math.sin(a) * d - 10, t0: IN + R.range(0, 0.12), c: R.pick(COLS) });
+              inbound.push({ tx: entering.x0 + x + shift, ty: entering.y0 + y + shiftY, ox: Math.cos(a) * d, oy: Math.sin(a) * d - 10, t0: IN + R.range(0, 0.12), c: R.pick(COLS) });
             }
       }
       if (t >= ARRIVE && !arrived) {
@@ -225,17 +235,18 @@ function blink(e: Env): Kit {
           light.glow(cx, my, 40, C[2]!, 0.8);
         }
         if (!o.arrivalOnly && t > OUT + 0.18 && t < OUT + 0.9) drawSil(buf, sil, cx, 1, A[2]!, A[4]!, 0.45 * (1 - (t - OUT - 0.18) / 0.72));
-        if (t > IN && t < ARRIVE + 0.02) {
-          const k = (t - IN) / (ARRIVE - IN);
+      }
+      if (t > IN && t < ARRIVE + 0.02) {
+        const k = (t - IN) / (ARRIVE - IN);
+        if (entering) {
           if (k < 0.55) {
-            const hh = (sil.h / 2 + 3) * outCubic(k / 0.55);
+            const hh = (entering.h / 2 + 3) * outCubic(k / 0.55);
             for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y + shiftY, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
-          } else drawSil(buf, sil, cx, outCubic((k - 0.55) / 0.45), k > 0.85 ? WHITE : C[1]!, k > 0.85 ? C[2]! : C[3]!, 1, shift, shiftY);
-          light.glow(cx + shift, my + shiftY, 34, C[2]!, 0.7 * k);
+          } else drawSil(buf, entering, cx, outCubic((k - 0.55) / 0.45), k > 0.85 ? WHITE : C[1]!, k > 0.85 ? C[2]! : C[3]!, 1, shift, shiftY);
+        } else {
+          const hh = 28 * outCubic(k / 0.55) * (1 - smooth(0.8, 1, k));
+          for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y + shiftY, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
         }
-      } else if (t > IN && t < ARRIVE + 0.02) {
-        const k = (t - IN) / (ARRIVE - IN), hh = 28 * outCubic(k / 0.55) * (1 - smooth(0.8, 1, k));
-        for (let y = -hh; y <= hh; y++) dot(buf, cx + shift, my + y + shiftY, WHITE, 1 - (Math.abs(y) / (hh + 1)) * 0.6);
         light.glow(cx + shift, my + shiftY, 34, C[2]!, 0.7 * k);
       }
       for (const p of inbound) {

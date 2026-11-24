@@ -1,4 +1,4 @@
-import { playGroundMovement } from './ground-movement';
+import { playGroundMovement, type BlinkDeparture } from './ground-movement';
 
 export const spriteWidth = 72;
 export const footOffset = 68;
@@ -7,6 +7,8 @@ const coverCornerInset = 12;
 const wideSurfaceWidth = 144;
 export const minDashDistance = 72;
 export const shortGapDistance = 72;
+const minDiagonalOffset = 24;
+const verticalJumpDistance = 120;
 export const mascotAttackChance = .4;
 export const mascotAttackMessage = '#@!%*?';
 
@@ -81,20 +83,25 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     if (!entrance) reveal();
   }
 
-  function blink(from: Point, to: Point, reveal: () => void) {
+  function blink(from: Point, to: Point, reveal: () => void, departureFrame?: BlinkDeparture) {
     cancel();
     place(from);
     layer.style.opacity = '';
     if (from.x !== to.x) layer.dataset.direction = to.x < from.x ? 'left' : 'right';
+    const facing = layer.dataset.direction === 'left' ? 'left' : 'right';
     if (canvas) {
       entrance = playGroundMovement(canvas, image, from, to.x, (_, opacity) => {
         if (opacity) place(to);
         layer.style.opacity = String(opacity);
-      }, reveal, { kind: 'blink', endY: to.y });
+      }, reveal, {
+        kind: 'blink', endY: to.y, departureFrame,
+        facing: departureFrame ? facing : undefined,
+      });
     }
     if (entrance) {
       phase = 'blink';
       layer.dataset.pose = phase;
+      if (departureFrame) layer.style.opacity = '0';
     } else reveal();
   }
 
@@ -121,10 +128,23 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     if (Math.abs(to.x - start.x) > 8) layer.dataset.direction = to.x < start.x ? 'left' : 'right';
     const dx = to.x - start.x;
     const dy = to.y - start.y;
-    const flight = carriedByDash ? 220 : Math.min(850, Math.max(360, Math.hypot(dx, dy) * 1.15));
+    const horizontal = Math.abs(dx);
+    const vertical = Math.abs(dy);
+    const distance = Math.hypot(dx, dy);
+    const wideGap = horizontal > shortGapDistance;
+    const longDiagonal = horizontal >= minDiagonalOffset && vertical >= minDiagonalOffset && distance > shortGapDistance;
+    let posePrefix = '';
+    if (!carriedByDash) {
+      if (wideGap || longDiagonal) posePrefix = 'long-';
+      else if (horizontal < minDiagonalOffset && vertical >= verticalJumpDistance) {
+        posePrefix = dy < 0 ? 'up-' : 'down-';
+      }
+    }
+
+    const flight = carriedByDash ? 220 : Math.min(850, Math.max(360, distance * 1.15));
     const push = carriedByDash ? 0 : 95;
     const duration = push + flight;
-    const rise = carriedByDash ? 8 : Math.abs(dx) <= 72 ? 14 : Math.min(68, Math.max(28, Math.abs(dy) / 4 + 24));
+    const rise = carriedByDash ? 8 : wideGap ? Math.min(68, Math.max(28, Math.abs(dy) / 4 + 24)) : 14;
     const arc = Math.abs(dy) + 2 * rise + 2 * Math.sqrt(rise * (rise + Math.abs(dy)));
     if (lift) {
       lift.style.left = `${start.x + spriteWidth / 2}px`;
@@ -137,10 +157,9 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
     }
     layer.style.setProperty('--jump-duration', `${duration}ms`);
     phase = 'jump';
-    layer.dataset.pose = phase;
-    const wideGap = Math.abs(dx) > shortGapDistance && !arcAcrossWideGap;
+    layer.dataset.pose = `${posePrefix}${phase}`;
     const startFrame = { transform: `translate(${start.x}px, ${start.y}px)` };
-    const frames = wideGap ? [
+    const frames = wideGap && !arcAcrossWideGap ? [
       startFrame,
       {
         ...startFrame,
@@ -167,7 +186,7 @@ export function createMascotMovement(layer: HTMLElement, canvas: HTMLCanvasEleme
 
     motion.onfinish = () => {
       phase = 'land';
-      layer.dataset.pose = phase;
+      layer.dataset.pose = `${posePrefix}${phase}`;
       recovery = window.setTimeout(onLand, 160);
     };
   }

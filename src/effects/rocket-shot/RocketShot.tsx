@@ -181,7 +181,8 @@ export function RocketShot({ target, actor, ground }: Props) {
             queue();
           }, () => {});
       }
-      fireAt = shotDeadline(fireAt, time, shotCaptionCentered(bounds, innerHeight, edge));
+      fireAt = shotDeadline(fireAt, time,
+        !mascot.closest('.mascot-case[data-manual]') && shotCaptionCentered(bounds, innerHeight, edge));
       if (fireAt === undefined) return;
       if (time < fireAt) {
         shotTimer = window.setTimeout(queue, fireAt - time);
