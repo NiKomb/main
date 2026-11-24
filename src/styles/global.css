@@ -1311,6 +1311,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   list-style: none;
 }
 .dns-case-stages > li {
+  display: grid;
+  align-content: space-between;
+  gap: var(--space-6);
   padding: var(--space-12);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -1324,28 +1327,14 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 #dns-interviews .dns-case-results {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
 }
-.dns-case-results > li { align-content: start; }
-.dns-case-section[aria-labelledby="dns-research"] .dns-case-results > .dns-case-fact,
-.dns-case-layout[data-section-id="project-vseinstrumenti"] .dns-case-results > .dns-case-fact {
-  align-content: space-between;
-}
 .dns-case-facts { display: flex; flex-wrap: wrap; }
 .dns-case-facts > li { max-inline-size: 100%; }
-.dns-case-stages > li { display: grid; gap: var(--space-6); }
 .dns-case-stages strong { font: var(--type-display) var(--font-accent); font-variant-numeric: tabular-nums; }
 .dns-case-facts > .dns-case-fact { max-inline-size: min(100%, 38ch); align-content: start; }
 .dns-case-fact .dns-case-fact-title {
   color: var(--color-text);
   font: var(--type-subheading) var(--font-accent);
   text-transform: var(--type-accent-transform);
-}
-@media (width >= 560px) {
-  .dns-case-stages > .dns-case-fact:has(> .dns-case-fact-context) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto 1fr;
-    column-gap: var(--space-20);
-  }
-  .dns-case-fact-context { grid-area: 1 / 2 / span 2; }
 }
 .dns-case-stages .dns-case-metric { font: var(--type-body) var(--font-body); }
 .dns-case-metric > .dns-case-metric-value {
@@ -1387,14 +1376,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   92% { --case-fact-glow-opacity: .55; }
   93% { --case-fact-glow-opacity: .9; }
 }
-.dns-decision-check .dns-case-metric {
-  align-content: stretch;
-  grid-template-rows: auto 1fr;
-}
 .dns-decision-check .dns-case-metric-value,
 #dns-interviews .dns-case-metric-value { color: var(--color-dns-accent); }
 .dns-case-metric > .vi-case-critical { color: var(--case-accent); }
-.dns-decision-check .dns-case-metric-copy { align-self: end; }
 /* Switch spacing at the midpoint between adjacent values on the scale. */
 @media (width >= 600px) {
   .dns-case-body { --dns-summary-padding: var(--space-20); }

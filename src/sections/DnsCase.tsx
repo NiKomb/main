@@ -43,7 +43,7 @@ function renderFact({ title, detail, context, comment, highlight, ground }: Omit
       key={title} comment={comment} highlight={highlight}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
-      {context && <p className="dns-case-fact-context">{context}</p>}
+      {context && <p>{context}</p>}
       {ground && (
         <span className="rocket-shot-ground" aria-hidden="true">
           <canvas ref={ground} hidden />

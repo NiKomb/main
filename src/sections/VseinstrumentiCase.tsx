@@ -126,8 +126,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           <ViHeading id="vi-hypotheses" />
           <p>{viCase.prioritization}</p>
           <CaseCardList as="ol" className="vi-hypotheses" aria-labelledby="vi-hypotheses">
-            {viDecisions.map(({ id, hypothesis }) => (
+            {viDecisions.map(({ id, label, hypothesis }) => (
               <CaseCard as="li" className="dns-case-fact" key={id}>
+                <p className="dns-case-fact-title">{label}</p>
                 {renderHypothesis(hypothesis)}
               </CaseCard>
             ))}
