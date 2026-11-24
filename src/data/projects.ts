@@ -81,6 +81,13 @@ export const viAfterLink: ProjectLink = {
   href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=after',
 };
 
+export const viJournalLink: ProjectLink = {
+  id: 'vi-journal',
+  kind: 'journal',
+  label: 'Журнал',
+  href: 'https://nikomb.github.io/vseinstrumenti-prototype/journal/',
+};
+
 export const projects = [
   {
     id: 'dns',
@@ -169,7 +176,7 @@ export const projects = [
       viPrototypeLink,
       { id: 'vi-before', kind: 'demo', label: 'Было', href: 'https://nikomb.github.io/vseinstrumenti-prototype/?variant=before' },
       viAfterLink,
-      { id: 'vi-journal', kind: 'journal', label: 'Журнал', href: 'https://nikomb.github.io/vseinstrumenti-prototype/journal/' },
+      viJournalLink,
     ],
   },
 ] as const satisfies readonly Project[];

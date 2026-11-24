@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
-import { caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
+import { caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight,
+  rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
 import { speechAvoidanceOffset, speechPlacement, speechPosition, speechSides, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
@@ -154,6 +155,29 @@ test('metric rows traverse adjacent tiles to the right and stop on their own las
   assert.equal(rightmostCaseSurface(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextLeft, tiles), nextRight);
   assert.equal(nextCaseSurfaceToRight(nextRight, tiles), undefined);
+});
+
+test('a full row keeps the chosen comment and progresses to the last card on the same line', () => {
+  const group = { hasAttribute: (name) => name === 'data-mascot-row' };
+  const tile = (left, top, hasOwnComment = false) => ({ tile: {}, group, kind: 'card', left, right: left + 250, top, hasOwnComment });
+  const first = tile(320, 180);
+  const commented = tile(578, 180, true);
+  const last = tile(836, 180);
+  const wrapped = tile(320, 340);
+  const tiles = [first, commented, last, wrapped];
+
+  assert.equal(selectCaseSurface(tiles, last, 900), commented);
+  assert.deepEqual(caseRowRoute(commented, tiles, last), {
+    current: last, finish: last, comment: commented.tile, stopAtComment: false,
+  });
+  assert.equal(caseRowRoute(commented, tiles, first).current, first);
+  assert.equal(caseRowRoute(commented, tiles, wrapped).current, undefined);
+  assert.equal(caseRowRoute(wrapped, tiles, last).finish, wrapped);
+
+  group.hasAttribute = () => false;
+  assert.deepEqual(caseRowRoute(commented, tiles, last), {
+    current: undefined, finish: commented, comment: undefined, stopAtComment: true,
+  });
 });
 
 test('blink vanishes at the origin and cues arrival on a different row', () => {

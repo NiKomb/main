@@ -1,8 +1,12 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CaseEvidence } from '../components/CaseEvidence';
+import { CaseCard } from '../components/CaseCard';
+import { CaseCardList, CaseResults } from '../components/CaseCardList';
+import { CaseDecisionCopy } from '../components/CaseDecisionCopy';
 import { renderCaseText } from '../components/renderCaseText';
 import { CaseSection } from '../components/CaseSection';
 import { CaseHeading } from '../components/CaseHeading';
+import { CaseTestAccounting } from '../components/CaseTestAccounting';
 import { GridIcon } from '../components/GridIcon';
 import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -35,32 +39,29 @@ function renderFact({ title, detail, context, comment, highlight, ground }: Omit
   ground?: RefObject<HTMLCanvasElement | null>;
 }) {
   return (
-    <li className={ground ? 'dns-case-fact rocket-shot-debris' : 'dns-case-fact'}
-      key={title} data-mascot-comment={comment} data-mascot-highlight={highlight ? '' : undefined}>
+    <CaseCard as="li" className={ground ? 'dns-case-fact rocket-shot-debris' : 'dns-case-fact'}
+      key={title} comment={comment} highlight={highlight}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
       {context && <p className="dns-case-fact-context">{context}</p>}
-      {highlight && <span className="case-fact-highlight" data-viewport-edge-overlay="" aria-hidden="true" />}
       {ground && (
         <span className="rocket-shot-ground" aria-hidden="true">
           <canvas ref={ground} hidden />
         </span>
       )}
-    </li>
+    </CaseCard>
   );
 }
 
 function renderMetric({ value, label, detail, comment, highlight }: CaseMetric) {
   return (
-    <li className="dns-case-fact dns-case-metric" key={label} data-mascot-comment={comment}
-      data-mascot-highlight={highlight ? '' : undefined}>
+    <CaseCard as="li" className="dns-case-fact dns-case-metric" key={label} comment={comment} highlight={highlight}>
       <p className="dns-case-metric-value">{value}</p>
       <div className="dns-case-metric-copy">
         <p className="dns-case-fact-title">{label}</p>
         {detail && <p>{detail}</p>}
       </div>
-      {highlight && <span className="case-fact-highlight" data-viewport-edge-overlay="" aria-hidden="true" />}
-    </li>
+    </CaseCard>
   );
 }
 
@@ -92,7 +93,7 @@ function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = '�
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
-      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery
+      <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-mascot-surface="screen"
         data-mascot-paint-frame={paintFrame ? '' : undefined} style={style}>
         <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
           aria-label={sliderLabel}
@@ -125,12 +126,11 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
   const toggleCaption = useRef<HTMLElement>(null);
   const groundCanvas = useRef<HTMLCanvasElement>(null);
 
-  function renderFigure(figure: CaseFigure, { captionTarget, skipMascot }: {
+  function renderFigure(figure: CaseFigure, { captionTarget }: {
     captionTarget?: RefObject<HTMLElement | null>;
-    skipMascot?: boolean;
   } = {}) {
     return (
-      <figure className="dns-case-figure" key={figure.src} data-mascot-skip={skipMascot ? '' : undefined}>
+      <figure className="dns-case-figure" key={figure.src}>
         {renderScreenshot(figure)}
         <figcaption ref={captionTarget} className={captionTarget ? 'rocket-shot-caption' : undefined}>
           {figure.label && <strong>{figure.label}</strong>}
@@ -149,7 +149,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           <div><dt>Мой вклад</dt><dd>{dnsCase.role}</dd></div>
           <div><dt>Статус</dt><dd>{dnsCase.status}</dd></div>
         </dl>
-        <section className="dns-case-summary" aria-labelledby="dns-summary" data-mascot-comment="intro">
+        <CaseCard as="section" className="dns-case-summary" aria-labelledby="dns-summary" comment="intro">
           <DnsHeading as="h2" id="dns-summary" />
           <p className="dns-summary-context">{renderCaseText(summary.context)}</p>
           <dl>
@@ -160,17 +160,17 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           </dl>
           <div className="dns-summary-actions">
             <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-decisions')}>
-              <span className="dns-brand-button-label">К решениям<GridIcon name="link" /></span>
+              <span className="dns-brand-button-label">К решениям</span>
             </button>
             <button className="icon-tile icon-tile--labeled dns-brand-button" {...iconTilePress} type="button" onClick={() => jumpToHeading('dns-results')}>
-              <span className="dns-brand-button-label">К результатам UX-теста<GridIcon name="link" /></span>
+              <span className="dns-brand-button-label">К результатам UX-теста</span>
             </button>
             <a className="icon-tile icon-tile--labeled dns-brand-button dns-summary-configurator" {...iconTilePress}
               href={dnsDemoLink.href} target="_blank" rel="noopener" data-track-id={dnsDemoLink.id}>
               <span className="dns-brand-button-label">{dnsConfiguratorLink.label}<GridIcon name="link" /></span>
             </a>
           </div>
-        </section>
+        </CaseCard>
       </header>
 
       <CaseSection id="dns-research" title={research.title}>
@@ -180,9 +180,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <p>{research.discussionAction}</p>
           </div>
           <div className="dns-case-block">
-            <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из обсуждений сборок" data-mascot-comment="external-review">
+            <CaseCardList aria-label="Наблюдения из обсуждений сборок" comment="external-review">
               {research.deskMetrics.map(renderMetric)}
-            </ul>
+            </CaseCardList>
             <p>{renderCaseText(research.discussionConclusion)}</p>
           </div>
         </section>
@@ -193,9 +193,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           </div>
           <div className="dns-case-block">
             <h4 id="dns-audit-problems">{research.auditProblemsTitle}</h4>
-            <ul className="dns-case-stages dns-case-results" aria-labelledby="dns-audit-problems">
+            <CaseCardList aria-labelledby="dns-audit-problems">
               {research.auditProblems.map(renderFact)}
-            </ul>
+            </CaseCardList>
             <p>{renderCaseText(research.auditConclusion)}</p>
           </div>
         </section>
@@ -214,14 +214,14 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <p>{research.interviewResultsLimit}</p>
           </>}>
           <div className="dns-case-block" id="dns-interview-results">
-            <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения из сессий">
+            <CaseResults aria-label="Наблюдения из сессий">
               {research.interviewFindings.map(renderMetric)}
-            </ul>
+            </CaseResults>
             <p>{renderCaseText(research.interviewConclusion)}</p>
           </div>
           <div className="dns-case-block" data-mascot-comment="comparison-search">
             <InterviewGallery label={research.framesTitle}>
-              {research.frames.map((figure, index) => renderFigure(figure, { skipMascot: index >= 2 }))}
+              {research.frames.map((figure) => renderFigure(figure))}
             </InterviewGallery>
           </div>
         </CaseEvidence>
@@ -231,9 +231,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <p>{research.competitors.action}</p>
           </div>
           <div className="dns-case-block">
-            <ul className="dns-case-stages dns-case-results" aria-label="Наблюдения по конкурентам">
+            <CaseCardList aria-label="Наблюдения по конкурентам">
               {research.competitors.findings.map(renderFact)}
-            </ul>
+            </CaseCardList>
             <p>{renderCaseText(research.competitors.conclusion)}</p>
           </div>
           <div className="dns-case-block">
@@ -247,13 +247,13 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <DnsHeading id="dns-prioritization" />
             <p>{research.prioritization.rationale}</p>
           </div>
-          <div className="dns-decision-copy">
-            <ol className="dns-case-stages dns-case-results" aria-label="Гипотезы для прототипа">
+          <div className="dns-decision-copy" data-mascot-row="">
+            <CaseCardList as="ol" aria-label="Гипотезы для прототипа">
               {dnsDecisions.map(({ hypothesis, contentsLabel, hypothesisText }) => renderFact({
                 title: `Гипотеза ${hypothesis} · ${contentsLabel}`,
                 detail: renderCaseText(hypothesisText.join('**')),
               }))}
-            </ol>
+            </CaseCardList>
             {renderFigure(research.prioritization.evidence)}
           </div>
         </section>
@@ -274,22 +274,15 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                   paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
               </div>
               <section className="dns-case-block dns-decision-check">
-                <div className="dns-decision-copy">
-                  <div className="dns-case-block">
-                    <h4>Гипотеза {decision.hypothesis}</h4>
-                    <blockquote cite={test.journalSource}>
-                      <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
-                    </blockquote>
-                  </div>
-                  <div className="dns-case-block">
-                    <h4>Решение</h4>
-                    <p>{renderCaseText(decision.solution)}</p>
-                  </div>
-                </div>
+                <CaseDecisionCopy hypothesisNumber={decision.hypothesis} hypothesis={(
+                  <blockquote cite={test.journalSource}>
+                    <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
+                  </blockquote>
+                )} solution={<p>{renderCaseText(decision.solution)}</p>} />
                 <h4>Результат</h4>
-                <ul className="dns-case-stages dns-case-results" aria-label={`Результат. ${decision.contentsLabel}`}>
+                <CaseResults aria-label={`Результат. ${decision.contentsLabel}`}>
                   {decision.metrics.map(renderMetric)}
-                </ul>
+                </CaseResults>
               </section>
               {decision.id === 'dns-comparison' && (
                 <section className="dns-case-block">
@@ -303,9 +296,9 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                     {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
                     {renderFigure(comparison.iteration.differencesFigure)}
                   </div>
-                  <ul className="dns-case-stages" aria-label="Результат раннего теста">
+                  <CaseCardList layout="strip" aria-label="Результат раннего теста">
                     {renderFact({ ...comparison.iteration.fact, ground: groundCanvas })}
-                  </ul>
+                  </CaseCardList>
                   {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} ground={groundCanvas} />}
                 </section>
               )}
@@ -334,19 +327,19 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         <section className="dns-case-block" aria-labelledby="dns-test-overview">
           <DnsHeading id="dns-test-overview" />
           <p>{test.action}</p>
-          <ul className="dns-case-stages dns-case-results" aria-label="Основные результаты UX-теста">
+          <CaseCardList aria-label="Основные результаты UX-теста">
             {test.overview.map(renderMetric)}
-          </ul>
+          </CaseCardList>
           <p>{renderCaseText(test.conclusion)}</p>
-          <p>{test.accounting}</p>
+          <CaseTestAccounting text={test.accounting} journalHref={test.journalSource} />
         </section>
         <CaseSection as="h3" id="dns-next-test" sectionId="dns-reflection" title={reflection.title}
           variant="labeled" note={reflectionNote}>
           <div className="dns-case-block">
             <p>{reflection.summary}</p>
-            <ul className="dns-case-stages dns-case-results" aria-label="Итоги проверки">
+            <CaseCardList aria-label="Итоги проверки">
               {reflection.takeaways.map(({ detail, ...fact }) => renderFact({ ...fact, detail: renderCaseText(detail) }))}
-            </ul>
+            </CaseCardList>
           </div>
         </CaseSection>
       </CaseSection>

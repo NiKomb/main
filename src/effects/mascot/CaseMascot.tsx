@@ -6,7 +6,7 @@ import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll
 import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment } from './case-comments';
-import { caseFooterRoute, caseRouteViewportLimits, nextCaseSurfaceToRight, rightmostCaseSurface, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
+import { caseFooterRoute, caseRouteViewportLimits, caseRowRoute, nextCaseSurfaceToRight, sameCaseRow, selectCaseSurface, type CaseSurface } from './case-route';
 import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
@@ -14,8 +14,6 @@ import { speechPosition, type SpeechPosition } from './speech-position';
 import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
 
-const gallerySelector = '.case-covers, .interview-gallery-scroll, .dns-case-frames';
-const cardSelector = '.dns-case-fact, .dns-case-summary, .dns-case-block > blockquote';
 const unlitFact = '[data-mascot-highlight]:not([data-mascot-highlighted])';
 type RouteSurface = CaseSurface & { surface: Surface };
 type Speech = SpeechPosition & { message: string; hidden?: boolean; paintTile?: Element };
@@ -58,22 +56,19 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const textColumn = article.querySelector('.dns-case-body > .case-text');
     const caseControls = [...article.querySelectorAll('.dns-case-body .icon-tile:is(button, a[href])')];
     const hitInset = Number.parseFloat(getComputedStyle(control).getPropertyValue('--mascot-hit-inset'));
-    const tileSelectors = [
-      '.case-covers .case-cover', '.dns-comparison-tile',
-      '.case-screenshot:not(.dns-comparison-tile *)', cardSelector,
-    ].join(', ');
     const tiles = Array.from(article.querySelectorAll<HTMLElement>(
-      `:is(${tileSelectors}):not([data-mascot-skip], [data-mascot-skip] *)`,
+      '[data-mascot-surface]:not([data-mascot-surface] *, [data-mascot-skip], [data-mascot-skip] *)',
     ), (tile) => {
-      const kind = tile.matches(cardSelector) ? 'card' as const : 'screen' as const;
-      const gallery = tile.closest(gallerySelector);
-      const clip = gallery?.matches('.case-covers, .interview-gallery-scroll') ? gallery : null;
-      const group = gallery ?? tile.closest('.dns-case-stages, .dns-decision-tile') ?? tile;
+      const kind = tile.dataset.mascotSurface === 'screen' ? 'screen' as const : 'card' as const;
+      const gallery = tile.parentElement?.closest('[data-media-gallery]');
+      const clip = gallery?.hasAttribute('data-mascot-clip') ? gallery : null;
+      const group = gallery ?? tile.closest('[data-mascot-row]') ?? tile.closest('[data-mascot-group]') ?? tile;
       return { tile, kind, group, clip };
     });
     let current: CaseStop | undefined;
     let destination: CaseStop | undefined;
     let routeFinish: CaseStop | undefined;
+    let routeComment: Element | undefined;
     let metricCheck: Element | null = null;
     let metricGrid: Element | null = null;
     let frame = 0;
@@ -198,7 +193,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         hideSpeech(fromScroll);
         return;
       }
-      const message = reaction ?? caseRouteComment(stop.surface.tile, comments);
+      const message = reaction ?? caseRouteComment(routeComment ?? stop.surface.tile, comments);
       if (!message) {
         if (fromScroll) interrupt();
         setSpeech(undefined);
@@ -342,13 +337,15 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const selected = selectCaseSurface(upperSurfaces, upperSurfaces.find(({ tile }) => tile === current?.surface.tile),
         innerHeight, direction < 0);
+      const row = selected && caseRowRoute(selected, upperSurfaces, previous);
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
-      const routeStart = selected && (upperSurfaces.find((candidate) =>
+      const routeStart = row?.current ?? (selected && (upperSurfaces.find((candidate) =>
         sameCaseRow(candidate, selected) && candidate.tile.matches(unlitFact) &&
-        (!selected.hasOwnComment || candidate.left < selected.left)) ?? selected);
-      const rightmost = selected && (selected.hasOwnComment ? selected : rightmostCaseSurface(selected, upperSurfaces));
-      routeFinish = routeEnd?.rightFinish ?? (rightmost && stop(rightmost.surface, 'finish', rightmost.surface.right));
+        (!selected.hasOwnComment || candidate.left < selected.left)) ?? selected));
+      routeComment = row?.comment;
+      const rowFinish = row && stop(row.finish.surface, 'finish', row.finish.surface.right);
+      routeFinish = routeEnd?.rightFinish ?? rowFinish;
       if (gestureTile && gestureTile !== routeFinish?.surface.tile) clearGesture();
 
       const crossingRouteEnd = !!target?.routeEnd !== !!routeEnd;
@@ -361,7 +358,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
           ? [routeEnd.rightFinish.surface, routeEnd.leftFinish.surface].find(({ tile }) => tile === target?.tile)
           : selected && upperSurfaces.find((candidate) => candidate.tile === target?.tile &&
             candidate.top <= innerHeight / 2 && sameCaseRow(candidate, selected) &&
-            (!selected.hasOwnComment || candidate === selected || candidate === routeStart))?.surface;
+            (!row?.stopAtComment || candidate === selected || candidate === routeStart))?.surface;
         if (!scrolledInJump && !motion.matches && target && live &&
           live.left === target.left && live.right === target.right && live.y === target.y) {
           drawSpeech(bounds, fromScroll);
@@ -398,7 +395,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         settle(routeFinish.point);
         if (selected) {
           for (const candidate of upperSurfaces) {
-            if (sameCaseRow(candidate, selected) && (!selected.hasOwnComment || candidate === selected || candidate === routeStart) &&
+            if (sameCaseRow(candidate, selected) && (!row?.stopAtComment || candidate === selected || candidate === routeStart) &&
               candidate.tile.matches(unlitFact)) candidate.tile.setAttribute('data-mascot-highlighted', '');
           }
         }

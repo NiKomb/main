@@ -100,7 +100,7 @@ h1, h2, h3, p { margin: 0; }
   text-align: start;
   text-wrap: var(--copy-wrap, pretty);
 }
-:where(.dns-case-summary, .dns-case-block > blockquote, .dns-case-stages > li) {
+:where(.dns-case-summary, .dns-case-block > blockquote, .case-decision-card > blockquote, .dns-case-stages > li) {
   --copy-wrap: balance;
   text-wrap: var(--copy-wrap);
 }
@@ -1191,16 +1191,26 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   font: var(--type-small) var(--font-accent);
   text-transform: var(--type-accent-transform);
 }
-.dns-case-block > :is(p, blockquote) { max-inline-size: 80ch; }
+.dns-case-block > :is(p, blockquote), .case-decision-card { max-inline-size: 80ch; }
+.case-test-accounting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-12);
+}
+.case-test-accounting > p { max-inline-size: 80ch; }
 :is(.dns-case-block, .case-evidence-entry) > blockquote,
-.dns-decision-copy .dns-case-block > p {
+.dns-decision-copy .dns-case-block > p,
+.case-decision-card {
   margin: 0;
   padding: var(--space-12);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
+.case-decision-card > blockquote { margin: 0; }
 .dns-case-section blockquote p,
-.dns-decision-copy .dns-case-block > p { color: var(--color-text); }
+.dns-decision-copy .dns-case-block > p,
+.case-decision-card { color: var(--color-text); }
 .case-evidence { position: relative; }
 .case-evidence-intro {
   display: flex;

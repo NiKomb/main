@@ -87,6 +87,7 @@ type Decision = {
   solution: readonly [before: string, emphasis: string, after: string];
   comparison: readonly [CaseFigure, CaseFigure];
   scenario: readonly [CaseFigure, CaseFigure] | readonly [CaseFigure, CaseFigure, CaseFigure];
+  scenarioComment?: string;
   testObservation?: { count: number; detail: string };
 };
 
@@ -162,7 +163,6 @@ export const viDecisions: readonly Decision[] = [
         ...viLiftingUnavailableScreen,
         label: 'Подъём недоступен',
         caption: 'Покупатель видит ограничение по весу и подсказку уточнить стоимость и возможность подъёма у ТК',
-        comment: 'followup',
       },
       {
         ...carrierQuote,
@@ -170,6 +170,7 @@ export const viDecisions: readonly Decision[] = [
         caption: 'Покупатель может запросить расчёт, чтобы уточнить условия доставки и подъёма',
       },
     ],
+    scenarioComment: 'followup',
     testObservation: {
       count: viCase.test.critical,
       detail: 'Подтвердили доставку курьером, хотя для общего веса заказа нужный подъём был недоступен',
@@ -199,9 +200,9 @@ export const viDecisions: readonly Decision[] = [
         ...viRequestScreen,
         label: 'Запрос отправлен',
         caption: 'Прототип сообщает, что цену, срок, разгрузку и подъём ещё нужно согласовать',
-        comment: 'scenario-request',
       },
     ],
+    scenarioComment: 'scenario-request',
   },
 ];
 
@@ -224,10 +225,10 @@ export const viContents = [
 
 export const viMascotComments: Readonly<Record<string, string>> = {
   'intro': 'Генератор весит почти центнер. Кто поднимет его на четвёртый этаж?',
-  'pickup-solution': 'Хорошо, что про ограничение по весу сказали до выбора пункта. Переключаюсь на курьера',
-  'courier-solution': 'Этаж, лифт и доплата в одной строке. Сразу вижу, что входит в доставку',
-  'carrier-solution': 'Цену товаров вижу. Сколько выйдет доставка? Узнаю после запроса',
-  'scenario-request': 'Запрос ушёл. Ждём, пока согласуют цену, срок и подъём',
-  'test-lifting': 'Курьера выбрали, а подъём всё ещё нужен. Где подсказку заметят вовремя?',
-  'followup': 'Подсказки уточнили. Проверим, заметят ли их до оформления',
+  'pickup-solution': 'Генератор слишком тяжёлый для самовывоза. Выбираю доставку',
+  'courier-solution': 'Подъём на второй этаж на лифте стоит 150 ₽',
+  'carrier-solution': 'Цена на экране — за товары. Доставку рассчитают по запросу',
+  'scenario-request': 'Жду звонка. Хочу узнать, сколько стоит доставка и поднимут ли машинку на четвёртый',
+  'test-lifting': 'Двое подтвердили доставку без подъёма. Они заметили предупреждение?',
+  'followup': 'Курьер не поднимет заказ на этаж. Спрошу про подъём у транспортной компании',
 };

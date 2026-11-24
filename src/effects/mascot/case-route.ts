@@ -40,6 +40,17 @@ export function rightmostCaseSurface<T extends CaseSurface>(surface: T, surfaces
   ), surface);
 }
 
+export function caseRowRoute<T extends CaseSurface>(selected: T, surfaces: readonly T[], current: T | undefined) {
+  const wholeRow = selected.group.hasAttribute('data-mascot-row');
+  const stopAtComment = !wholeRow && !!selected.hasOwnComment;
+  return {
+    current: wholeRow && current && sameCaseRow(current, selected) ? current : undefined,
+    finish: stopAtComment ? selected : rightmostCaseSurface(selected, surfaces),
+    comment: wholeRow && selected.hasOwnComment ? selected.tile : undefined,
+    stopAtComment,
+  };
+}
+
 export function nextCaseSurfaceToRight<T extends CaseSurface>(surface: T, surfaces: readonly T[]): T | undefined {
   let next: T | undefined;
   for (const candidate of surfaces) {

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { CaseContents, type CaseContentsItem } from '../components/CaseContents';
-import { GalleryStrip } from '../components/GalleryStrip';
 import { ContactButtons } from '../components/ContactButtons';
+import { GalleryStrip } from '../components/GalleryStrip';
 import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress } from '../components/icon-tile-press';
@@ -186,8 +186,10 @@ function CaseVideoTile({ video, videoRef, videoElement, coverId, togglePlayback,
   return (
     <div className="case-cover-slide">
       <button type="button" className={coverId ? 'case-zoom-trigger' : 'case-zoom-trigger case-screenshot'}
+        data-mascot-surface={coverId ? undefined : 'screen'}
         aria-label={`Смотреть: ${video.title}`} onClick={(event) => onOpen(event.currentTarget)}>
-        <span className="case-cover case-screenshot-media" data-cover={coverId} data-cover-gallery={coverId ? '' : undefined}>
+        <span className="case-cover case-screenshot-media" data-mascot-surface={coverId ? 'screen' : undefined}
+          data-cover={coverId} data-cover-gallery={coverId ? '' : undefined}>
           <CaseVideoArtwork video={video} videoRef={videoRef} preload="metadata" />
         </span>
       </button>
@@ -256,6 +258,7 @@ function CaseScreenshot({ image, onOpen }: {
 }) {
   return (
     <button type="button" className="case-zoom-trigger case-screenshot" aria-label={`Увеличить: ${image.alt}`}
+      data-mascot-surface="screen"
       data-original-src={image.original?.src} data-original-alt={image.original?.alt}
       onClick={(event) => onOpen(event.currentTarget)}>
       <span className="case-cover case-screenshot-media" {...screenshotAttributes(image)}
@@ -266,24 +269,27 @@ function CaseScreenshot({ image, onOpen }: {
   );
 }
 
-function CaseGalleryTile({ media, label, onOpen, coverId, className, previewAspectRatio, loading }: {
+function CaseGalleryTile({ media, label, onOpen, coverId, className, variant = 'cover' }: {
   media: ProjectImage | readonly ProjectImage[];
   label: string;
   onOpen: (trigger: HTMLButtonElement) => void;
   coverId?: string;
   className?: string;
-  previewAspectRatio?: string;
-  loading?: 'lazy';
+  variant?: 'cover' | 'scenario';
 }) {
+  const scenario = variant === 'scenario';
+  const classes = ['case-zoom-trigger', scenario && 'case-screenshot', className].filter(Boolean).join(' ');
+  const loading = scenario ? 'lazy' : undefined;
   const singleImage = 'src' in media;
   const attributes = singleImage ? screenshotAttributes(media) : undefined;
-  const style = previewAspectRatio
-    ? { ...attributes?.style, '--case-preview-aspect-ratio': previewAspectRatio } as CSSProperties
+  const style = scenario
+    ? { ...attributes?.style, '--case-preview-aspect-ratio': '10 / 7' } as CSSProperties
     : attributes?.style;
   return (
-    <button type="button" className={className ? `case-zoom-trigger ${className}` : 'case-zoom-trigger'}
+    <button type="button" className={classes} data-mascot-surface={scenario ? 'screen' : undefined}
       aria-label={label} onClick={(event) => onOpen(event.currentTarget)}>
       <span className="case-cover case-screenshot-media" data-cover-gallery="" data-cover={coverId}
+        data-mascot-surface={scenario ? undefined : 'screen'}
         {...attributes} style={style}>
         {singleImage ? <CaseScreenshotFrame image={media} loading={loading} /> : <CaseCoverStrip images={media} loading={loading} />}
       </span>
@@ -690,7 +696,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   renderScenario={(images, label) => (
                     <CaseGalleryTile media={images.map((image) => ({ ...image, previewCrop: undefined }))}
                       label={`Увеличить сценарий. ${label}`} onOpen={openMedia}
-                      className="case-screenshot" previewAspectRatio="10 / 7" loading="lazy" />
+                      variant="scenario" />
                   )} />
               ) : (
                 <>
