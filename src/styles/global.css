@@ -434,14 +434,11 @@ a.tile-layout--sign[data-visible-cover] {
   overscroll-behavior-inline: contain;
   cursor: grab;
   user-select: none;
-  scroll-snap-type: x proximity;
   scroll-padding-inline: var(--case-gallery-inset) var(--case-page-gutter);
 }
-.case-covers:is([data-dragging], [data-coasting]) { scroll-snap-type: none; }
 .case-covers[data-dragging], .case-covers[data-dragging] button { cursor: grabbing; }
 .case-covers::-webkit-scrollbar { display: none; }
 .case-covers:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-.case-covers > * { scroll-snap-align: start; }
 .case-covers .case-cover { height: var(--case-cover-height); }
 .case-covers button:focus-visible { outline-offset: -3px; }
 .case-cover-secondary { --cover: #333; }
@@ -1349,32 +1346,32 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   inherits: true;
   initial-value: 1;
 }
-.dns-case-fact[data-mascot-highlight] { position: relative; }
+[data-mascot-highlight] { position: relative; }
 .case-fact-highlight { display: none; }
 [data-mascot-highlighted] > .case-fact-highlight {
   display: block;
   position: absolute;
   inset: 0;
-  border: 2px solid var(--color-dns-accent);
+  border: 2px solid var(--case-accent);
   border-radius: inherit;
-  box-shadow: 0 0 17px color-mix(in srgb, var(--color-dns-accent) 55%, transparent),
-    inset 0 0 12px color-mix(in srgb, var(--color-dns-accent) 30%, transparent);
+  box-shadow: 0 0 17px color-mix(in srgb, var(--case-accent) 55%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--case-accent) 30%, transparent);
   opacity: var(--case-fact-glow-opacity);
   pointer-events: none;
 }
 [data-mascot-highlighted] > :is(.dns-case-metric-value, .dns-case-fact-title) {
-  text-shadow: 0 0 7px color-mix(in srgb, var(--color-dns-accent) calc(68% * var(--case-fact-glow-opacity)), transparent);
+  text-shadow: 0 0 7px color-mix(in srgb, var(--case-accent) calc(68% * var(--case-fact-glow-opacity)), transparent);
 }
 @media (prefers-reduced-motion: no-preference) {
   [data-mascot-highlighted] > .case-fact-highlight {
     animation: case-sign-startup 600ms steps(1) 140ms backwards;
   }
-  .dns-case-fact[data-mascot-highlighted] { animation: case-fact-hum 6s steps(1) infinite; }
+  [data-mascot-highlighted] { animation: case-fact-hum 4s steps(1) infinite; }
 }
 @keyframes case-fact-hum {
-  0%, 91%, 94%, 100% { --case-fact-glow-opacity: 1; }
-  92% { --case-fact-glow-opacity: .55; }
-  93% { --case-fact-glow-opacity: .9; }
+  0%, 86.5%, 91%, 100% { --case-fact-glow-opacity: 1; }
+  88% { --case-fact-glow-opacity: .55; }
+  89.5% { --case-fact-glow-opacity: .9; }
 }
 .dns-decision-check .dns-case-metric-value,
 #dns-interviews .dns-case-metric-value { color: var(--color-dns-accent); }

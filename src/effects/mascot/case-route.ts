@@ -15,13 +15,13 @@ const scrollSpeedWindow = 100;
 const sameLevelGap = 72;
 const diagonalGap = 160;
 
-export function recordCaseScrollStep(steps: CaseScrollStep[], delta: number, time: number, viewportHeight: number) {
+export function recordCaseScrollStep(steps: CaseScrollStep[], delta: number, time: number, viewportSize: number) {
   if (!delta) return false;
   const previous = steps.at(-1);
   if (previous && Math.sign(previous.delta) !== Math.sign(delta)) steps.length = 0;
   while (steps[0] && time - steps[0].time > scrollSpeedWindow) steps.shift();
   steps.push({ time, delta });
-  return Math.abs(steps.reduce((distance, step) => distance + step.delta, 0)) > viewportHeight / 2;
+  return Math.abs(steps.reduce((distance, step) => distance + step.delta, 0)) > viewportSize / 2;
 }
 
 type JumpSurface = { left: number; right: number; y: number };

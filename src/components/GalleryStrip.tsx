@@ -15,10 +15,9 @@ export function GalleryStrip(props: ComponentPropsWithRef<'div'>) {
     frame.current = null;
   }, []);
 
-  function cancelAnimation(element: HTMLDivElement) {
+  function cancelAnimation() {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
     frame.current = null;
-    delete element.dataset.coasting;
   }
 
   function reducedMotion() {
@@ -27,18 +26,14 @@ export function GalleryStrip(props: ComponentPropsWithRef<'div'>) {
 
   function animate(element: HTMLDivElement, now: number) {
     frame.current = null;
-    if (reducedMotion()) {
-      cancelAnimation(element);
-      return;
-    }
+    if (reducedMotion()) return;
     const { target, velocity } = motion.current;
     const limit = element.scrollWidth - element.clientWidth;
     const next = galleryScrollFrame(element.scrollLeft, target, velocity, limit, now - lastFrame.current, !!drag.current);
     motion.current = next;
     element.scrollLeft = next.scrollLeft;
     lastFrame.current = now;
-    if (next.settled) delete element.dataset.coasting;
-    else frame.current = requestAnimationFrame((time) => animate(element, time));
+    if (!next.settled) frame.current = requestAnimationFrame((time) => animate(element, time));
   }
 
   function continueAnimation(element: HTMLDivElement) {
@@ -50,7 +45,7 @@ export function GalleryStrip(props: ComponentPropsWithRef<'div'>) {
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.button !== 0) return;
     const element = event.currentTarget;
-    cancelAnimation(element);
+    cancelAnimation();
     suppressClick.current = false;
     if (event.pointerType !== 'mouse' || element.scrollWidth <= element.clientWidth) return;
     drag.current = { pointer: event.pointerId, startX: event.clientX, lastX: event.clientX, lastTime: event.timeStamp };
@@ -93,16 +88,14 @@ export function GalleryStrip(props: ComponentPropsWithRef<'div'>) {
     drag.current = null;
     if (event.type === 'pointerup' && suppressClick.current && !reducedMotion()) {
       if (event.timeStamp - gesture.lastTime > 80) motion.current.velocity = 0;
-      element.dataset.coasting = '';
       continueAnimation(element);
-    } else cancelAnimation(element);
+    } else cancelAnimation();
     delete element.dataset.dragging;
   }
 
   return (
     <div {...props} data-media-gallery data-mascot-clip=""
-      onWheel={(event) => cancelAnimation(event.currentTarget)} onKeyDown={(event) => cancelAnimation(event.currentTarget)}
-      onFocusCapture={(event) => cancelAnimation(event.currentTarget)}
+      onWheel={cancelAnimation} onKeyDown={cancelAnimation} onFocusCapture={cancelAnimation}
       onPointerDown={startDrag} onPointerMove={moveDrag}
       onPointerUp={stopDrag} onPointerCancel={stopDrag} onLostPointerCapture={stopDrag}
       onPointerLeave={(event) => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) stopDrag(event); }}

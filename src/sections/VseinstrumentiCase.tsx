@@ -36,9 +36,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
   const reflectionHeading = viContents.find((item) => item.id === 'vi-followup');
   const ratio = (count: number) => `${count} из ${test.runs}`;
 
-  function renderFact({ title, detail }: CaseFact) {
+  function renderFact({ title, detail, highlight }: CaseFact) {
     return (
-      <CaseCard as="li" className="dns-case-fact" key={title}>
+      <CaseCard as="li" className="dns-case-fact" key={title} highlight={highlight}>
         <p className="dns-case-fact-title">{title}</p>
         <p>{renderCaseText(detail)}</p>
       </CaseCard>
@@ -126,8 +126,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           <ViHeading id="vi-hypotheses" />
           <p>{viCase.prioritization}</p>
           <CaseCardList as="ol" className="vi-hypotheses" aria-labelledby="vi-hypotheses">
-            {viDecisions.map(({ id, label, hypothesis }) => (
-              <CaseCard as="li" className="dns-case-fact" key={id}>
+            {viDecisions.map(({ id, label, hypothesis, highlightHypothesis }) => (
+              <CaseCard as="li" className="dns-case-fact" key={id} highlight={highlightHypothesis}>
                 <p className="dns-case-fact-title">{label}</p>
                 {renderHypothesis(hypothesis)}
               </CaseCard>
@@ -137,7 +137,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
       </CaseSection>
 
       <CaseSection id="vi-solutions" title={viCase.decisionsTitle}>
-        {viDecisions.map(({ id, title, hypothesis, solution: [before, emphasis, after], comparison, scenario: steps, scenarioComment, testObservation }, index) => (
+        {viDecisions.map(({ id, title, hypothesis, highlightHypothesis, solution: [before, emphasis, after],
+          comparison, scenario: steps, scenarioComment, testObservation }, index) => (
           <section className="dns-case-group" key={id} aria-labelledby={id}>
             <ViHeading id={id} />
             <div className="dns-case-frames" data-media-gallery>
@@ -158,13 +159,13 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 ))}
               </figcaption>
             </figure>
-            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)}
+            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
               solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
             {testObservation && (
               <div className="dns-case-block">
                 <h4 id={`${id}-result`}>Результат</h4>
                 <CaseResults aria-labelledby={`${id}-result`}>
-                  <CaseCard as="li" className="dns-case-fact dns-case-metric" comment="test-lifting">
+                  <CaseCard as="li" className="dns-case-fact dns-case-metric" comment="test-lifting" highlight>
                     <p className="dns-case-metric-value vi-case-critical">{ratio(testObservation.count)}</p>
                     <p>{testObservation.detail}</p>
                   </CaseCard>
@@ -188,7 +189,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             </div>
             <div className="dns-case-block">
               <h4>Результат</h4>
-              <p>{scenario.result}</p>
+              <CaseCard as="p" highlight>{scenario.result}</CaseCard>
             </div>
           </div>
         </section>
@@ -200,7 +201,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
               <p className="dns-case-metric-value">{ratio(test.success)}</p>
               <p>Оформили все товары с подходящим способом получения</p>
             </CaseCard>
-            <CaseCard as="li" className="dns-case-fact dns-case-metric">
+            <CaseCard as="li" className="dns-case-fact dns-case-metric" highlight>
               <p className="dns-case-metric-value vi-case-critical">{ratio(test.critical)}</p>
               <p>Подтвердили курьера, хотя нужный подъём был недоступен</p>
             </CaseCard>

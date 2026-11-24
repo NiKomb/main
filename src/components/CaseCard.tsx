@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react';
 
 export function CaseCard({ as: Tag = 'div', comment, highlight, children, ...props }: HTMLAttributes<HTMLElement> & {
-  as?: 'div' | 'li' | 'section';
+  as?: 'div' | 'li' | 'p' | 'section';
   comment?: string;
   highlight?: boolean;
 }) {

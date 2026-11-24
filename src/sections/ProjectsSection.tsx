@@ -637,7 +637,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       aria-label={item ? undefined : 'Кейсы'} tabIndex={-1}>
       {item ? (
         <article key={item.id} className={detailedContents ? 'dns-case-layout' : undefined} data-section-id={`project-${item.id}`}>
-          <GalleryStrip className="case-covers" role="region" aria-label="Обложки кейса" tabIndex={0}>
+          <GalleryStrip className="case-covers" role="region" aria-label="Обложки кейса" tabIndex={0} data-mascot-row="">
             {item.coverVideo && (
               <CaseVideoTile video={item.coverVideo} videoRef={setActiveCoverVideo} videoElement={activeCoverVideo} coverId={item.id}
                 togglePlayback={toggleCoverPlayback} playbackLabel={`видео «${item.title}»`} onOpen={openMedia} />

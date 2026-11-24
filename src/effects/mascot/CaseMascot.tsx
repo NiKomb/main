@@ -26,6 +26,7 @@ import './mascot.css';
 const unlitFact = '[data-mascot-highlight]:not([data-mascot-highlighted])';
 const dragThreshold = 5;
 const tuckedDragFrame = 4;
+const galleryBlinkDelay = 100;
 const finishGroupSelector = '[data-mascot-finish-group]';
 const finishButtonSelector = '[data-mascot-finish-button]';
 type RouteSurface = CaseSurface & { surface: Surface };
@@ -127,6 +128,10 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let appeared = false;
     let suspended = false;
     let lastScroll = scrollY;
+    let lastGalleryOffset = openingGallery?.scrollLeft ?? 0;
+    let lastGalleryScroll = -Infinity;
+    let galleryBlink: CaseStop | 'pending' | undefined;
+    const galleryScrollSteps: CaseScrollStep[] = [];
     const scrollSteps: CaseScrollStep[] = [];
     let scrollPending = false;
     let teleportingFromJump = false;
@@ -201,6 +206,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     function finish(next: CaseStop, movingRight = false) {
       teleportingFromJump = false;
+      galleryBlink = undefined;
       destination = undefined;
       current = next;
       rightwardArrival = movingRight ? next : undefined;
@@ -784,6 +790,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       if (!enabled || motion.matches) departure?.cancel();
       if (!enabled) {
         scrollSteps.length = 0;
+        galleryScrollSteps.length = 0;
         releaseDrag();
         if (flight) {
           flight.lastTime = undefined;
@@ -804,6 +811,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         actor.hidden = true;
         visibleActor = undefined;
         teleportingFromJump = false;
+        galleryBlink = undefined;
         hideSpeech();
         current = destination = undefined;
         control.inert = false;
@@ -814,6 +822,11 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const delta = scrollY - lastScroll;
       if (delta !== 0) scrollingUp = delta < 0;
       lastScroll = scrollY;
+      const galleryOffset = openingGallery?.scrollLeft ?? 0;
+      const galleryDelta = galleryOffset - lastGalleryOffset;
+      lastGalleryOffset = galleryOffset;
+      if (galleryDelta) lastGalleryScroll = now;
+      const fastGalleryScroll = recordCaseScrollStep(galleryScrollSteps, galleryDelta, now, innerWidth);
       if (flight && delta !== 0) flight.reachedBottom = scrollRemaining() <= 1;
       if (drag) return;
       if (flight) {
@@ -879,6 +892,38 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       routeComment = row?.comment;
       const rowFinish = row && stop(row.finish.surface, 'finish', row.finish.surface.right);
       routeFinish = routeEnd?.rightFinish ?? rowFinish;
+
+      if (!motion.matches && rowFinish && openingGallery && selected?.group === openingGallery &&
+        current && openingGallery.contains(current.surface.tile)) {
+        const blinkTarget = galleryBlink !== 'pending' && destination === galleryBlink ? galleryBlink : undefined;
+        if (blinkTarget?.surface.tile === rowFinish.surface.tile && blinkTarget.point.x === rowFinish.point.x &&
+          blinkTarget.point.y === rowFinish.point.y) return;
+
+        const lostSupport = galleryDelta !== 0 && (!previous || !surfaces.some(({ tile }) => tile === target?.tile));
+        if (galleryBlink !== 'pending' && (blinkTarget || fastGalleryScroll || lostSupport)) {
+          const origin = renderedPosition(bounds);
+          movement.cancel();
+          if (origin) settle(origin);
+          destination = undefined;
+          galleryBlink = 'pending';
+        }
+        if (galleryBlink === 'pending') {
+          // Wait for the gallery to stop before committing to the Blink destination.
+          if (now - lastGalleryScroll < galleryBlinkDelay) {
+            queue();
+            return;
+          }
+          const origin = renderedPosition(bounds);
+          destination = galleryBlink = rowFinish;
+          if (origin) movement.blink(origin, rowFinish.point, () => finish(rowFinish));
+          else {
+            settle(rowFinish.point);
+            movement.appear(rowFinish.point, actor.dataset.direction === 'left' ? 'left' : 'right', () => finish(rowFinish));
+          }
+          return;
+        }
+      }
+      galleryBlink = undefined;
 
       const buttonFinish = row && !row.stopAtComment && !motion.matches ? readRowFinishButton(row.finish, bounds, contentsBottom) : undefined;
       const buttonTakeoff = !fastScroll && rowFinish && current && current === rightwardArrival && current.surface.tile === rowFinish.surface.tile &&

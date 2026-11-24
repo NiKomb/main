@@ -22,7 +22,7 @@ export const viCase = {
   reviews: {
     introduction: 'Разобрал пять отзывов о получении тяжёлых заказов',
     findings: [
-      { title: 'Разгрузка', detail: 'Один покупатель искал условия разгрузки отдельно. Другому пришлось нанимать рабочих' },
+      { title: 'Разгрузка', detail: 'Один покупатель искал условия разгрузки отдельно. Другому пришлось нанимать рабочих', highlight: true },
       { title: 'Сроки', detail: 'Заказ с одной датой разделили на несколько доставок' },
       { title: 'Статус заказа', detail: 'После смены статуса потребовалось уточнять по телефону, почему изменилась сумма заказа' },
     ],
@@ -38,7 +38,7 @@ export const viCase = {
   audit: {
     introduction: 'Прошёл три способа получения в действующем приложении до нажатия «Заказать»',
     problems: [
-      { title: 'Самовывоз', detail: 'Для генератора весом 98,2 кг можно было выбрать пункт. В справке были указаны пределы 55 кг для магазина и 35 кг для пункта выдачи' },
+      { title: 'Самовывоз', detail: 'Для генератора весом 98,2 кг можно было выбрать пункт. В справке были указаны пределы 55 кг для магазина и 35 кг для пункта выдачи', highlight: true },
       { title: 'Курьер', detail: 'Условие о том, что при весе заказа свыше 50 кг разгрузка ложится на покупателя, было доступно отдельно' },
       { title: 'Транспортная компания', detail: 'Рядом с кнопкой «Заказать» была цена товаров. Стоимость доставки ещё нужно было уточнить' },
     ],
@@ -84,6 +84,7 @@ type Decision = {
   label: string;
   title: string;
   hypothesis: readonly [before: string, emphasis: string, after: string];
+  highlightHypothesis?: boolean;
   solution: readonly [before: string, emphasis: string, after: string];
   comparison: readonly [CaseFigure, CaseFigure];
   scenario: readonly [CaseFigure, CaseFigure] | readonly [CaseFigure, CaseFigure, CaseFigure];
@@ -143,6 +144,7 @@ export const viDecisions: readonly Decision[] = [
       'показать условия рядом с выбранным способом получения',
       ', покупатель учтёт их при оформлении, потому что они зависят от способа получения и состава покупки',
     ],
+    highlightHypothesis: true,
     solution: ['Если подъём доступен, показал этаж, способ и доплату в сводке курьера. Если ', 'подъём недоступен', ', показал причину'],
     comparison: [
       {
