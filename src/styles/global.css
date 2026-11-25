@@ -233,11 +233,40 @@ h3, .portfolio-profile-section > h2 {
   text-transform: var(--type-accent-transform);
   white-space: nowrap;
   pointer-events: none;
-  visibility: hidden;
+  display: none;
 }
-.portfolio-socials .icon-tile:focus-visible + .portfolio-contact-label { visibility: visible; }
+.portfolio-contact-label[data-copy-feedback],
+.portfolio-socials .icon-tile:focus-visible + .portfolio-contact-label { display: block; }
 @media (any-hover: hover) {
-  .portfolio-socials .icon-tile:hover + .portfolio-contact-label { visibility: visible; }
+  .portfolio-socials .icon-tile:hover + .portfolio-contact-label { display: block; }
+}
+.portfolio-contact-status {
+  position: absolute;
+  inset: 0 auto auto 0;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .portfolio-contact-character {
+    --contact-character-duration: 18ms;
+    --contact-character-delay: calc(var(--contact-character-index) * var(--contact-character-duration));
+    position: relative;
+    animation: typewriter-character 0s var(--contact-character-delay) backwards;
+  }
+  .portfolio-contact-character:not(:last-child)::after {
+    position: absolute;
+    inset-inline-start: 100%;
+    inset-block-end: 0;
+    inline-size: calc(2 * var(--pixel-step));
+    block-size: calc(4 * var(--pixel-step));
+    background: currentColor;
+    opacity: 0;
+    content: "";
+    animation: typewriter-caret var(--contact-character-duration) var(--contact-character-delay);
+  }
 }
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
@@ -1026,7 +1055,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     --contents-character-duration: 18ms;
     --contents-character-delay: calc(var(--contents-character-index) * var(--contents-character-duration));
     position: relative;
-    animation: contents-character 0s var(--contents-character-delay) backwards;
+    animation: typewriter-character 0s var(--contents-character-delay) backwards;
   }
   .case-nav[data-dns-contents] .case-contents-character:not(:last-child)::after {
     position: absolute;
@@ -1039,11 +1068,11 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     opacity: 0;
     pointer-events: none;
     content: "";
-    animation: contents-caret var(--contents-character-duration) var(--contents-character-delay);
+    animation: typewriter-caret var(--contents-character-duration) var(--contents-character-delay);
   }
 }
-@keyframes contents-character { from { opacity: 0; } }
-@keyframes contents-caret {
+@keyframes typewriter-character { from { opacity: 0; } }
+@keyframes typewriter-caret {
   from, to { opacity: 1; }
 }
 .dns-case-body :is(h1, h2, h3, h4)[tabindex]:focus-visible {
