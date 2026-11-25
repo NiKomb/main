@@ -89,7 +89,7 @@ type Decision = {
   comparison: readonly [CaseFigure, CaseFigure];
   scenario: readonly [CaseFigure, CaseFigure] | readonly [CaseFigure, CaseFigure, CaseFigure];
   scenarioComment?: string;
-  testObservation?: { count: number; detail: string };
+  result: { count: number; label: string; detail: string; comment?: string };
 };
 
 const pickupRestricted: CaseFigure = {
@@ -134,6 +134,11 @@ export const viDecisions: readonly Decision[] = [
       { ...pickupRestricted, comment: 'pickup-solution' },
     ],
     scenario: [pickupRestricted, courierSelected],
+    result: {
+      count: 4,
+      label: 'Столкнулись с ограничением самовывоза',
+      detail: 'Один участник оформил лёгкий товар в пункт выдачи, а для стиральной машины выбрал самовывоз из магазина',
+    },
   },
   {
     id: 'vi-courier-solution',
@@ -173,9 +178,11 @@ export const viDecisions: readonly Decision[] = [
       },
     ],
     scenarioComment: 'followup',
-    testObservation: {
+    result: {
       count: viCase.test.critical,
-      detail: 'Подтвердили доставку курьером, хотя для общего веса заказа нужный подъём был недоступен',
+      label: 'Подтвердили курьера при недоступном подъёме',
+      detail: 'Для общего веса заказа нужный подъём был недоступен. Причину выбора предстоит выяснить',
+      comment: 'test-lifting',
     },
   },
   {
@@ -205,6 +212,11 @@ export const viDecisions: readonly Decision[] = [
       },
     ],
     scenarioComment: 'scenario-request',
+    result: {
+      count: 3,
+      label: 'Отправили запрос на согласование доставки через ТК',
+      detail: 'После отправки запроса ещё нужно согласовать цену, срок, разгрузку и подъём',
+    },
   },
 ];
 

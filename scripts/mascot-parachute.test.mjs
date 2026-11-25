@@ -55,74 +55,87 @@ test('a button takeoff pushes off from a single point and opens the parachute in
   }
 });
 
-test('one ordinary scroll produces a banked arc that continues after input stops', () => {
+test('one ordinary scroll banks into a descending arc and settles at the new position', () => {
   const area = parachuteGlideArea(320, 1090, 1440, 900);
   const glide = createParachuteGlide();
-  stepParachuteGlide(glide, area, 90, 16);
-  assert.equal(glide.maneuver.kind, 'arc');
-  const arc = Array.from({ length: 50 }, () => stepParachuteGlide(glide, area, 0, 16));
-  assert.ok(arc[16].x > area.center.x + 25 && arc[16].tilt > 8);
-  assert.ok(arc[24].y > area.center.y + 40);
-  assert.ok(arc[33].x < area.center.x - 15);
-  assert.ok(Math.abs(arc.at(-1).y - area.center.y) < 5);
-  stepParachuteGlide(glide, area, -80, 16);
-  const uphill = Array.from({ length: 23 }, () => stepParachuteGlide(glide, area, 0, 16)).at(-1);
-  assert.ok(uphill.y < area.center.y - 38);
+  const start = stepParachuteGlide(glide, area, 90, 16);
+  const arc = Array.from({ length: 90 }, () => stepParachuteGlide(glide, area, 0, 16));
+  const end = arc.at(-1);
+
+  assert.ok(arc[8].x > start.x && arc[8].tilt > 7);
+  assert.ok(arc[8].y > start.y && arc[8].y < end.y);
+  assert.ok(arc.every(({ x, y, tilt }, i) => i === 0 ||
+    (x >= arc[i - 1].x && y >= arc[i - 1].y && tilt >= 0)));
+  assert.ok(end.x - start.x >= 20 && end.x - start.x <= 30);
+  assert.ok(end.y - start.y > 12);
+  assert.ok(Math.abs(end.tilt) < .1);
+  assert.ok(Math.hypot(end.x - arc[79].x, end.y - arc[79].y) < .1);
 });
 
-test('a sustained fast swipe starts one wider loop inside the gutter', () => {
+test('a sustained swipe extends the same descending arc within the gutter', () => {
   const area = parachuteGlideArea(320, 1090, 1440, 900);
   const glide = createParachuteGlide();
-  for (let frame = 0; frame < 5; frame++) {
+  const arc = Array.from({ length: 90 }, (_, frame) => {
+    if (frame < 12) noteParachuteScrollInput(glide, 'touch');
+    return stepParachuteGlide(glide, area, frame < 12 ? 48 : 0, 16);
+  });
+  const end = arc.at(-1);
+
+  assert.ok(end.x > area.center.x + 50 && end.y > area.center.y + 35);
+  assert.ok(arc.every(({ x, y, tilt }, i) => i === 0 ||
+    (x >= arc[i - 1].x && y >= arc[i - 1].y && tilt >= 0)));
+  assert.ok(arc.every(({ x }) => x - 36 >= 1090 && x + 108 <= 1440));
+  assert.ok(Math.abs(end.tilt) < .1);
+});
+
+test('a touch swipe still widens the drift when scroll events arrive at a lower frame rate', () => {
+  const area = parachuteGlideArea(320, 1090, 1440, 900);
+  const glide = createParachuteGlide();
+  for (let frame = 0; frame < 7; frame++) {
     noteParachuteScrollInput(glide, 'touch');
-    stepParachuteGlide(glide, area, 48, 16);
+    stepParachuteGlide(glide, area, 36, 50);
   }
-  assert.equal(glide.maneuver.kind, 'turn');
-  const loop = Array.from({ length: 75 }, (_, frame) => stepParachuteGlide(glide, area, frame < 20 ? 40 : 0, 16));
-  assert.ok(loop[17].y > area.center.y + 60);
-  assert.ok(Math.min(...loop.slice(30, 45).map(({ x }) => x)) < area.center.x - 52);
-  assert.ok(loop[53].y < area.center.y - 60);
-  assert.ok(loop.every(({ x }) => x - 36 >= 1090 && x + 108 <= 1440));
-  assert.equal(glide.maneuver, undefined);
-  const exit = glide.offset.x;
-  stepParachuteGlide(glide, area, 0, 16);
-  assert.ok(glide.offset.x > 0 && glide.offset.x < exit);
-  for (let frame = 0; frame < 20; frame++) stepParachuteGlide(glide, area, 0, 16);
-  assert.ok(Math.hypot(glide.offset.x, glide.offset.y, glide.offset.tilt) < .1);
+  const end = stepParachuteGlide(glide, area, 0, 1500);
+  assert.ok(end.x > area.center.x + 50 && end.y > area.center.y + 35);
 });
 
-test('reversing scroll carries the previous movement and bank before bending back', () => {
+test('reversing scroll carries the previous drift and bank, then steers back while descending', () => {
   const area = parachuteGlideArea(320, 1090, 1440, 900);
   const glide = createParachuteGlide();
   stepParachuteGlide(glide, area, 90, 16);
-  for (let frame = 0; frame < 14; frame++) stepParachuteGlide(glide, area, 0, 16);
-  stepParachuteGlide(glide, area, -90, 16);
-  const atReversal = { ...glide.offset };
-  assert.equal(glide.maneuver.direction, -1);
-  stepParachuteGlide(glide, area, 0, 16);
-  assert.ok(glide.offset.y > atReversal.y && glide.offset.tilt > atReversal.tilt);
-  for (let frame = 0; frame < 14; frame++) stepParachuteGlide(glide, area, 0, 16);
-  assert.ok(glide.offset.y < 0 && glide.offset.tilt < 0);
+  for (let frame = 0; frame < 7; frame++) stepParachuteGlide(glide, area, 0, 16);
+  const reversal = stepParachuteGlide(glide, area, -90, 16);
+  const carry = stepParachuteGlide(glide, area, 0, 16);
+  assert.ok(carry.x > reversal.x && carry.tilt > 0);
+
+  const returnArc = Array.from({ length: 30 }, () => stepParachuteGlide(glide, area, 0, 16));
+  assert.ok(returnArc[12].x < reversal.x && returnArc[12].tilt < 0);
+  assert.ok(returnArc.every(({ y }, i) => y >= (returnArc[i - 1]?.y ?? carry.y)));
 });
 
-test('large wheel notches and short pixel scrolls keep the ordinary arc', () => {
+test('a large wheel notch or short pixel scroll moves less than a sustained trackpad swipe', () => {
   const area = parachuteGlideArea(320, 1090, 1440, 900);
+  const finish = (kind, samples) => {
+    const glide = createParachuteGlide();
+    for (let frame = 0; frame < samples; frame++) {
+      noteParachuteScrollInput(glide, kind);
+      stepParachuteGlide(glide, area, kind === 'wheel-step' ? 350 : 52, 16);
+    }
+    return stepParachuteGlide(glide, area, 0, 1500).x - area.center.x;
+  };
+
+  assert.ok(finish('wheel-step', 1) < 30);
+  assert.ok(finish('pixel-wheel', 3) < 30);
+  assert.ok(finish('pixel-wheel', 5) > 50);
+});
+
+test('a tight gutter retains the bank without needing horizontal space', () => {
+  const area = parachuteGlideArea(260, 246, 390, 740);
   const glide = createParachuteGlide();
-  noteParachuteScrollInput(glide, 'wheel-step');
-  stepParachuteGlide(glide, area, 350, 16);
-  assert.equal(glide.maneuver.kind, 'arc');
-  noteParachuteScrollInput(glide, 'wheel-step');
-  for (let frame = 0; frame < 7; frame++) stepParachuteGlide(glide, area, -55, 16);
-  assert.equal(glide.maneuver.kind, 'arc');
-  assert.equal(glide.maneuver.direction, -1);
-  for (let frame = 0; frame < 3; frame++) {
-    noteParachuteScrollInput(glide, 'pixel-wheel');
-    stepParachuteGlide(glide, area, 52, 16);
-  }
-  assert.equal(glide.maneuver.kind, 'arc');
-  for (let frame = 0; frame < 2; frame++) {
-    noteParachuteScrollInput(glide, 'pixel-wheel');
-    stepParachuteGlide(glide, area, 52, 16);
-  }
-  assert.equal(glide.maneuver.kind, 'turn');
+  stepParachuteGlide(glide, area, -90, 16);
+  const arc = Array.from({ length: 90 }, () => stepParachuteGlide(glide, area, 0, 16));
+  assert.ok(arc.every(({ x }) => x === area.center.x));
+  assert.ok(arc[8].tilt < -7);
+  assert.ok(arc.at(-1).y > area.center.y + 12);
+  assert.ok(Math.abs(arc.at(-1).tilt) < .1);
 });

@@ -161,6 +161,11 @@
 /* Keep the hidden text measurement from widening the mobile viewport. */
 .case-grid > .mascot-speech { overflow: clip; }
 
+.mascot-case > [data-highlighted-speech] .mascot-speech {
+  background: var(--color-dns-button-face);
+  box-shadow: inset 0 calc(-2 * var(--pixel-step)) var(--color-dns-button-shadow);
+}
+
 .mascot-speech:not([data-replaying]),
 .mascot-speech__replay::before,
 .mascot-speech__replay > span {

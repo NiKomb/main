@@ -1,6 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 
-export type CaseContentsItem = { id: string; label: string; note?: string; divider?: string | null };
+export type CaseContentsItem = { id: string; label: string; divider?: string | null };
 
 type Props = {
   items: readonly CaseContentsItem[];
@@ -36,21 +36,17 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
 
   return (
     <ul ref={listRef}>
-      {items.map(({ id, label, note, divider }) => {
+      {items.map(({ id, label, divider }) => {
         const current = activeHeading === id;
         return (
-          <li key={id}>
+          <li key={id} data-section-start={divider !== undefined ? '' : undefined}>
             {divider && <span className="case-contents-divider" data-active={activeDivider?.id === id ? '' : undefined}>{divider}</span>}
             <button type="button" onClick={() => onJump(id)}
-              aria-label={note ? label : undefined}
-              aria-describedby={note ? `${id}-contents-note` : undefined}
-              title={note}
               aria-current={current ? 'location' : undefined}
               style={current ? { '--contents-label-length': label.length } as CSSProperties : undefined}>
               <span className="case-contents-label">
                 <span className="case-contents-text">{label}</span>
               </span>
-              {note && <span id={`${id}-contents-note`} className="case-contents-note">{note}</span>}
             </button>
           </li>
         );

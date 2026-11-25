@@ -5,7 +5,7 @@ import { ContactButtons } from '../components/ContactButtons';
 import { GalleryStrip } from '../components/GalleryStrip';
 import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
-import { iconTilePress } from '../components/icon-tile-press';
+import { iconTilePress, restartIconTileStartup } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectResults } from '../data/projectResults';
@@ -231,7 +231,7 @@ function VideoControls({ video, placement, playbackLabel = 'видео', onToggl
   return (
     <div className={`video-controls video-controls--${placement}`} role="group" aria-label="Управление видео"
       onPointerDown={(event) => event.stopPropagation()}>
-      <button type="button" className="icon-tile" {...iconTilePress}
+      <button type="button" className="icon-tile icon-tile--secondary" {...iconTilePress}
         aria-label={`${playing ? 'Приостановить' : 'Воспроизвести'} ${playbackLabel}`} onClick={() => {
           if (onToggle) onToggle();
           else if (video.paused || video.ended) void video.play().catch(() => {});
@@ -249,6 +249,31 @@ function VideoControls({ video, placement, playbackLabel = 'видео', onToggl
         }} />
       <span className="video-time">{timestamp} / {total}</span>
     </div>
+  );
+}
+
+function GalleryArrow({ direction, onMove }: { direction: -1 | 1; onMove: (direction: -1 | 1) => void }) {
+  const previous = direction === -1;
+
+  function followPointer({ currentTarget: button, pointerType, clientX, clientY }: PointerEvent<HTMLButtonElement>) {
+    const followsPointer = pointerType === 'mouse' || pointerType === 'pen';
+    button.toggleAttribute('data-gallery-arrow-cursor', followsPointer);
+    if (!followsPointer) return;
+    const bounds = button.getBoundingClientRect();
+    button.style.setProperty('--gallery-pointer-x', `${clientX - bounds.left}px`);
+    button.style.setProperty('--gallery-pointer-y', `${clientY - bounds.top}px`);
+  }
+
+  return (
+    <button type="button" className={previous ? 'gallery-previous' : 'gallery-next'}
+      aria-label={previous ? 'Предыдущий кадр' : 'Следующий кадр'}
+      onPointerEnter={followPointer} onPointerMove={followPointer}
+      onClick={(event) => {
+        restartIconTileStartup(event.currentTarget, 'press');
+        onMove(direction);
+      }}>
+      <span className="gallery-arrow-icon" aria-hidden="true"><GridIcon name={previous ? 'left' : 'right'} /></span>
+    </button>
   );
 }
 
@@ -485,10 +510,11 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       setContentsVisible(overview.getBoundingClientRect().bottom <= alignment.offset);
       const footerInset = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
       const activeHeadingOffset = window.innerHeight / 2;
-      const current = headings.find((heading) => {
+      const current = headings.find((heading, index) => {
         if (!heading) return false;
-        const { top, height } = heading.getBoundingClientRect();
-        return top + height * alignment.anchor <= activeHeadingOffset;
+        const { top, bottom, height } = heading.getBoundingClientRect();
+        return top + height * alignment.anchor <= activeHeadingOffset ||
+          (index === 0 && footerInset > 0 && top >= 0 && bottom <= window.innerHeight);
       });
       setActiveHeading(current?.id ?? firstHeading);
       navigation.style.setProperty('--dns-case-footer-inset', `${footerInset}px`);
@@ -781,7 +807,9 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
             ))}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
               <div className="tile-layout--sign">
-                <div className="case-sign-heading"><h2>Скоро будет</h2></div>
+                <div className="case-sign-heading">
+                  <h2 aria-label="Скоро будет">Жвэ#лкр фя%чн жгщ*взмлксвё ы мю?рачж к щл#эфю</h2>
+                </div>
                 <span className="case-cover" data-cover="preview" aria-hidden="true">
                   <span className="case-cover-frame" data-cropped="">
                     <img src={financePreview} width={960} height={732} alt="" loading="lazy" />
@@ -795,7 +823,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
           <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
         </>
       )}
-      <dialog ref={dialog} className="case-dialog" aria-label="Просмотр материалов"
+      <dialog ref={dialog} className="case-dialog" data-case-theme={item?.id} aria-label="Просмотр материалов"
         onCancel={(event) => { event.preventDefault(); closeMedia(); }}
         onKeyDown={(event) => {
           if (showingOriginal || event.target instanceof HTMLInputElement || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
@@ -853,8 +881,8 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
         {gallery && gallery.slides.length > 1 && !showingOriginal && (
           <>
             <div className="gallery-navigation" {...mediaSwipeHandlers}>
-              <button type="button" className="gallery-previous" aria-label="Предыдущий кадр" onClick={() => moveMedia(-1)} />
-              <button type="button" className="gallery-next" aria-label="Следующий кадр" onClick={() => moveMedia(1)} />
+              <GalleryArrow direction={-1} onMove={moveMedia} />
+              <GalleryArrow direction={1} onMove={moveMedia} />
             </div>
             <span role="status" className="gallery-position">Кадр {gallery.index + 1} из {gallery.slides.length}</span>
           </>

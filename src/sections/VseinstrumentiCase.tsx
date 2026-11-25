@@ -138,7 +138,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
 
       <CaseSection id="vi-solutions" title={viCase.decisionsTitle}>
         {viDecisions.map(({ id, title, hypothesis, highlightHypothesis, solution: [before, emphasis, after],
-          comparison, scenario: steps, scenarioComment, testObservation }, index) => (
+          comparison, scenario: steps, scenarioComment, result }, index) => (
           <section className="dns-case-group" key={id} aria-labelledby={id}>
             <ViHeading id={id} />
             <div className="dns-case-frames" data-media-gallery>
@@ -159,19 +159,20 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 ))}
               </figcaption>
             </figure>
-            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
-              solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
-            {testObservation && (
-              <div className="dns-case-block">
-                <h4 id={`${id}-result`}>Результат</h4>
-                <CaseResults aria-labelledby={`${id}-result`}>
-                  <CaseCard as="li" className="dns-case-fact dns-case-metric" comment="test-lifting" highlight>
-                    <p className="dns-case-metric-value vi-case-critical">{ratio(testObservation.count)}</p>
-                    <p>{testObservation.detail}</p>
-                  </CaseCard>
-                </CaseResults>
-              </div>
-            )}
+            <section className="dns-case-block">
+              <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
+                solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
+              <h4 id={`${id}-result`}>Результат</h4>
+              <CaseResults aria-labelledby={`${id}-result`}>
+                <CaseCard as="li" className="dns-case-fact dns-case-metric" comment={result.comment} highlight>
+                  <p className="dns-case-metric-value vi-case-critical">{ratio(result.count)}</p>
+                  <div className="dns-case-metric-copy">
+                    <p className="dns-case-fact-title">{result.label}</p>
+                    <p>{result.detail}</p>
+                  </div>
+                </CaseCard>
+              </CaseResults>
+            </section>
           </section>
         ))}
       </CaseSection>

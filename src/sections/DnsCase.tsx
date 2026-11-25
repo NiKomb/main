@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CaseEvidence } from '../components/CaseEvidence';
 import { CaseCard } from '../components/CaseCard';
 import { CaseCardList, CaseResults } from '../components/CaseCardList';
@@ -12,8 +12,8 @@ import { InterviewGallery } from '../components/InterviewGallery';
 import { iconTilePress } from '../components/icon-tile-press';
 import { dnsCase, dnsContents, dnsDecisions, type CaseFact, type CaseFigure, type CaseMetric } from '../data/dnsCase';
 import { dnsConfiguratorLink, dnsDemoLink, type ProjectImage } from '../data/projects';
-import { ComparisonDivider } from '../effects/comparison-divider/ComparisonDivider';
-import { ComparisonFramePaint } from '../effects/comparison-frame-paint/ComparisonFramePaint';
+import { useComparisonPosition } from '../effects/comparison-divider/use-comparison-position';
+import '../effects/comparison-divider/comparison-divider.css';
 import { RocketShot } from '../effects/rocket-shot/RocketShot';
 
 type Props = {
@@ -65,53 +65,40 @@ function renderMetric({ value, label, detail, comment, highlight }: CaseMetric) 
   );
 }
 
-function DnsComparison({ frames, headingId, paintFrame = false, sliderLabel = 'Разделитель «Было / Стало»',
+function DnsComparison({ frames, headingId, highlightSpeech = false, sliderLabel = 'Разделитель «Было / Стало»',
   renderScreenshot }: Pick<Props, 'renderScreenshot'> & {
   frames: readonly [CaseFigure, CaseFigure];
   headingId: string;
-  paintFrame?: boolean;
+  highlightSpeech?: boolean;
   sliderLabel?: string;
 }) {
-  const [position, setPosition] = useState(50);
-  const [size, setSize] = useState({ width: 0, height: 0 });
   const tile = useRef<HTMLDivElement>(null);
+  const { position, moveTo, startDrag, stopCoast } = useComparisonPosition(tile);
+  const displayedPosition = Math.round(position);
   const [before, after] = frames;
   const style = { '--comparison-position': `${position}%` } as CSSProperties;
-
-  useLayoutEffect(() => {
-    const element = tile.current;
-    if (!element) return;
-    const measure = () => {
-      const { width, height } = element.getBoundingClientRect();
-      setSize((previous) => previous.width === width && previous.height === height ? previous : { width, height });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
       <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-mascot-surface="screen"
-        data-mascot-paint-frame={paintFrame ? '' : undefined} style={style}>
-        <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={position}
+        data-mascot-highlight-speech={highlightSpeech ? '' : undefined} style={style}>
+        <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={displayedPosition}
           aria-label={sliderLabel}
-          aria-valuetext={`Было — ${position}%, стало — ${100 - position}%`}
-          onChange={(event) => setPosition(event.currentTarget.valueAsNumber)} />
+          aria-valuetext={`Было — ${displayedPosition}%, стало — ${100 - displayedPosition}%`}
+          onChange={(event) => moveTo(event.currentTarget.valueAsNumber)}
+          onPointerDown={startDrag} onKeyDown={stopCoast} onBlur={stopCoast} />
         <div className="dns-comparison-frame" data-side="before" hidden={position === 0}>
           {renderScreenshot(before)}
         </div>
         <div className="dns-comparison-frame" data-side="after" hidden={position === 100}>
           {renderScreenshot(after)}
         </div>
-        <ComparisonDivider tile={tile} position={position} width={size.width} height={size.height} />
-        <span className="icon-tile dns-comparison-handle" aria-hidden="true">
+        <span className="dns-comparison-divider" aria-hidden="true" />
+        <span className="icon-tile icon-tile--secondary dns-comparison-handle" aria-hidden="true">
           <GridIcon name="left" />
           <GridIcon name="right" />
         </span>
       </div>
-      {paintFrame && <ComparisonFramePaint tile={tile} {...size} />}
       <figcaption className="dns-case-frames">
         <span><strong>{before.label}</strong>{before.caption}</span>
         <span><strong>{after.label}</strong>{after.caption}</span>
@@ -271,7 +258,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               <div className="dns-case-block" data-mascot-comment={decision.comment}>
                 {decision.solutionFigure && renderFigure(decision.solutionFigure)}
                 <DnsComparison frames={decision.comparison} headingId={decision.id}
-                  paintFrame={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
+                  highlightSpeech={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
               </div>
               <section className="dns-case-block dns-decision-check">
                 <CaseDecisionCopy hypothesisNumber={decision.hypothesis} hypothesis={(

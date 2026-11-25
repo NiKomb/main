@@ -1,15 +1,51 @@
 .dns-comparison-divider {
   position: absolute;
   z-index: 2;
-  inset-block-start: 0;
+  inset-block: 0;
   left: var(--comparison-position);
-  height: 100%;
+  inline-size: var(--pixel-step);
+  background: var(--color-background);
   transform: translateX(-50%);
   pointer-events: none;
 }
-.dns-comparison-divider > path {
-  fill: none;
-  stroke: var(--color-muted);
-  stroke-width: var(--pixel-step);
-  vector-effect: non-scaling-stroke;
+
+@media (forced-colors: none) {
+  .dns-comparison-divider::before {
+    --comparison-core-color: var(--case-accent, var(--color-dns-accent));
+    position: absolute;
+    inset-block: 12.5%;
+    inset-inline: var(--pixel-step);
+    background: var(--comparison-core-color);
+    box-shadow: 0 0 6px 2px color-mix(in srgb, var(--comparison-core-color) 65%, transparent);
+    opacity: calc(var(--case-sign-light-opacity) * var(--icon-tile-visibility));
+    --case-sign-light-opacity: var(--comparison-core-lit, 0);
+    content: none;
+  }
+
+  .dns-comparison-control:is(:focus-visible, :active, [data-touch-pressed]) ~ .dns-comparison-divider::before {
+    --comparison-core-lit: 1;
+  }
+
+  @media (hover: hover) {
+    .dns-comparison-control:hover ~ .dns-comparison-divider::before {
+      --comparison-core-lit: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) and (hover: hover) {
+    .dns-comparison-control:hover:not(:active, :focus-visible) ~ .dns-comparison-divider::before {
+      --case-sign-light-opacity: 0;
+      animation: var(--case-sign-startup) forwards;
+    }
+
+    .dns-comparison-control:not(:hover, :active, :focus-visible, [data-touch-pressed]) ~ .dns-comparison-divider::before {
+      --case-sign-light-opacity: 1;
+      --icon-tile-visibility: 0;
+      transition: --icon-tile-visibility var(--case-sign-startup-duration);
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .dns-comparison-divider { background: CanvasText; }
 }

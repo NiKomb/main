@@ -1,20 +1,4 @@
-.comparison-particles {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--color-text);
-  mix-blend-mode: difference;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  .dns-comparison-tile[data-pixel-swap] > .dns-comparison-frame[data-side="before"] {
-    clip-path: var(--comparison-clip-before);
-  }
-  .dns-comparison-tile[data-pixel-swap] > .dns-comparison-frame[data-side="after"] {
-    clip-path: var(--comparison-clip-after);
-  }
   .case-nav[data-dns-contents] ul {
     animation: case-contents-appear 200ms steps(5, end) both;
   }
