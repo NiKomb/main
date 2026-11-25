@@ -10,7 +10,7 @@ import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment } from './case-comments';
 import { caseFooterRoute, caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowFinishButton, caseRowRoute,
-  caseSurfacesInJumpRange, nextCaseSurfaceToRight, recordCaseScrollStep, sameCaseRow, selectCaseSurface,
+  caseSurfacesInJumpRange, nextCaseSurfaceToRight, recordCaseScrollStep, sameCaseRow, selectCaseSurface, trackCaseGalleryScroll,
   type CaseScrollStep, type CaseSurface, type ParkingSide } from './case-route';
 import { dampDragReaction, dragPull, type DragSample } from './drag-reaction';
 import { playGroundMovement, type BlinkDeparture } from './ground-movement';
@@ -26,7 +26,6 @@ import './mascot.css';
 const unlitFact = '[data-mascot-highlight]:not([data-mascot-highlighted])';
 const dragThreshold = 5;
 const tuckedDragFrame = 4;
-const galleryBlinkDelay = 100;
 const finishGroupSelector = '[data-mascot-finish-group]';
 const finishButtonSelector = '[data-mascot-finish-button]';
 type RouteSurface = CaseSurface & { surface: Surface };
@@ -100,6 +99,9 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const movement = createMascotMovement(actor, canvas.current, lift.current, image);
     const openingGallery = article.querySelector('.case-covers');
+    const galleries = new Map(Array.from(article.querySelectorAll('[data-mascot-clip]'), (gallery) => [
+      gallery, trackCaseGalleryScroll(gallery),
+    ]));
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const caseFooter = article.querySelector('.dns-case-footer');
     const body = article.querySelector('.dns-case-body');
@@ -127,10 +129,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let appeared = false;
     let suspended = false;
     let lastScroll = scrollY;
-    let lastGalleryOffset = openingGallery?.scrollLeft ?? 0;
-    let lastGalleryScroll = -Infinity;
     let galleryBlink: CaseStop | 'pending' | undefined;
-    const galleryScrollSteps: CaseScrollStep[] = [];
     const scrollSteps: CaseScrollStep[] = [];
     let scrollPending = false;
     let teleportingFromJump = false;
@@ -364,6 +363,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       shotCaption = undefined;
       destination = undefined;
       teleportingFromJump = false;
+      galleryBlink = undefined;
       hideSpeech();
       control.inert = false;
       layer.setAttribute('data-manual', '');
@@ -788,7 +788,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       if (!enabled || motion.matches) departure?.cancel();
       if (!enabled) {
         scrollSteps.length = 0;
-        galleryScrollSteps.length = 0;
+        for (const scroll of galleries.values()) scroll.reset();
         releaseDrag();
         if (flight) {
           flight.lastTime = undefined;
@@ -820,11 +820,6 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const delta = scrollY - lastScroll;
       if (delta !== 0) scrollingUp = delta < 0;
       lastScroll = scrollY;
-      const galleryOffset = openingGallery?.scrollLeft ?? 0;
-      const galleryDelta = galleryOffset - lastGalleryOffset;
-      lastGalleryOffset = galleryOffset;
-      if (galleryDelta) lastGalleryScroll = now;
-      const fastGalleryScroll = recordCaseScrollStep(galleryScrollSteps, galleryDelta, now, innerWidth);
       if (flight && delta !== 0) flight.reachedBottom = scrollRemaining() <= 1;
       if (drag) return;
       if (flight) {
@@ -891,24 +886,32 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const rowFinish = row && stop(row.finish.surface, 'finish', row.finish.surface.right);
       routeFinish = routeEnd?.rightFinish ?? rowFinish;
 
-      if (!motion.matches && rowFinish && openingGallery && selected?.group === openingGallery &&
-        current && openingGallery.contains(current.surface.tile)) {
+      const gallery = selected?.group;
+      const galleryScroll = gallery && galleries.get(gallery)?.read(now);
+      if (!motion.matches && rowFinish && galleryScroll &&
+        (gallery.contains(current?.surface.tile ?? null) || gallery.contains(target?.tile ?? null))) {
         const blinkTarget = galleryBlink !== 'pending' && destination === galleryBlink ? galleryBlink : undefined;
-        if (blinkTarget?.surface.tile === rowFinish.surface.tile && blinkTarget.point.x === rowFinish.point.x &&
+        const dragged = galleryScroll.changed && galleryScroll.dragging;
+        if (!dragged && blinkTarget?.surface.tile === rowFinish.surface.tile && blinkTarget.point.x === rowFinish.point.x &&
           blinkTarget.point.y === rowFinish.point.y) return;
 
-        const lostSupport = galleryDelta !== 0 && (!previous || !surfaces.some(({ tile }) => tile === target?.tile));
-        if (galleryBlink !== 'pending' && (blinkTarget || fastGalleryScroll || lostSupport)) {
+        const lostSupport = !previous || !surfaces.some(({ tile }) => tile === target?.tile);
+        if (galleryBlink !== 'pending' && (blinkTarget || dragged || galleryScroll.fast || (galleryScroll.changed && lostSupport))) {
           const origin = renderedPosition(bounds);
+          departure?.cancel();
           movement.cancel();
           if (origin) settle(origin);
+          else {
+            actor.hidden = true;
+            visibleActor = undefined;
+          }
           destination = undefined;
           galleryBlink = 'pending';
         }
         if (galleryBlink === 'pending') {
-          // Wait for the gallery to stop before committing to the Blink destination.
-          if (now - lastGalleryScroll < galleryBlinkDelay) {
-            queue();
+          hideSpeech(fromScroll);
+          if (!galleryScroll.settled) {
+            if (!galleryScroll.dragging) queue();
             return;
           }
           const origin = renderedPosition(bounds);
@@ -1098,10 +1101,11 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     resize.observe(article);
     if (textColumn) resize.observe(textColumn);
     for (const button of article.querySelectorAll(finishButtonSelector)) resize.observe(button);
-    const footerChanges = new MutationObserver(queue);
+    const routeChanges = new MutationObserver(queue);
+    for (const gallery of galleries.keys()) routeChanges.observe(gallery, { attributeFilter: ['data-dragging'] });
     if (footerActions) {
       resize.observe(footerActions);
-      footerChanges.observe(footerActions, {
+      routeChanges.observe(footerActions, {
         subtree: true, childList: true, attributes: true,
         attributeFilter: ['class', 'style', 'hidden', 'disabled', 'href', 'aria-disabled', 'aria-hidden', 'inert'],
       });
@@ -1159,7 +1163,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       departure?.cancel();
       movement.cancel();
       resize.disconnect();
-      footerChanges.disconnect();
+      routeChanges.disconnect();
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('wheel', onWheel, true);
       window.removeEventListener('touchmove', onTouchMove, true);

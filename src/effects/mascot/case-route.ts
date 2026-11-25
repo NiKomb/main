@@ -12,6 +12,7 @@ export type ParkingSide = 'left' | 'right';
 export type CaseScrollStep = { time: number; delta: number };
 
 const scrollSpeedWindow = 100;
+const galleryBlinkDelay = 100;
 const sameLevelGap = 72;
 const diagonalGap = 160;
 
@@ -22,6 +23,28 @@ export function recordCaseScrollStep(steps: CaseScrollStep[], delta: number, tim
   while (steps[0] && time - steps[0].time > scrollSpeedWindow) steps.shift();
   steps.push({ time, delta });
   return Math.abs(steps.reduce((distance, step) => distance + step.delta, 0)) > viewportSize / 2;
+}
+
+export function trackCaseGalleryScroll(gallery: Pick<Element, 'scrollLeft' | 'clientWidth' | 'hasAttribute'>) {
+  const steps: CaseScrollStep[] = [];
+  let offset = gallery.scrollLeft;
+  let lastScroll = -Infinity;
+
+  return {
+    reset() {
+      offset = gallery.scrollLeft;
+      lastScroll = -Infinity;
+      steps.length = 0;
+    },
+    read(now: number) {
+      const delta = gallery.scrollLeft - offset;
+      offset = gallery.scrollLeft;
+      if (delta) lastScroll = now;
+      const fast = recordCaseScrollStep(steps, delta, now, gallery.clientWidth);
+      const dragging = gallery.hasAttribute('data-dragging');
+      return { changed: delta !== 0, fast, dragging, settled: !dragging && now - lastScroll >= galleryBlinkDelay };
+    },
+  };
 }
 
 type JumpSurface = { left: number; right: number; y: number };

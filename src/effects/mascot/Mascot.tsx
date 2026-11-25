@@ -7,7 +7,7 @@ import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset,
   spriteWidth, type Point, type Stop } from './mascot-movement';
 import { MascotSpeech } from './MascotSpeech';
-import { selectNarrowCover } from './narrow-cover';
+import { secondCaseId, selectMascotStop, selectNarrowCover } from './narrow-cover';
 import { speechPosition, type SpeechPosition } from './speech-position';
 import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
@@ -17,7 +17,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
   const actorRef = useRef<HTMLButtonElement>(null);
   const effectsRef = useRef<HTMLCanvasElement>(null);
   const takeoffRef = useRef<HTMLSpanElement>(null);
-  const [speech, setSpeech] = useState<(SpeechPosition & { message: string }) | null>(null);
+  const [speech, setSpeech] = useState<(SpeechPosition & { message: string; onClose?: () => void }) | null>(null);
   const [speechReplay, setSpeechReplay] = useState(0);
   const { bubbleRef, interrupt, interruption } = useSpeechInterruption();
 
@@ -46,15 +46,27 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let resumedAtTop = false;
     let censored = false;
     let scrollPending = false;
+    let secondCaseCommentClosed = false;
+    let waitingForSecondCaseComment = false;
+
+    const finishSecondCaseComment = () => {
+      secondCaseCommentClosed = true;
+      queueUpdate();
+    };
+    const finishAttackComment = () => {
+      censored = false;
+      if (waitingForSecondCaseComment) queueUpdate();
+    };
 
     function showSpeech(point: Point, bounds: DOMRect, sectionId: string | null, fromScroll = false) {
       const anchor = { x: point.x + spriteWidth / 2, top: point.y, bottom: point.y + footOffset };
       const position = speechPosition(anchor, bounds, innerHeight, narrow.matches);
       const message = censored ? mascotAttackMessage : sectionId ? results[sectionId] : undefined;
-      const next = message && position ? { ...position, message } : null;
+      const onClose = censored ? finishAttackComment : sectionId === secondCaseId ? finishSecondCaseComment : undefined;
+      const next = message && position ? { ...position, message, onClose } : null;
       if (fromScroll) interrupt(next?.message);
       setSpeech((current) => current && next && current.message === next.message && current.y === next.y &&
-        current.alignment === next.alignment && current.above === next.above ? current : next);
+        current.alignment === next.alignment && current.above === next.above && current.onClose === next.onClose ? current : next);
     }
 
     const hideSpeech = (fromScroll = false) => {
@@ -156,7 +168,9 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         return;
       }
 
-      const targetFinish = targetRoute.finish;
+      const destination = selectMascotStop(routes, targetRoute, secondCaseCommentClosed || !results[secondCaseId], footOffset);
+      waitingForSecondCaseComment = destination.commentId !== targetRoute.id;
+      const targetFinish = destination.stop.finish;
       const stops = routes.map(({ finish }) => finish);
       if (avatar && avatarBox?.width) {
         const surface = readSurface(avatar, bounds, avatarBox, minDashDistance);
@@ -234,7 +248,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (holdReturn) return;
       if (sameStop(current, targetFinish)) {
         introduction = false;
-        showSpeech(current.point, bounds, targetRoute.id, fromScroll);
+        if (targetRoute === routes[0]) secondCaseCommentClosed = false;
+        showSpeech(current.point, bounds, destination.commentId, fromScroll);
         return;
       }
 
@@ -323,7 +338,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         {interruption}
       </div>
       {!interruption && speech && <MascotSpeech key={`${speech.message}:${speechReplay}`} message={speech.message}
-        position={speech} bubbleRef={bubbleRef} mascotRef={root} />}
+        position={speech} bubbleRef={bubbleRef} mascotRef={root} onClose={speech.onClose} />}
     </>
   );
 }

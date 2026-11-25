@@ -10,10 +10,11 @@ function speechTarget(target: EventTarget | null) {
     : null;
 }
 
-export function MascotSpeech({ message, position, duration, bubbleRef, mascotRef }: {
+export function MascotSpeech({ message, position, duration, bubbleRef, mascotRef, onClose }: {
   message: string; position: SpeechPosition; duration?: number | 'persistent';
   bubbleRef: RefObject<HTMLSpanElement | null>;
   mascotRef: RefObject<HTMLElement | null>;
+  onClose?: () => void;
 }) {
   const [printed, setPrinted] = useState(0);
   const [visible, setVisible] = useState(true);
@@ -29,6 +30,7 @@ export function MascotSpeech({ message, position, duration, bubbleRef, mascotRef
     const hide = () => {
       window.clearInterval(typingTimer);
       setVisible(false);
+      onClose?.();
     };
     const finish = () => {
       window.clearInterval(typingTimer);
@@ -51,7 +53,7 @@ export function MascotSpeech({ message, position, duration, bubbleRef, mascotRef
       window.clearInterval(typingTimer);
       window.clearTimeout(closeTimer);
     };
-  }, [message, duration, replay]);
+  }, [message, duration, replay, onClose]);
 
   useLayoutEffect(() => {
     const bubble = bubbleRef.current;
