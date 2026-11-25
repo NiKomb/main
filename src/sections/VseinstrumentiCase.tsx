@@ -140,14 +140,16 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         {viDecisions.map(({ id, title, hypothesis, highlightHypothesis, solution: [before, emphasis, after],
           comparison, scenario: steps, scenarioComment, result }, index) => (
           <section className="dns-case-group" key={id} aria-labelledby={id}>
-            <ViHeading id={id} />
-            <div className="dns-case-frames" data-media-gallery>
-              {comparison.map((frame, frameIndex) => (
-                <figure className="dns-case-figure" key={frame.src} data-mascot-comment={frame.comment}>
-                  {renderScreenshot(frame)}
-                  <figcaption><strong>{frameIndex === 0 ? 'Было' : 'Стало'}</strong>{frame.caption}</figcaption>
-                </figure>
-              ))}
+            <div className="dns-case-block">
+              <ViHeading id={id} />
+              <div className="dns-case-frames" data-media-gallery>
+                {comparison.map((frame, frameIndex) => (
+                  <figure className="dns-case-figure" key={frame.src} data-mascot-comment={frame.comment}>
+                    {renderScreenshot(frame)}
+                    <figcaption><strong>{frameIndex === 0 ? 'Было' : 'Стало'}</strong>{frame.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
             </div>
             <figure className="dns-case-figure" data-mascot-comment={scenarioComment}>
               {renderScenario(steps, title)}
@@ -159,9 +161,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 ))}
               </figcaption>
             </figure>
+            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
+              solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
             <section className="dns-case-block">
-              <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
-                solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
               <h4 id={`${id}-result`}>Результат</h4>
               <CaseResults aria-labelledby={`${id}-result`}>
                 <CaseCard as="li" className="dns-case-fact dns-case-metric" comment={result.comment} highlight>

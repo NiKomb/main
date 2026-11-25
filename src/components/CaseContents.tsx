@@ -34,18 +34,22 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
     return () => observer.disconnect();
   }, [items, activeHeading]);
 
+  let inSection = false;
   return (
     <ul ref={listRef}>
       {items.map(({ id, label, divider }) => {
         const current = activeHeading === id;
+        if (divider !== undefined) inSection = Boolean(divider);
         return (
-          <li key={id} data-section-start={divider !== undefined ? '' : undefined}>
+          <li key={id} data-section-start={divider !== undefined ? '' : undefined} data-section-item={inSection ? '' : undefined}>
             {divider && <span className="case-contents-divider" data-active={activeDivider?.id === id ? '' : undefined}>{divider}</span>}
-            <button type="button" onClick={() => onJump(id)}
-              aria-current={current ? 'location' : undefined}
-              style={current ? { '--contents-label-length': label.length } as CSSProperties : undefined}>
+            <button type="button" aria-label={label} onClick={() => onJump(id)}
+              aria-current={current ? 'location' : undefined}>
               <span className="case-contents-label">
-                <span className="case-contents-text">{label}</span>
+                <span className="case-contents-text">{current ? Array.from(label, (character, index) => (
+                  <span className="case-contents-character" key={index}
+                    style={{ '--contents-character-index': index } as CSSProperties}>{character}</span>
+                )) : label}</span>
               </span>
             </button>
           </li>

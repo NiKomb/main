@@ -251,21 +251,23 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
           const [before, emphasis, after] = decision.hypothesisText;
           return (
             <section className="dns-case-group" key={decision.id} aria-labelledby={decision.id}>
-              <DnsHeading id={decision.id} />
-              <div className="dns-case-frames" data-media-gallery data-mascot-comment={decision.comment}>
-                {decision.detailFrames.map((figure) => renderFigure(figure))}
+              <div className="dns-case-block">
+                <DnsHeading id={decision.id} />
+                <div className="dns-case-frames" data-media-gallery data-mascot-comment={decision.comment}>
+                  {decision.detailFrames.map((figure) => renderFigure(figure))}
+                </div>
               </div>
               <div className="dns-case-block" data-mascot-comment={decision.comment}>
                 {decision.solutionFigure && renderFigure(decision.solutionFigure)}
                 <DnsComparison frames={decision.comparison} headingId={decision.id}
                   highlightSpeech={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
               </div>
+              <CaseDecisionCopy hypothesisNumber={decision.hypothesis} hypothesis={(
+                <blockquote cite={test.journalSource}>
+                  <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
+                </blockquote>
+              )} solution={<p>{renderCaseText(decision.solution)}</p>} />
               <section className="dns-case-block dns-decision-check">
-                <CaseDecisionCopy hypothesisNumber={decision.hypothesis} hypothesis={(
-                  <blockquote cite={test.journalSource}>
-                    <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
-                  </blockquote>
-                )} solution={<p>{renderCaseText(decision.solution)}</p>} />
                 <h4>Результат</h4>
                 <CaseResults aria-label={`Результат. ${decision.contentsLabel}`}>
                   {decision.metrics.map(renderMetric)}
