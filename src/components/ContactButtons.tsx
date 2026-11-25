@@ -11,9 +11,10 @@ export function ContactButtons() {
         return (
           <li key={id} data-contact={id}>
             {href
-              ? <a className={className} {...iconTilePress} href={href} aria-label={label} title={label}>{icon}</a>
+              ? <a className={className} {...iconTilePress} href={href} aria-label={label}>{icon}</a>
               : <button type="button" className={className} {...iconTilePress} aria-label={label}
-                  title={`${label} — ссылка пока не указана`}>{icon}</button>}
+                  aria-description="Ссылка пока не указана">{icon}</button>}
+            <span className="portfolio-contact-label" aria-hidden="true">{label}</span>
           </li>
         );
       })}

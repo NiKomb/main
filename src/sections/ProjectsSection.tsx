@@ -8,7 +8,7 @@ import { connectCoverPlayback } from '../components/cover-playback';
 import { iconTilePress, restartIconTileStartup } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
-import { projectResults } from '../data/projectResults';
+import { projectCoverMetrics, projectResults } from '../data/projectResults';
 import { projects, type Project, type ProjectImage } from '../data/projects';
 import financePreview from '../data/screens/portfolio-finance-preview.png';
 import { site } from '../data/site';
@@ -785,24 +785,30 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
                   history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
                   transition(entry.id);
                 }}>
-                  <div className="case-sign-heading">
-                    <p className="case-sign-brand">{entry.title}</p>
-                    <span className="case-sign-arrow" aria-hidden="true">
-                      <span className="icon-tile"><GridIcon name="right" /></span>
-                    </span>
-                    <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
-                    {caseCardCopy[entry.id] && (
-                      <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
-                    )}
+                  <div className="case-sign-copy">
+                    <div className="case-sign-heading">
+                      <p className="case-sign-brand">{entry.title}</p>
+                      <span className="case-sign-arrow" aria-hidden="true">
+                        <span className="icon-tile"><GridIcon name="right" /></span>
+                      </span>
+                      <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
+                      {caseCardCopy[entry.id] && (
+                        <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
+                      )}
+                    </div>
+                    <ul className="case-sign-metrics" role="list">
+                      {projectCoverMetrics[entry.id].map(({ value, label }) => (
+                        <li key={label}>
+                          <p><strong>{value}</strong> {label}</p>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <span className="case-cover" data-cover={entry.id} aria-hidden="true">
                     <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />
                     <span className="case-sign-scanlines" />
                   </span>
                 </a>
-                {projectResults[`project-${entry.id}`] && (
-                  <p className="mascot-speech__transcript">{projectResults[`project-${entry.id}`]}</p>
-                )}
               </article>
             ))}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
@@ -820,7 +826,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
             </article>
             {startupComplete && <Mascot resumeRoute={returnedFromCase} results={projectResults} />}
           </div>
-          <PixelViewportEdges root={page} targetSelector=".case-tile, .intro" />
+          <PixelViewportEdges root={page} targetSelector=".case-tile" />
         </>
       )}
       <dialog ref={dialog} className="case-dialog" data-case-theme={item?.id} aria-label="Просмотр материалов"

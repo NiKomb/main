@@ -212,17 +212,36 @@ h3, .portfolio-profile-section > h2 {
   display: flex;
   gap: 8px;
 }
-.portfolio-socials span { color: var(--color-muted); }
+.portfolio-socials > li { position: relative; }
 .portfolio-socials [data-contact="telegram"] {
   --contact-accent: var(--color-telegram);
   --icon-tile-hum-delay: -3.2s;
 }
 .portfolio-socials [data-contact="email"] { --contact-accent: var(--color-gmail); }
 .portfolio-socials [data-contact="cv"] { --contact-accent: white; }
+.portfolio-contact-label {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: calc(100% + var(--space-8));
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--space-4);
+  background: #171717;
+  color: var(--color-text);
+  font: 11px / 16px var(--font-accent);
+  text-transform: var(--type-accent-transform);
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}
+.portfolio-socials .icon-tile:focus-visible + .portfolio-contact-label { visibility: visible; }
+@media (any-hover: hover) {
+  .portfolio-socials .icon-tile:hover + .portfolio-contact-label { visibility: visible; }
+}
 .portfolio-flow { min-width: 0; }
 .page:has(.projects[data-case-open]) { grid-template-columns: minmax(0, 1fr); }
 .page:has(.projects[data-case-open]) > .portfolio-profile { display: none; }
-.page:has(.projects[data-case-open]) .intro { display: none; }
 .site-footer {
   width: min(var(--content-width), 100% - 64px);
   min-height: 112px;
@@ -242,6 +261,7 @@ h3, .portfolio-profile-section > h2 {
 .case-tile[data-section-id="project-dns"] { --sign-light: var(--color-dns-accent); }
 .case-tile[data-section-id="project-vseinstrumenti"] {
   --sign-light: var(--color-vi-sign);
+  --case-sign-text-accent: var(--color-vi-accent);
 }
 .tile-layout--sign {
   --tile-highlight: 0%;
@@ -252,13 +272,14 @@ h3, .portfolio-profile-section > h2 {
     inset 0 0 24px color-mix(in srgb, var(--sign-light) 30%, transparent);
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-columns: var(--case-sign-text-column, minmax(0, 1fr)) minmax(0, 2fr);
   align-items: start;
   gap: var(--home-tile-gap);
   padding: var(--space-16);
   border-radius: 8px;
   background: var(--sign-background);
 }
+a.tile-layout--sign { --case-sign-text-column: minmax(272px, 1fr); }
 a.tile-layout--sign:focus-visible {
   outline-color: color-mix(in srgb, var(--sign-background), var(--color-text) 36%);
 }
@@ -294,18 +315,23 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
 }
 .case-tile:has(> a.tile-layout--sign:is([data-visible-cover], [data-touch-pressed], [data-icon-tile-startup])) { clip-path: none; }
 @media (prefers-reduced-motion: no-preference) {
+  @media (any-hover: hover) {
+    a.tile-layout--sign:hover {
+      animation: var(--case-fact-hum) calc(var(--case-sign-startup-delay) + var(--case-sign-startup-duration));
+    }
+  }
   .tile-layout--sign::after { transition: border-color 400ms, box-shadow 500ms; }
   .case-sign-arrow::after { transition: border-color 300ms, box-shadow 300ms; }
   .case-sign-arrow svg { transition: color 300ms, filter 300ms; }
-  .case-sign-brand { transition: color 300ms, text-shadow 300ms; }
+  .case-sign-brand,
+  .case-sign-metrics strong { transition: color 400ms var(--sign-startup-delay, 0ms); }
   a.tile-layout--sign::after,
   .tile-layout--sign .case-sign-arrow::after,
   .tile-layout--sign .case-sign-arrow svg {
     animation: var(--sign-startup, none) forwards;
-    opacity: var(--case-sign-light-opacity);
+    opacity: calc(var(--case-sign-light-opacity) * var(--case-fact-glow-opacity));
   }
-  a.tile-layout--sign::after,
-  .tile-layout--sign .case-sign-brand { transition-delay: var(--sign-startup-delay, 0ms); }
+  a.tile-layout--sign::after { transition-delay: var(--sign-startup-delay, 0ms); }
 }
 @property --case-sign-light-opacity {
   syntax: "<number>";
@@ -331,13 +357,28 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
   margin-block-start: var(--space-4);
   color: var(--color-muted);
 }
-.case-sign-brand {
-  --case-label-accent: var(--sign-light);
-  --case-label-light: var(--tile-highlight);
-  --case-label-rest: var(--color-muted);
-  align-self: start;
+.case-sign-copy {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.case-sign-metrics {
+  display: grid;
+  gap: var(--space-2);
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
 }
 .case-sign-brand,
+.case-sign-metrics strong {
+  font: var(--type-small) var(--font-accent);
+  color: color-mix(in srgb, var(--case-sign-text-accent, var(--sign-light)) var(--tile-highlight), white);
+}
+.case-sign-brand {
+  align-self: start;
+  text-transform: var(--type-accent-transform);
+}
 .icon-tile--lit .icon-tile-label {
   --case-label-glow: color-mix(in srgb, var(--case-label-accent) var(--case-label-light), transparent);
   color: color-mix(in srgb, color-mix(in srgb, var(--case-label-accent) 35%, white) var(--case-label-light), var(--case-label-rest, var(--color-text)));
@@ -891,6 +932,9 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   z-index: 4;
   inset-block-end: var(--space-20);
   inset-inline-start: var(--space-20);
+}
+.dns-case-contacts .portfolio-contact-label {
+  inset-block: auto calc(100% + var(--space-8));
 }
 .dns-case-footer-signature {
   display: flex;
@@ -1481,7 +1525,10 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   .dns-case-footer { padding-block-end: calc(var(--size-icon-tile) + var(--space-12)); }
 }
 @media (width < 560px) {
-  .dns-case-contacts .portfolio-socials { flex-direction: column; }
+  .dns-case-contacts .portfolio-socials {
+    flex-direction: column;
+    gap: var(--space-32);
+  }
   .dns-case-footer { padding-block-end: 0; }
   .dns-case-footer-signature { padding-inline-start: calc(var(--size-icon-tile) + var(--space-12)); }
   .dns-case-layout .case-covers { gap: var(--space-16); }
@@ -1493,15 +1540,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 @media (width < 430px) {
   .dns-case-facts > li:has(> strong) { inline-size: min-content; }
 }
-
-.intro {
-  display: grid;
-  gap: 8px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--color-border);
-}
-.intro p { max-width: 600px; color: var(--color-muted); }
 
 @media (prefers-reduced-motion: no-preference) {
   .case-tile .case-cover { transition: transform 140ms ease; }

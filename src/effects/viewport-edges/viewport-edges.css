@@ -15,7 +15,7 @@
 .viewport-edge-particles canvas:last-child { bottom: 0; }
 
 @media (prefers-reduced-motion: no-preference) {
-  :is(.case-tile, .intro, .dns-case-layout .case-covers, .dns-case-body > *) {
+  :is(.case-tile, .dns-case-layout .case-covers, .dns-case-body > *) {
     clip-path: var(--viewport-edge-clip, none);
   }
 }
