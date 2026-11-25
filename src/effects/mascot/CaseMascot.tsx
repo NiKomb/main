@@ -16,7 +16,7 @@ import { dampDragReaction, dragPull, type DragSample } from './drag-reaction';
 import { playGroundMovement, type BlinkDeparture } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset, shortGapDistance,
   spriteWidth, type Point, type Stop, type Surface } from './mascot-movement';
-import { createParachuteGlide, createParachuteTrack, noteParachuteScrollInput, parachuteCelSize, parachuteChance, parachuteFrame,
+import { createParachuteGlide, createParachuteTrack, createParachuteTrigger, noteParachuteScrollInput, parachuteCelSize, parachuteFrame,
   parachuteGlideArea, parachuteSpriteOffset, stepParachuteGlide, visibleParachuteEdge,
   type ParachuteGlide } from './parachute-flight';
 import { speechPosition, type SpeechPosition } from './speech-position';
@@ -147,7 +147,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     let suppressClick = false;
     let finishManualMove: (() => void) | undefined;
     let routeReleaseScroll: number | undefined;
-    let parachuteUsed = false;
+    const parachuteOnClick = createParachuteTrigger();
     let flight: ParachuteFlight | undefined;
 
     function readSurfaces(bounds: DOMRect, viewportBottom?: number): RouteSurface[] {
@@ -394,7 +394,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     }
 
     function parachuteTrack(origin: CaseStop) {
-      if (parachuteUsed || !launchImage.naturalWidth || !parachuteImage.naturalWidth || scrollRemaining() <= 1) return;
+      if (!launchImage.naturalWidth || !parachuteImage.naturalWidth || scrollRemaining() <= 1) return;
       const { clientWidth: width, clientHeight: height } = document.documentElement;
       const { left: x, top: y } = actor.getBoundingClientRect();
       const contentRight = readingColumn.getBoundingClientRect().right;
@@ -414,7 +414,6 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
     function launchParachute(track: ParachuteFlight['track']) {
       beginManualMove();
-      parachuteUsed = true;
       current = undefined;
       routeReleaseScroll = undefined;
       flight = { track, elapsed: 0, reachedBottom: false };
@@ -741,17 +740,17 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         return;
       }
       const origin = current;
-      if (!origin || origin.surface.routeEnd || actor.hasAttribute('data-attacking')) return;
-      const { point, surface } = origin;
-      const pointerX = event.detail && point.x > surface.left && point.x < surface.right ? event.clientX : undefined;
-      clearGesture();
-      const track = parachuteTrack(origin);
-      const roll = Math.random();
-      if (track && roll < parachuteChance) {
+      if (!origin || origin.surface.routeEnd) return;
+      const track = parachuteOnClick(() => parachuteTrack(origin));
+      if (track) {
         launchParachute(track);
         return;
       }
-      if (roll < mascotAttackChance + (track ? parachuteChance : 0)) {
+      if (actor.hasAttribute('data-attacking')) return;
+      const { point, surface } = origin;
+      const pointerX = event.detail && point.x > surface.left && point.x < surface.right ? event.clientX : undefined;
+      clearGesture();
+      if (Math.random() < mascotAttackChance) {
         gestureTile = surface.tile;
         if (!motion.matches) actor.dataset.attacking = '';
       } else if (!motion.matches && movement.dashAndReturn(point, surface, pointerX, () => {

@@ -1,8 +1,21 @@
 import type { Point } from './mascot-movement';
 
-export const parachuteChance = .15;
 export const parachuteCelSize = 144;
 export const parachuteSpriteOffset = { x: -36, y: -64 };
+
+export function createParachuteTrigger() {
+  let remainingClicks = 7;
+  let launched = false;
+
+  return (readTrack: () => ReturnType<typeof createParachuteTrack> | undefined) => {
+    if (launched) return;
+    if (remainingClicks > 0) remainingClicks -= 1;
+    if (remainingClicks > 0) return;
+    const track = readTrack();
+    if (track) launched = true;
+    return track;
+  };
+}
 
 type Cel = { hold: number; column: number; row: number };
 type GlideOffset = Point & { tilt: number };

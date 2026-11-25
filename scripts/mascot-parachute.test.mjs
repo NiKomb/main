@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clampParachute, createParachuteGlide, createParachuteTrack, noteParachuteScrollInput, parachuteFrame, parachuteGlideArea,
-  stepParachuteGlide, visibleParachuteEdge } from '../src/effects/mascot/parachute-flight.ts';
+import { clampParachute, createParachuteGlide, createParachuteTrack, createParachuteTrigger, noteParachuteScrollInput,
+  parachuteFrame, parachuteGlideArea, stepParachuteGlide, visibleParachuteEdge } from '../src/effects/mascot/parachute-flight.ts';
+
+test('the seventh click launches once per case opening', () => {
+  const track = createParachuteTrack({ x: 100, y: 200 }, 740, 1280, 900, 900);
+
+  for (const seventhClickCanLaunch of [true, false]) {
+    const onClick = createParachuteTrigger();
+    for (let click = 0; click < 6; click++) assert.equal(onClick(() => track), undefined);
+
+    if (!seventhClickCanLaunch) assert.equal(onClick(() => undefined), undefined);
+    assert.equal(onClick(() => track), track);
+    assert.equal(onClick(() => track), undefined);
+  }
+});
 
 test('a clipped right edge cannot launch the parachute', () => {
   const gallery = { left: 20, right: 370, top: 100, bottom: 280 };
