@@ -276,10 +276,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               {decision.id === 'dns-comparison' && (
                 <>
                   <section className="dns-case-block" aria-labelledby="dns-comparison-iteration">
-                    <h4 className="dns-case-labeled-heading" id="dns-comparison-iteration">
-                      <span>{comparison.iteration.title}</span>
-                      <span className="dns-case-heading-label">{comparison.iteration.label}</span>
-                    </h4>
+                    <h4 id="dns-comparison-iteration">{comparison.iteration.title}</h4>
                     <div className="dns-case-frames" data-media-gallery>
                       {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
                       {renderFigure(comparison.iteration.differencesFigure)}
@@ -290,7 +287,10 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                     {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} ground={groundCanvas} />}
                   </section>
                   <section className="dns-case-block">
-                    <h4>Результат</h4>
+                    <h4 className="dns-case-labeled-heading">
+                      <span>Результат</span>
+                      <span className="dns-case-heading-label">{comparison.iteration.label}</span>
+                    </h4>
                     <CaseCardList layout="strip" aria-label="Результат раннего теста">
                       {renderFact(comparison.iteration.fact)}
                     </CaseCardList>

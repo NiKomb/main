@@ -388,6 +388,7 @@
   inset: calc(-1 * var(--mascot-hit-inset));
   content: '';
 }
+.mascot[data-viewport-finish] .mascot__actor::after { inset-block-end: 0; }
 .mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: auto; }
 .mascot-case .mascot[data-visible="true"][data-pose="idle"] .mascot__actor { pointer-events: none; }
 .mascot-case .mascot[data-visible="true"][data-pose="idle"] .mascot__actor::after {

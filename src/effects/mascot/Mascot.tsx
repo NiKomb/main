@@ -36,7 +36,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
     const image = new Image();
     const movement = createMascotMovement(layer, effectsRef.current, takeoffRef.current, image);
-    const { place, settle, blink, dashAndReturn, travel } = movement;
+    const { place, blink, dashAndReturn, travel } = movement;
     const narrow = matchMedia('(width < 1040px)');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let frame = 0;
@@ -48,6 +48,11 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let scrollPending = false;
     let secondCaseCommentClosed = false;
     let waitingForSecondCaseComment = false;
+
+    const settle = (point: Point) => {
+      movement.settle(point);
+      layer.toggleAttribute('data-viewport-finish', currentStop?.surface.tile === grid);
+    };
 
     const finishSecondCaseComment = () => {
       secondCaseCommentClosed = true;
@@ -170,7 +175,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
       const destination = selectMascotStop(routes, targetRoute, secondCaseCommentClosed || !results[secondCaseId], footOffset);
       waitingForSecondCaseComment = destination.commentId !== targetRoute.id;
-      const targetFinish = destination.stop.finish;
+      let targetFinish = destination.stop.finish;
       const stops = routes.map(({ finish }) => finish);
       if (avatar && avatarBox?.width) {
         const surface = readSurface(avatar, bounds, avatarBox, minDashDistance);
@@ -201,6 +206,17 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         if (reducedMotion.matches) reveal();
         else movement.appear(start.point, introduction ? 'right' : 'left', reveal);
         return;
+      }
+
+      if (currentStop.surface.tile === grid || (atBottom && destination.stop === targetRoute && sameStop(currentStop, targetFinish))) {
+        const x = Math.max(0, Math.floor(bounds.width - spriteWidth));
+        const y = Math.floor(innerHeight + scrollLimit - scrollY - bounds.top - spriteWidth);
+        const floor: Stop = {
+          surface: { tile: grid, left: x, right: x, y, canDash: false, dashDistance: minDashDistance },
+          edge: 'finish', point: { x, y },
+        };
+        stops.push(floor);
+        if (atBottom) targetFinish = floor;
       }
 
       const currentIndex = stops.findIndex((stop) => sameStop(currentStop, stop));
@@ -260,9 +276,13 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         queueUpdate();
       };
       const fromAvatar = current.surface.tile === avatar;
+      const toFloor = targetFinish.surface.tile === grid;
+      if (toFloor) layer.setAttribute('data-viewport-finish', '');
       if (reducedMotion.matches) {
         if (fromAvatar) avatar.dispatchEvent(new Event(mascotTakeoffEvent));
         finish();
+      } else if (toFloor) {
+        movement.leap(current.point, targetFinish.point, finish, { arcAcrossWideGap: true });
       } else {
         travel(current, targetFinish, true, finish, fromAvatar,
           fromAvatar ? () => avatar.dispatchEvent(new Event(mascotTakeoffEvent)) : undefined);

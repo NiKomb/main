@@ -168,7 +168,7 @@ export function caseRowFinishButton<T extends ButtonBounds>(buttons: readonly T[
 }
 
 export function caseFooterRoute<T extends ButtonBounds>(buttons: readonly T[],
-  width: number, height: number, textRight: number, spriteSize: number) {
+  width: number, height: number, signatureRight: number, spriteSize: number) {
   if (width <= spriteSize) return;
 
   const visible = buttons.filter((button) => visibleCaseButton(button, width, height, spriteSize));
@@ -178,6 +178,6 @@ export function caseFooterRoute<T extends ButtonBounds>(buttons: readonly T[],
   return {
     button,
     buttonX: caseButtonX(button, width, spriteSize),
-    rightFinish: { x: Math.max(0, Math.min(width, textRight) - spriteSize), y: height - spriteSize },
+    rightFinish: { x: Math.max(0, Math.min(width - spriteSize, signatureRight + 12)), y: height - spriteSize },
   };
 }

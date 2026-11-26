@@ -10,9 +10,9 @@ test('a button narrower than the sprite supports a centered stop as close to the
   assert.equal(caseButtonX({ left: 350, right: 390 }, 390, 72), 318);
 });
 
-test('the footer route starts over the button and finishes at the right edge of the text column', () => {
+test('the footer route starts over the button and finishes to the right of the date', () => {
   assert.deepEqual(caseFooterRoute([button], 1440, 800, 1120, 72), {
-    button, buttonX: 200, rightFinish: { x: 1048, y: 728 },
+    button, buttonX: 200, rightFinish: { x: 1132, y: 728 },
   });
 });
 
@@ -30,9 +30,9 @@ test('the footer route picks the rightmost visible target by position', () => {
   assert.equal(caseFooterRoute([left], 1440, 800, 1120, 72).button, left);
 });
 
-test('the finish follows the text column on narrow windows and keeps the sprite in view', () => {
-  const route = caseFooterRoute([button], 280, 800, 274, 72);
-  assert.deepEqual(route.rightFinish, { x: 202, y: 728 });
+test('the reserved date gap works on narrow windows and the sprite stays in view', () => {
+  const route = caseFooterRoute([button], 280, 800, 196, 72);
+  assert.deepEqual(route.rightFinish, { x: 208, y: 728 });
   assert.equal(route.buttonX, 200);
 
   const atRightEdge = caseFooterRoute([button], 260, 800, 300, 72);

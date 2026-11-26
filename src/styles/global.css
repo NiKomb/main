@@ -294,7 +294,7 @@ h3, .portfolio-profile-section > h2 {
 }
 .tile-layout--sign {
   --tile-highlight: 0%;
-  --sign-background: #0e0c13;
+  --sign-background: var(--color-surface);
   --sign-border-width: 2px;
   --sign-glow-lit:
     0 0 34px color-mix(in srgb, var(--sign-light) 55%, transparent),
@@ -970,6 +970,8 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-8);
+  /* Reserve the mascot's width and a gap to the right of the date on narrow screens. */
+  padding-inline-end: max(0px, calc(72px + var(--space-12) - (100vw - 100%) / 2));
   font: var(--type-small) var(--font-accent);
   color: var(--color-muted);
   text-transform: var(--type-accent-transform);

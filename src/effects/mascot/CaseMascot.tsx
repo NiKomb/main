@@ -104,6 +104,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
     ]));
     const footerActions = article.querySelector('[data-mascot-route-end]');
     const caseFooter = article.querySelector('.dns-case-footer');
+    const footerDate = caseFooter?.querySelector('time');
     const body = article.querySelector('.dns-case-body');
     const textColumn = body?.querySelector(':scope > .case-text');
     const commentBlocks = [...article.querySelectorAll('[data-mascot-comment]')];
@@ -227,7 +228,8 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const buttons = Array.from(footerActions.querySelectorAll('button, a[href]'))
         .filter(routeButtonEnabled)
         .map(readButtonBounds);
-      const footer = caseFooterRoute(buttons, innerWidth, innerHeight, textColumn.getBoundingClientRect().right, spriteWidth);
+      const signatureRight = (footerDate ?? textColumn).getBoundingClientRect().right;
+      const footer = caseFooterRoute(buttons, innerWidth, innerHeight, signatureRight, spriteWidth);
       if (!footer) return;
 
       const { button } = footer;
@@ -862,19 +864,16 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const target = (destination ?? current)?.surface;
       const onFooterButton = target?.routeEnd && target.tile !== footerActions;
       const footerButtonIsSafe = onFooterButton && target.tile.getBoundingClientRect().top < innerHeight * .95;
-      const footerRoute = scrollingUp && !footerButtonIsSafe ? undefined : readRouteEnd(bounds);
-      const factBeforeFooter = footerRoute && tiles.some(({ tile }) => {
-        if (!tile.matches(unlitFact)) return false;
-        const box = tile.getBoundingClientRect();
-        return box.width >= spriteWidth && box.top >= limits.top && box.top <= limits.bottom;
-      });
-      const routeEnd = factBeforeFooter ? undefined : footerRoute;
+      // If the page gets shorter, scrollY can decrease while the viewport stays at the bottom.
+      const footerRoute = scrollingUp && !footerButtonIsSafe && scrollRemaining() > 1 ? undefined : readRouteEnd(bounds);
+      const surfaces = readSurfaces(bounds, innerHeight).filter(({ top }) => top >= contentsBottom);
+      const footerFact = footerRoute && selectCaseSurface(surfaces.filter(({ tile }) => tile.matches(unlitFact)), limits);
+      const routeEnd = footerFact ? undefined : footerRoute;
       control.inert = !!routeEnd && (current?.surface.tile !== footerActions || movement.phase !== 'idle');
-      const surfaces = routeEnd ? [] : readSurfaces(bounds, innerHeight).filter(({ top }) => top >= contentsBottom);
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const retained = surfaces.find(({ tile }) => tile === (target?.rowFinishTile ?? target?.tile)) ?? previous;
       const opening = scrollY <= 0 ? surfaces.find(({ tile }) => openingGallery?.contains(tile)) : undefined;
-      const selected = opening ?? selectCaseSurface(surfaces, limits, retained);
+      const selected = routeEnd ? undefined : footerFact ?? opening ?? selectCaseSurface(surfaces, limits, retained);
       const row = selected && caseRowRoute(selected, surfaces, previous);
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
       metricGrid = selected?.group.matches('.dns-case-results[data-mascot-comment]') ? selected.group : null;
@@ -994,7 +993,10 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
         if (selected) {
           for (const candidate of surfaces) {
             if (sameCaseRow(candidate, selected) && (!row?.stopAtComment || candidate === selected || candidate === routeStart) &&
-              candidate.tile.matches(unlitFact)) candidate.tile.setAttribute('data-mascot-highlighted', '');
+              candidate.tile.matches(unlitFact)) {
+              candidate.tile.setAttribute('data-mascot-highlighted', '');
+              if (footerFact) queue();
+            }
           }
         }
         appeared = true;
