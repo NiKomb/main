@@ -379,7 +379,11 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
   column-gap: var(--space-16);
 }
 .case-sign-heading > :is(h2, .case-sign-summary) { grid-column: 1 / -1; }
-.case-sign-heading h2 { text-wrap: balance; }
+.case-sign-heading h2 {
+  font: var(--type-subheading) var(--font-accent);
+  white-space: pre-line;
+  text-wrap: balance;
+}
 .case-sign-arrow + h2 { margin-block-start: var(--space-4); }
 .case-sign-summary {
   margin-block-start: var(--space-4);

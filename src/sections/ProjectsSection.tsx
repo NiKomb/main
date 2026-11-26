@@ -33,7 +33,7 @@ const caseCardCopy: Partial<Record<string, { title: string; summary: string }>> 
     summary: 'Сравнение в каталоге и возврат к сборке из обзора детали',
   },
   vseinstrumenti: {
-    title: 'Показал условия подъёма до подтверждения заказа',
+    title: 'Показал\nусловия подъёма\nдо подтверждения\nзаказа',
     summary: 'Условия подъёма и запрос расчёта при выборе доставки',
   },
 };
