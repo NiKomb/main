@@ -33,22 +33,15 @@ function DnsHeading({ id, as }: {
   return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
-function renderFact({ title, detail, context, comment, highlight, ground }: Omit<CaseFact, 'detail'> & {
+function renderFact({ title, detail, context, comment, highlight }: Omit<CaseFact, 'detail'> & {
   detail: ReactNode;
   context?: string;
-  ground?: RefObject<HTMLCanvasElement | null>;
 }) {
   return (
-    <CaseCard as="li" className={ground ? 'dns-case-fact rocket-shot-debris' : 'dns-case-fact'}
-      key={title} comment={comment} highlight={highlight}>
+    <CaseCard as="li" className="dns-case-fact" key={title} comment={comment} highlight={highlight}>
       <p className="dns-case-fact-title">{title}</p>
       <p>{detail}</p>
       {context && <p>{context}</p>}
-      {ground && (
-        <span className="rocket-shot-ground" aria-hidden="true">
-          <canvas ref={ground} hidden />
-        </span>
-      )}
     </CaseCard>
   );
 }
@@ -66,11 +59,12 @@ function renderMetric({ value, label, detail, comment, highlight }: CaseMetric) 
 }
 
 function DnsComparison({ frames, headingId, highlightSpeech = false, sliderLabel = 'Разделитель «Было / Стало»',
-  renderScreenshot }: Pick<Props, 'renderScreenshot'> & {
+  renderScreenshot, ground }: Pick<Props, 'renderScreenshot'> & {
   frames: readonly [CaseFigure, CaseFigure];
   headingId: string;
   highlightSpeech?: boolean;
   sliderLabel?: string;
+  ground?: RefObject<HTMLCanvasElement | null>;
 }) {
   const tile = useRef<HTMLDivElement>(null);
   const { position, moveTo, startDrag, stopCoast } = useComparisonPosition(tile);
@@ -79,7 +73,8 @@ function DnsComparison({ frames, headingId, highlightSpeech = false, sliderLabel
   const style = { '--comparison-position': `${position}%` } as CSSProperties;
 
   return (
-    <figure className="dns-case-figure" aria-labelledby={headingId} data-mascot-comment={after.comment}>
+    <figure className={ground ? 'dns-case-figure rocket-shot-debris' : 'dns-case-figure'}
+      aria-labelledby={headingId} data-mascot-comment={after.comment}>
       <div ref={tile} className="case-cover dns-comparison-tile" data-media-gallery data-mascot-surface="screen"
         data-mascot-highlight-speech={highlightSpeech ? '' : undefined} style={style}>
         <input className="dns-comparison-control" {...iconTilePress} type="range" min="0" max="100" value={displayedPosition}
@@ -99,6 +94,11 @@ function DnsComparison({ frames, headingId, highlightSpeech = false, sliderLabel
           <GridIcon name="right" />
         </span>
       </div>
+      {ground && (
+        <span className="rocket-shot-ground" aria-hidden="true">
+          <canvas ref={ground} hidden />
+        </span>
+      )}
       <figcaption className="dns-case-frames">
         <span><strong>{before.label}</strong>{before.caption}</span>
         <span><strong>{after.label}</strong>{after.caption}</span>
@@ -274,22 +274,28 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                 </CaseResults>
               </section>
               {decision.id === 'dns-comparison' && (
-                <section className="dns-case-block">
-                  <h4 className="dns-case-labeled-heading" id="dns-comparison-iteration">
-                    <span>{comparison.iteration.title}</span>
-                    <span className="dns-case-heading-label">{comparison.iteration.label}</span>
-                  </h4>
-                  <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
-                    sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot} />
-                  <div className="dns-case-frames" data-media-gallery>
-                    {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
-                    {renderFigure(comparison.iteration.differencesFigure)}
-                  </div>
-                  <CaseCardList layout="strip" aria-label="Результат раннего теста">
-                    {renderFact({ ...comparison.iteration.fact, ground: groundCanvas })}
-                  </CaseCardList>
-                  {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} ground={groundCanvas} />}
-                </section>
+                <>
+                  <section className="dns-case-block" aria-labelledby="dns-comparison-iteration">
+                    <h4 className="dns-case-labeled-heading" id="dns-comparison-iteration">
+                      <span>{comparison.iteration.title}</span>
+                      <span className="dns-case-heading-label">{comparison.iteration.label}</span>
+                    </h4>
+                    <div className="dns-case-frames" data-media-gallery>
+                      {renderFigure(comparison.iteration.toggleFigure, { captionTarget: toggleCaption })}
+                      {renderFigure(comparison.iteration.differencesFigure)}
+                    </div>
+                    <DnsComparison frames={comparison.iteration.frames} headingId="dns-comparison-iteration"
+                      sliderLabel="Разделитель «Было / Стало» для сравнения по наведению" renderScreenshot={renderScreenshot}
+                      ground={groundCanvas} />
+                    {rocketActor && <RocketShot target={toggleCaption} actor={rocketActor} ground={groundCanvas} />}
+                  </section>
+                  <section className="dns-case-block">
+                    <h4>Результат</h4>
+                    <CaseCardList layout="strip" aria-label="Результат раннего теста">
+                      {renderFact(comparison.iteration.fact)}
+                    </CaseCardList>
+                  </section>
+                </>
               )}
             </section>
           );
@@ -324,12 +330,12 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         </section>
         <CaseSection as="h3" id="dns-next-test" sectionId="dns-reflection" title={reflection.title}
           variant="labeled" note={reflectionNote}>
-          <div className="dns-case-block">
-            <p>{reflection.summary}</p>
-            <CaseCardList aria-label="Итоги проверки">
-              {reflection.takeaways.map(({ detail, ...fact }) => renderFact({ ...fact, detail: renderCaseText(detail) }))}
-            </CaseCardList>
-          </div>
+          <CaseCardList aria-label="Итоги проверки">
+            {reflection.takeaways.map(({ detail, ...fact }) => renderFact({
+              ...fact,
+              detail: renderCaseText(detail),
+            }))}
+          </CaseCardList>
         </CaseSection>
       </CaseSection>
     </>

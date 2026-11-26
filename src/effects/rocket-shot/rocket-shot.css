@@ -11,7 +11,6 @@
 body[data-rocket-caption-hit] .rocket-shot-caption { opacity: 0; }
 
 .rocket-shot-debris { position: relative; isolation: isolate; }
-.rocket-shot-debris > p { z-index: 2; }
 
 .rocket-shot-ground {
   position: absolute;
@@ -20,7 +19,7 @@ body[data-rocket-caption-hit] .rocket-shot-caption { opacity: 0; }
   z-index: 1;
   inline-size: min(50%, calc(288 * var(--pixel-step)));
   aspect-ratio: 288 / 208;
-  /* Put the effect's ground line at the top of the result tile. */
+  /* Put the effect's ground line at the top of the comparison tile. */
   translate: 0 calc(-164 / 208 * 100%);
   pointer-events: none;
 }
