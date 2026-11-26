@@ -15,7 +15,7 @@ import competitorXcore from './screens/dns-competitor-xcore.webp';
 import compareBefore from './screens/dns-compare-before.webp';
 import compareSelection from './screens/dns-compare-select.webp';
 import compareTable from './screens/dns-compare-table.webp';
-import productCardComparison from './screens/dns-product-card-comparison.webp';
+import productCardComparison from './screens/dns-product-card-comparison.png';
 import filterPanelComparison from './screens/dns-filter-panel-comparison.png';
 import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
 import catalogArticlesAfter from './screens/dns-catalog-articles-after.webp';
@@ -25,7 +25,7 @@ import articlePanelAfter from './screens/dns-article-panel-after.webp';
 import articlePanelStates from './screens/dns-article-panel-states.webp';
 import hoverModalWithoutSwitch from './screens/dns-hover-modal-before.webp';
 import hoverModalWithSwitch from './screens/dns-hover-modal-after.webp';
-import hoverToggleStates from './screens/dns-hover-toggle-states.png';
+import hoverTogglePanels from './screens/dns-hover-toggle-states.png';
 import hoverCardDifferences from './screens/dns-hover-card-differences.png';
 import processorScenario from './screens/dns-processor-scenario.mp4';
 import processorScenarioPoster from './screens/dns-processor-scenario.webp';
@@ -272,13 +272,27 @@ export const dnsCase = {
     ] as const,
     detailFrames: [
       {
-        src: productCardComparison, width: 1600, height: 900, showFull: true, label: 'Карточка товара',
-        alt: 'Сверху чекбокс «Сравнить» в карточке товара. Снизу иконка сравнения рядом с избранным',
+        src: productCardComparison, width: 3120, height: 1488, showFull: true, label: 'Карточка товара',
+        previewCrop: {
+          top: 186, height: 815, horizontal: { left: 1184, width: 1450 },
+          contextMask: [
+            { left: 696, top: 40, width: 942, height: 319, radius: 26, previewShift: { x: 742, y: 197 } },
+            { left: 2178, top: 808, width: 942, height: 362, radius: 26, previewShift: { x: -740, y: -201 } },
+          ],
+        },
+        alt: 'Две карточки Ryzen 7 7800X3D. Сверху старая карточка с чекбоксом «Сравнить», снизу новая с иконкой сравнения рядом с избранным',
         caption: 'Чекбокс «Сравнить» заменили иконкой рядом с избранным',
       },
       {
-        src: filterPanelComparison, width: 1600, height: 900, showFull: true, label: 'Панель фильтров',
-        alt: 'Сверху поле поиска по фильтрам. Снизу то же поле с кнопкой сравнения',
+        src: filterPanelComparison, width: 1692, height: 2400, showFull: true, label: 'Панель фильтров',
+        previewCrop: {
+          top: -209, height: 538, horizontal: { left: 368, width: 956 },
+          contextMask: [
+            { left: 0, top: 0, width: 822, height: 120, previewShift: { x: 435, y: -92 } },
+            { left: 870, top: 0, width: 822, height: 120, previewShift: { x: -435, y: 92 } },
+          ],
+        },
+        alt: 'Старая панель с полем поиска и новая панель с кнопкой сравнения и счётчиком рядом с поиском. В зуме старая слева, новая справа',
         caption: 'Справа от поиска появилась кнопка сравнения. Счётчик на ней показывает, сколько товаров отмечено',
       },
     ],
@@ -306,8 +320,15 @@ export const dnsCase = {
         },
       ] as const,
       toggleFigure: {
-        src: hoverToggleStates, width: 1600, height: 900, showFull: true,
-        alt: 'Сверху режим выключен. Снизу включён, в подписи указан AMD Ryzen 7 9800X3D',
+        src: hoverTogglePanels, width: 3120, height: 1080, showFull: true,
+        previewCrop: {
+          top: 568, height: 244, horizontal: { left: 1022, width: 929 },
+          contextMask: [
+            { left: 1074, top: 348, width: 627, height: 108, radius: 36, previewShift: { y: 220 } },
+            { left: 1074, top: 924, width: 825, height: 108, radius: 36, previewShift: { y: -220 } },
+          ],
+        },
+        alt: 'Сверху панель с выключенным переключателем «Различия при наведении», снизу панель с активным переключателем «Сравнение с AMD Ryzen 7 9800X3D»',
         caption: 'При повторном входе в категорию режим можно было включить переключателем. В подписи было видно, с какой деталью из сборки сравниваются модели',
       },
       differencesFigure: {
@@ -438,15 +459,21 @@ export const dnsDecisions: readonly Decision[] = [
     ],
     detailFrames: [
       {
-        src: catalogArticlesDetail, width: 1648, height: 464,
-        previewCrop: { top: 0, height: 464, horizontal: { left: 500, width: 1040 } },
-        alt: 'Лента из трёх обзоров процессоров с оранжевыми метками моделей над выдачей',
+        src: catalogArticlesDetail, width: 2328, height: 1560,
+        previewCrop: {
+          top: 516, height: 464, horizontal: { left: 1140, width: 1040 },
+          contextMask: [{ left: 640, top: 516, width: 1648, height: 464 }],
+        },
+        alt: 'Три обзора процессоров с оранжевыми метками моделей между фильтрами и выдачей каталога',
         caption: 'Метки на обложках показывают, о каких процессорах рассказывают обзоры над выдачей',
       },
       {
-        src: buildRecommendedArticles, width: 700, height: 1534, showFull: true,
-        previewCrop: { top: 0, height: 480 },
-        alt: 'Три карточки Клуба DNS на экране сборки о выборе видеокарты, материнской платы и блока питания',
+        src: buildRecommendedArticles, width: 2760, height: 1956, showFull: true,
+        previewCrop: {
+          top: 422, height: 480, horizontal: { left: 2060, width: 700 },
+          contextMask: [{ left: 2060, top: 422, width: 700, height: 1534 }],
+        },
+        alt: 'Слева панель сборки ПК, справа подсказки и три статьи Клуба DNS о выборе комплектующих',
         caption: 'Если по выбранным деталям нет подходящих обзоров, справа от сборки показываются общие материалы по выбору комплектующих',
       },
     ],

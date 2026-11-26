@@ -15,7 +15,11 @@ function captureVideoFrame(video: HTMLVideoElement) {
 }
 
 function screenKeyframe(screen: HTMLImageElement): Keyframe {
-  const { width, height, transform } = getComputedStyle(screen);
+  const style = getComputedStyle(screen);
+  const { width, height, transform } = style;
+  if (screen.closest('[data-preview-context]')) {
+    return { width, transform, '--preview-context-opacity': style.getPropertyValue('--preview-context-opacity') };
+  }
   if (screen.closest('[data-preview-crop]')) return { width, transform };
   if (screen.parentElement?.classList.contains('case-cover-strip')) return { width, height, transform };
   return { width };

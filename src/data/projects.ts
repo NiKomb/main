@@ -20,6 +20,15 @@ export type ProjectLink = {
   href: `https://${string}`;
 };
 
+export type PreviewMaskRegion = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  radius?: number;
+  previewShift?: { x?: number; y?: number };
+};
+
 export type ProjectImage = {
   src: string;
   alt: string;
@@ -27,7 +36,12 @@ export type ProjectImage = {
   height: number;
   roundedCorners?: boolean | number;
   cropInset?: number;
-  previewCrop?: { top: number; height: number; horizontal?: { left: number; width: number } };
+  previewCrop?: {
+    top: number;
+    height: number;
+    horizontal?: { left: number; width: number };
+    contextMask?: readonly PreviewMaskRegion[];
+  };
   showFull?: boolean;
   original?: { src: string; alt: string };
 };

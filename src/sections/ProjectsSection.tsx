@@ -9,7 +9,7 @@ import { iconTilePress, restartIconTileStartup } from '../components/icon-tile-p
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectCoverMetrics, projectResults } from '../data/projectResults';
-import { projects, type Project, type ProjectImage } from '../data/projects';
+import { projects, type PreviewMaskRegion, type Project, type ProjectImage } from '../data/projects';
 import financePreview from '../data/screens/portfolio-finance-preview.png';
 import { site } from '../data/site';
 import { viContents, viMascotComments } from '../data/vseinstrumentiCase';
@@ -52,6 +52,14 @@ function headingAlignment(heading: HTMLElement) {
   };
 }
 
+function previewMask(image: ProjectImage, regions?: readonly PreviewMaskRegion[]) {
+  if (!regions?.length) return;
+  const shapes = regions.map(({ left, top, width, height, radius = 0 }) =>
+    `<rect x="${left}" y="${top}" width="${width}" height="${height}" rx="${radius}"/>`).join('');
+  const mask = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${image.width} ${image.height}">${shapes}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(mask)}")`;
+}
+
 function previewCropStyle(image: ProjectImage): CSSProperties | undefined {
   const crop = image.previewCrop;
   if (!crop) return;
@@ -61,12 +69,14 @@ function previewCropStyle(image: ProjectImage): CSSProperties | undefined {
     '--preview-crop-width-fraction': width / image.width,
     '--preview-crop-translate-x': `${-(left + width / 2) / image.width * 100}%`,
     '--preview-crop-translate': `${-(crop.top + crop.height / 2) / image.height * 100}%`,
+    '--preview-context-mask': previewMask(image, crop.contextMask?.filter(({ previewShift }) => !previewShift)),
   } as CSSProperties;
 }
 
 function screenshotAttributes(image: ProjectImage) {
   return {
     'data-preview-crop': image.previewCrop ? '' : undefined,
+    'data-preview-context': image.previewCrop?.contextMask ? '' : undefined,
     'data-fit': image.showFull ? '' : undefined,
     style: {
       '--screenshot-ratio': image.width / image.height,
@@ -94,10 +104,20 @@ function CaseScreenshotImage({ image, decorative, loading, cropPreview }: CaseSc
 }
 
 function CaseScreenshotFrame({ image, decorative, loading }: CaseScreenshotProps) {
+  const { width, height } = image.previewCrop?.contextMask?.[0] ?? image;
+  const shiftedRegions = image.previewCrop?.contextMask?.filter(({ previewShift }) => previewShift);
   return (
-    <span className="case-cover-frame" data-cropped={image.width > image.height ? '' : undefined}
-      data-portrait={image.height > image.width ? '' : undefined}>
+    <span className="case-cover-frame" data-cropped={width > height ? '' : undefined}
+      data-portrait={image.height > image.width && width <= height ? '' : undefined}>
       <CaseScreenshotImage image={image} decorative={decorative} loading={loading} />
+      {shiftedRegions?.map((region) => (
+        <img key={`${region.left}-${region.top}`} src={image.src} width={image.width} height={image.height} alt="" draggable={false}
+          loading={loading} data-preview-fragment="" style={{
+            '--preview-context-mask': previewMask(image, [region]),
+            '--preview-shift-x': `${(region.previewShift?.x ?? 0) / image.width * 100}%`,
+            '--preview-shift-y': `${(region.previewShift?.y ?? 0) / image.height * 100}%`,
+          } as CSSProperties} />
+      ))}
     </span>
   );
 }
@@ -329,7 +349,10 @@ function createMedia(source: HTMLElement) {
   media.style.removeProperty('visibility');
   media.querySelector('img')?.removeAttribute('loading');
   const video = media.querySelector('video');
-  if (video) video.muted = true;
+  if (video) {
+    video.muted = true;
+    video.currentTime = source.querySelector('video')?.currentTime ?? 0;
+  }
   return media;
 }
 
@@ -581,6 +604,7 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     const source = gallery.slides[index].firstElementChild;
     if (!(source instanceof HTMLElement)) return;
     mediaTransition.current?.();
+    saveGalleryPlaybackPosition();
     const media = createMedia(source);
     const slideDirection = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? undefined : direction;
     mediaTransition.current = replaceGallerySlide(content, media, slideDirection);
@@ -592,7 +616,15 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
     void video?.play().catch(() => {});
   }
 
+  function saveGalleryPlaybackPosition() {
+    if (!gallery?.video) return;
+    const preview = gallery.slides[gallery.index].querySelector('video');
+    gallery.video.pause();
+    if (preview) preview.currentTime = gallery.video.currentTime;
+  }
+
   function dismissMedia() {
+    saveGalleryPlaybackPosition();
     dialog.current?.close();
     dialogContent.current?.replaceChildren();
     mediaSwipe.current = null;
