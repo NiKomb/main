@@ -111,6 +111,38 @@ test('the Blink canvas covers an avatar to the left of or above the case grid', 
   }
 });
 
+test('the dash canvas reaches the viewport edges when the route leaves the grid', (t) => {
+  const context = {
+    drawImage() {},
+    getImageData: () => ({ data: new Uint8ClampedArray(36 * 36 * 4) }),
+    createImageData: (width, height) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+  };
+  globalThis.document = { createElement: () => ({ getContext: () => context }) };
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => {
+    delete globalThis.document;
+    delete globalThis.requestAnimationFrame;
+    delete globalThis.cancelAnimationFrame;
+  });
+
+  const bounds = { left: 100, top: 100, width: 900, height: 620 };
+  const viewport = { clientWidth: 1200, clientHeight: 800 };
+  const canvas = {
+    ownerDocument: { documentElement: viewport },
+    parentElement: { getBoundingClientRect: () => bounds },
+    getContext: () => context,
+    style: {},
+    hidden: true,
+  };
+  const dash = playGroundMovement(canvas, { naturalWidth: 288 }, { x: 464, y: 628 }, 1016,
+    () => {}, () => {}, { kind: 'dash' });
+  assert.ok(dash);
+  assert.equal(bounds.left + parseFloat(canvas.style.left) + canvas.width * 2, viewport.clientWidth);
+  assert.equal(bounds.top + parseFloat(canvas.style.top) + canvas.height * 2, viewport.clientHeight);
+  dash.cancel();
+});
+
 test('a drag release draws the tucked sprite until it vanishes, then reveals the standing actor at the destination', (t) => {
   const standing = { naturalWidth: 288 };
   const tucked = { width: 56, height: 56 };

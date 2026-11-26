@@ -39,11 +39,21 @@ export function playGroundMovement(
   const silhouette = new Uint32Array(source.getImageData(0, 0, spriteSize, spriteSize).data.buffer);
   const bounds = canvas.parentElement?.getBoundingClientRect();
   if (!bounds) return;
-  const w = Math.ceil(bounds.width / scale);
+  const viewport = canvas.ownerDocument?.documentElement;
+  const farX = Math.max(start.x, endX);
+  const farY = Math.max(start.y, endY);
+  let right = Math.ceil(bounds.width / scale);
+  let bottom = Math.ceil(bounds.height / scale);
+  if (viewport && farX + spriteSize * scale > bounds.width) {
+    right = Math.max(right, Math.floor((viewport.clientWidth - bounds.left) / scale));
+  }
+  if (viewport && farY + spriteSize * scale > bounds.height) {
+    bottom = Math.max(bottom, Math.floor((viewport.clientHeight - bounds.top) / scale));
+  }
   const ox = Math.max(Math.floor(Math.min(0, -bounds.left) / scale), Math.floor((Math.min(start.x, endX) - 160) / scale));
   const oy = Math.max(Math.floor(Math.min(0, -bounds.top) / scale), Math.floor((Math.min(start.y, endY) - 120) / scale));
-  const width = Math.min(w, Math.ceil((Math.max(start.x, endX) + 220) / scale)) - ox;
-  const height = Math.min(Math.ceil(bounds.height / scale), Math.ceil((Math.max(start.y, endY) + 170) / scale)) - oy;
+  const width = Math.min(right, Math.ceil((farX + 220) / scale)) - ox;
+  const height = Math.min(bottom, Math.ceil((farY + 170) / scale)) - oy;
   if (width <= 0 || height <= 0) return;
 
   canvas.width = width;
