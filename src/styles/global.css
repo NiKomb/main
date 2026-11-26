@@ -294,7 +294,6 @@ h3, .portfolio-profile-section > h2 {
 }
 .tile-layout--sign {
   --tile-highlight: 0%;
-  --sign-background: var(--color-surface);
   --sign-border-width: 2px;
   --sign-glow-lit:
     0 0 34px color-mix(in srgb, var(--sign-light) 55%, transparent),
@@ -306,11 +305,11 @@ h3, .portfolio-profile-section > h2 {
   gap: var(--home-tile-gap);
   padding: var(--space-16);
   border-radius: 8px;
-  background: var(--sign-background);
+  background: var(--color-background);
 }
 a.tile-layout--sign { --case-sign-text-column: minmax(272px, 1fr); }
 a.tile-layout--sign:focus-visible {
-  outline-color: color-mix(in srgb, var(--sign-background), var(--color-text) 36%);
+  outline-color: color-mix(in srgb, var(--color-background), var(--color-text) 36%);
 }
 .tile-layout--sign::after,
 .case-sign-arrow::after {
@@ -594,10 +593,19 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
 .case-nav { align-self: start; }
 .case-nav > p { margin-top: 12px; font: var(--type-small) var(--font-accent); }
 .case-nav ul { display: flex; flex-wrap: wrap; gap: 0 16px; padding: 0; margin: 0; list-style: none; }
-.case-nav :is(a, button) { display: inline-flex; align-items: center; color: var(--color-muted); text-decoration: none; }
+.case-nav :is(a, button) { display: inline-flex; align-items: center; text-decoration: none; }
+.case-nav :is(a, button):where(:not(.case-back)) { color: var(--color-muted); }
 .case-nav button { min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
-.case-nav :is(a, button):hover { color: var(--color-text); }
+.case-nav :is(a, button):where(:not(.case-back)):hover { color: var(--color-text); }
 .case-back { justify-content: center; }
+@media (forced-colors: none) {
+  .case-back:is(:focus-visible, :active, [data-touch-pressed]) {
+    --icon-tile-visibility: 1;
+  }
+  .case-back:is(:focus-visible, :active, [data-touch-pressed]):not([data-icon-tile-startup]) {
+    --icon-tile-light: 1;
+  }
+}
 .grid-icon {
   display: block;
   flex: none;
