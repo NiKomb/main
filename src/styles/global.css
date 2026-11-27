@@ -88,6 +88,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   :is(.icon-tile--secondary, .icon-tile--lit) {
     --icon-tile-accent: var(--contact-accent, var(--case-accent));
     --icon-tile-glow: calc(var(--icon-tile-light, 0) * var(--case-fact-glow-opacity) * var(--icon-tile-visibility));
+  }
+  :is(.icon-tile--secondary, .icon-tile--lit),
+  a.tile-layout--sign .case-sign-heading :is(h2, .case-sign-delayed-word) {
     --icon-tile-color: color-mix(in srgb, var(--icon-tile-accent) calc(100% * var(--icon-tile-glow)),
       var(--icon-tile-rest-color, var(--color-text)));
     color: var(--icon-tile-color);
@@ -364,11 +367,15 @@ a.tile-layout--sign:focus-visible {
 a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover], [data-touch-pressed], [data-icon-tile-startup]) {
   --tile-highlight: 100%;
   --sign-glow: var(--sign-glow-lit);
+  --sign-heading-active: 1;
+  --sign-heading-startup: var(--case-sign-startup);
 }
 @media (any-hover: hover) {
   a.tile-layout--sign:is(:hover, [data-mascot-hover]) {
     --tile-highlight: 100%;
     --sign-glow: var(--sign-glow-lit);
+    --sign-heading-active: 1;
+    --sign-heading-startup: var(--case-sign-startup);
     --sign-startup: var(--case-sign-startup);
     --sign-startup-delay: var(--case-sign-startup-delay);
   }
@@ -410,6 +417,22 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
 }
 .case-sign-heading { display: flow-root; }
 .case-sign-heading h2 { text-wrap: pretty; }
+a.tile-layout--sign .case-sign-heading :is(h2, .case-sign-delayed-word) {
+  --icon-tile-accent: var(--case-sign-text-accent, var(--sign-light));
+  --icon-tile-visibility: var(--sign-heading-active, 0);
+  --icon-tile-glow: calc(var(--case-sign-light-opacity) * var(--icon-tile-visibility));
+}
+@media (prefers-reduced-motion: no-preference) {
+  a.tile-layout--sign .case-sign-heading :is(h2, .case-sign-delayed-word) {
+    --heading-rest: calc(1 - var(--sign-heading-active, 0));
+    --case-sign-light-opacity: var(--heading-rest);
+    animation: var(--sign-heading-startup, none) forwards;
+    transition: --icon-tile-visibility calc(var(--heading-rest) * var(--case-sign-startup-duration));
+  }
+  a.tile-layout--sign .case-sign-heading .case-sign-delayed-word {
+    animation-delay: calc(var(--case-sign-startup-delay) + 140ms);
+  }
+}
 .case-sign-summary {
   clear: both;
   color: var(--color-muted);

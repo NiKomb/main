@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode, type Ref, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { CaseContents, type CaseContentsItem } from '../components/CaseContents';
 import { ContactButtons } from '../components/ContactButtons';
@@ -27,13 +27,13 @@ const cases: readonly Project[] = [
   ...projects,
   { id: 'preview', title: 'Кейс 3', summary: 'Место для следующего проекта', links: [] },
 ];
-const caseCardCopy: Partial<Record<string, { title: string; summary: string }>> = {
+const caseCardCopy: Partial<Record<string, { title: ReactNode; summary: string }>> = {
   dns: {
-    title: 'Упростил сравнение и возврат к сборке',
+    title: <>Упростил сравнение и возврат к <span className="case-sign-delayed-word">сборке</span></>,
     summary: 'Сравнение в каталоге и возврат к сборке из обзора детали',
   },
   vseinstrumenti: {
-    title: 'Прояснил доставку и добавил запрос расчёта',
+    title: <>Прояснил доставку и добавил запрос <span className="case-sign-delayed-word">расчёта</span></>,
     summary: 'Условия подъёма и запрос расчёта при выборе доставки',
   },
 };
@@ -189,7 +189,7 @@ function useCoverPlayback(video: HTMLVideoElement | null, enabled: boolean) {
 }
 
 function CaseSignCopy({ title, titleLabel, brand, summary, metrics }: {
-  title: string;
+  title: ReactNode;
   titleLabel?: string;
   brand?: string;
   summary?: string;
