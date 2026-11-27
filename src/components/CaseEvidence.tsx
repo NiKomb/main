@@ -6,7 +6,7 @@ type Props = {
   id?: string;
   headingId: string;
   heading: ReactNode;
-  introduction: string;
+  introduction: ReactNode;
   panelId: string;
   panelTitle: string;
   evidence: ReactNode;

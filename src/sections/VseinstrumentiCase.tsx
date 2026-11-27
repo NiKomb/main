@@ -83,7 +83,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
 
       <CaseSection id="vi-research" title={viCase.researchTitle}>
         <CaseEvidence headingId="vi-reviews" heading={<ViHeading id="vi-reviews" />}
-          introduction={reviews.introduction} panelId="vi-review-quotes" panelTitle="Фрагменты пяти отзывов"
+          introduction={renderCaseText(reviews.introduction)} panelId="vi-review-quotes" panelTitle="Фрагменты пяти отзывов"
           evidence={reviews.quotes.map(({ title, quote }) => (
             <div className="case-evidence-entry" key={title}>
               <h5>{title}</h5>
@@ -94,7 +94,6 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             <CaseResults aria-label="Наблюдения из отзывов">
               {reviews.findings.map(renderFact)}
             </CaseResults>
-            <p>{renderCaseText(reviews.conclusion)}</p>
           </div>
         </CaseEvidence>
         <section className="dns-case-group" aria-labelledby="vi-audit">
