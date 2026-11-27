@@ -91,8 +91,12 @@ export function MascotSpeech({ message, position, duration, bubbleRef, mascotRef
             measure.style.removeProperty('max-inline-size');
             return { ...column, width, height };
           });
-          const obstacles = Array.from(position.avoidTiles?.children ?? [], (tile) => tile.getBoundingClientRect());
-          const next = speechPlacement(columns, mascotBounds, innerHeight, obstacles);
+          const targets = position.avoidContent ?? position.avoidTiles?.children ?? [];
+          const obstacles = Array.from(targets, (element) => ({ element, bounds: element.getBoundingClientRect() }))
+            .filter(({ bounds }) => bounds.width > 0 && bounds.height > 0);
+          const next = speechPlacement(columns, mascotBounds, innerHeight, obstacles.map(({ bounds }) => bounds),
+            !position.avoidContent) ?? (position.avoidContent && speechPlacement(columns, mascotBounds, innerHeight,
+            obstacles.filter(({ element }) => !element.matches('.case-cover')).map(({ bounds }) => bounds)));
           if (next) {
             placement = { key, top: next.top - frame.top, height: next.height };
             bubble.style.setProperty('--speech-left', `${next.anchor - frame.left}px`);

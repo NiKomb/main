@@ -29,11 +29,11 @@ const cases: readonly Project[] = [
 ];
 const caseCardCopy: Partial<Record<string, { title: string; summary: string }>> = {
   dns: {
-    title: 'Упростил выбор комплектующих и возврат к сборке',
+    title: 'Упростил сравнение и возврат к сборке',
     summary: 'Сравнение в каталоге и возврат к сборке из обзора детали',
   },
   vseinstrumenti: {
-    title: 'Показал условия подъёма до подтверждения заказа',
+    title: 'Прояснил доставку и добавил запрос расчёта',
     summary: 'Условия подъёма и запрос расчёта при выборе доставки',
   },
 };
@@ -186,6 +186,36 @@ function useCoverPlayback(video: HTMLVideoElement | null, enabled: boolean) {
   }, [video, enabled]);
 
   return () => controller.current?.toggle();
+}
+
+function CaseSignCopy({ title, titleLabel, brand, summary, metrics }: {
+  title: string;
+  titleLabel?: string;
+  brand?: string;
+  summary?: string;
+  metrics?: readonly { value: string; label: string }[];
+}) {
+  return (
+    <div className="case-sign-copy">
+      <div className="case-sign-heading">
+        {brand && <p className="case-sign-brand">{brand}</p>}
+        <h2 aria-label={titleLabel}>{title}</h2>
+        {summary && <p className="case-sign-summary">{summary}</p>}
+      </div>
+      {metrics && (
+        <>
+          <ul className="case-sign-metrics" role="list">
+            {metrics.map(({ value, label }) => (
+              <li key={label}><p><strong>{value}</strong> {label}</p></li>
+            ))}
+          </ul>
+          <span className="case-sign-arrow" aria-hidden="true">
+            <span className="icon-tile"><GridIcon name="right" /></span>
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
 
 function CaseListCoverArtwork({ project, enabled }: { project: Project; enabled: boolean }) {
@@ -809,45 +839,29 @@ export function ProjectsSection({ page, startupComplete }: { page: RefObject<HTM
       ) : (
         <>
           <div className="case-grid">
-            {projects.map((entry) => (
-              <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
-                <a className="tile-layout--sign" {...iconTilePress} href={`#case-${entry.id}`} onClick={(event) => {
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  event.preventDefault();
-                  history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
-                  transition(entry.id);
-                }}>
-                  <div className="case-sign-copy">
-                    <div className="case-sign-heading">
-                      <p className="case-sign-brand">{entry.title}</p>
-                      <span className="case-sign-arrow" aria-hidden="true">
-                        <span className="icon-tile"><GridIcon name="right" /></span>
-                      </span>
-                      <h2>{caseCardCopy[entry.id]?.title ?? entry.summary}</h2>
-                      {caseCardCopy[entry.id] && (
-                        <p className="case-sign-summary">{caseCardCopy[entry.id]?.summary}</p>
-                      )}
-                    </div>
-                    <ul className="case-sign-metrics" role="list">
-                      {projectCoverMetrics[entry.id].map(({ value, label }) => (
-                        <li key={label}>
-                          <p><strong>{value}</strong> {label}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <span className="case-cover" data-cover={entry.id} aria-hidden="true">
-                    <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />
-                    <span className="case-sign-scanlines" />
-                  </span>
-                </a>
-              </article>
-            ))}
+            {projects.map((entry) => {
+              const copy = caseCardCopy[entry.id];
+              return (
+                <article className="case-tile" key={entry.id} data-section-id={`project-${entry.id}`}>
+                  <a className="tile-layout--sign" {...iconTilePress} href={`#case-${entry.id}`} onClick={(event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    history.pushState({ fromCaseList: true }, '', `#case-${entry.id}`);
+                    transition(entry.id);
+                  }}>
+                    <CaseSignCopy title={copy?.title ?? entry.summary} brand={entry.title} summary={copy?.summary}
+                      metrics={projectCoverMetrics[entry.id]} />
+                    <span className="case-cover" data-cover={entry.id} aria-hidden="true">
+                      <CaseListCoverArtwork project={entry} enabled={arrived && !viewingMedia} />
+                      <span className="case-sign-scanlines" />
+                    </span>
+                  </a>
+                </article>
+              );
+            })}
             <article className="case-tile case-tile-placeholder" data-section-id="project-preview">
               <div className="tile-layout--sign">
-                <div className="case-sign-heading">
-                  <h2 aria-label="Скоро будет">Жвэ#лкр фя%чн жгщ*взмлксвё ы мю?рачж к щл#эфю</h2>
-                </div>
+                <CaseSignCopy title="Жвэ#лкр фя%чн жгщ*взмлксвё ы мю?рачж к щл#эфю" titleLabel="Скоро будет" />
                 <span className="case-cover" data-cover="preview" aria-hidden="true">
                   <span className="case-cover-frame" data-cropped="">
                     <img src={financePreview} width={960} height={732} alt="" loading="lazy" />

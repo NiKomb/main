@@ -66,6 +66,14 @@ test('speech finds a nearby row when metric text blocks both centered placements
   ]), { ...columns[0], top: 244 });
 });
 
+test('speech can reject a blocked placement without moving away from the mascot', () => {
+  const mascot = { left: 350, right: 422, top: 200, bottom: 272 };
+  const columns = speechSides(mascot, 180, 900).map((column) => ({ ...column, width: 180, height: 60 }));
+  const obstacles = [{ left: 0, right: 900, top: 180, bottom: 350 }];
+  assert.equal(speechPlacement(columns, mascot, 600, obstacles).top, 206);
+  assert.equal(speechPlacement(columns, mascot, 600, obstacles, false), undefined);
+});
+
 test('speech opens below a mascot near the top and stays hidden outside the viewport', () => {
   const anchor = { x: 175, top: 56, bottom: 124 };
   assert.deepEqual(speechPosition(anchor, { top: -24, width: 350 }, 600), {

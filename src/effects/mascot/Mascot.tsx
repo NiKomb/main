@@ -13,6 +13,7 @@ import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
 
 const viewportFinishGap = 12;
+const chevronClearance = 20;
 
 export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results: Readonly<Partial<Record<string, string>>> }) {
   const root = useRef<HTMLDivElement>(null);
@@ -29,11 +30,17 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     const actor = actorRef.current;
     if (!layer || !grid || !actor) return;
 
-    const avatar = grid.closest('main')?.querySelector('.portfolio-avatar');
+    const main = grid.closest('main');
+    const avatar = main?.querySelector('.portfolio-avatar');
+    const speechObstacles = Array.from((main ?? grid).querySelectorAll(
+      '.portfolio-avatar, .portfolio-profile-section > *, .portfolio-socials .icon-tile, ' +
+      '.case-sign-heading > *, .case-sign-metrics p, .case-sign-arrow, .case-cover',
+    ));
     const sections = Array.from(grid.querySelectorAll('.case-tile'), (section) => ({
       element: section,
       id: section.getAttribute('data-section-id'),
       cover: section.querySelector('.case-cover'),
+      chevron: section.querySelector('.case-sign-copy > .case-sign-arrow'),
     }));
 
     const image = new Image();
@@ -66,7 +73,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       const position = speechPosition(anchor, bounds, innerHeight, narrow.matches);
       const message = censored ? mascotAttackMessage : sectionId ? results[sectionId] : undefined;
       const onClose = censored ? finishAttackComment : undefined;
-      const next = message && position ? { ...position, message, onClose } : null;
+      const next = message && position ? { ...position, message, onClose, avoidContent: speechObstacles } : null;
       if (fromScroll) interrupt(next?.message);
       setSpeech((current) => current && next && current.message === next.message && current.y === next.y &&
         current.alignment === next.alignment && current.above === next.above && current.onClose === next.onClose ? current : next);
@@ -147,14 +154,16 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       const visible = bounds.bottom > 0 && top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
 
-      const routes = sections.flatMap(({ id, cover }) => {
+      const routes = sections.flatMap(({ id, cover, chevron }) => {
         const box = cover?.getBoundingClientRect();
         if (!cover || !box?.width || !box.height) return [];
         const surface = readSurface(cover, bounds, box, minDashDistance);
         const center = Math.round((surface.left + surface.right) / 2);
         const midpoint: Stop = { surface, edge: 'midpoint', point: { x: center, y: surface.y } };
-        const x = id === 'project-preview' ? center
-          : onSurface(Math.round(box.right - bounds.left - spriteWidth / 2 - sectionEdgeInset), surface);
+        const finishX = chevron
+          ? chevron.getBoundingClientRect().left - spriteWidth - chevronClearance
+          : box.right - spriteWidth / 2 - sectionEdgeInset;
+        const x = id === 'project-preview' ? center : onSurface(Math.round(finishX - bounds.left), surface);
         const finish: Stop = { surface, edge: 'finish', point: { x, y: surface.y } };
         return [{ id, top: box.top, bottom: box.bottom, midpoint, finish }];
       });

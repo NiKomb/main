@@ -1,4 +1,4 @@
-export type SpeechPosition = { y: number; alignment: number; above: boolean; avoidTiles?: Element };
+export type SpeechPosition = { y: number; alignment: number; above: boolean; avoidTiles?: Element; avoidContent?: readonly Element[] };
 
 const speechGap = 8;
 const speechSideGap = 4;
@@ -23,7 +23,7 @@ type MeasuredSpeech = SpeechColumn & { width: number; height: number };
 type PlacedSpeech = MeasuredSpeech & { top: number };
 
 export function speechPlacement(columns: readonly MeasuredSpeech[], mascot: Pick<SpeechBounds, 'top' | 'bottom'>,
-  viewportHeight: number, obstacles: readonly SpeechBounds[]) {
+  viewportHeight: number, obstacles: readonly SpeechBounds[], allowOverlap = true) {
   let fallback: PlacedSpeech | undefined;
   let nearest: PlacedSpeech | undefined;
   let closestDistance = Infinity;
@@ -52,7 +52,7 @@ export function speechPlacement(columns: readonly MeasuredSpeech[], mascot: Pick
       }
     }
   }
-  return nearest ?? fallback;
+  return nearest ?? (allowOverlap ? fallback : undefined);
 }
 
 export function speechAvoidanceOffset(bubble: SpeechBounds, control: SpeechBounds,
