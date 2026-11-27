@@ -27,8 +27,8 @@ function ViHeading({ id, as }: { id: string; as?: 'h2' | 'h3' }) {
   return <CaseHeading id={id} as={as} note={entry.note}>{entry.label}</CaseHeading>;
 }
 
-function renderHypothesis([before, emphasis, after]: readonly [string, string, string]) {
-  return <p>{before}<span className="dns-copy-emphasis">{emphasis}</span>{after}</p>;
+function renderDecisionText(parts: readonly [string, string, string]) {
+  return <p>{renderCaseText(parts.join('**'))}</p>;
 }
 
 export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScenario, scenarioMedia }: Props) {
@@ -124,11 +124,11 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         <section className="dns-case-block" aria-labelledby="vi-hypotheses">
           <ViHeading id="vi-hypotheses" />
           <p>{viCase.prioritization}</p>
-          <CaseCardList as="ol" className="vi-hypotheses" aria-labelledby="vi-hypotheses" data-mascot-row="">
+          <CaseCardList as="ol" className="case-hypotheses" aria-labelledby="vi-hypotheses" data-mascot-row="">
             {viDecisions.map(({ id, label, hypothesis, highlightHypothesis, hypothesisComment }) => (
               <CaseCard as="li" className="dns-case-fact" key={id} comment={hypothesisComment} highlight={highlightHypothesis}>
                 <p className="dns-case-fact-title">{label}</p>
-                {renderHypothesis(hypothesis)}
+                {renderDecisionText(hypothesis)}
               </CaseCard>
             ))}
           </CaseCardList>
@@ -136,7 +136,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
       </CaseSection>
 
       <CaseSection id="vi-solutions" title={viCase.decisionsTitle}>
-        {viDecisions.map(({ id, title, hypothesis, highlightHypothesis, solution: [before, emphasis, after],
+        {viDecisions.map(({ id, title, hypothesis, highlightHypothesis, solution,
           comparison, scenario: steps, scenarioComment, result }, index) => (
           <section className="dns-case-group" key={id} aria-labelledby={id}>
             <div className="dns-case-block">
@@ -160,8 +160,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
                 ))}
               </figcaption>
             </figure>
-            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderHypothesis(hypothesis)} highlightHypothesis={highlightHypothesis}
-              solution={<p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>} />
+            <CaseDecisionCopy hypothesisNumber={index + 1} hypothesis={renderDecisionText(hypothesis)} highlightHypothesis={highlightHypothesis}
+              solution={renderDecisionText(solution)} />
             <section className="dns-case-block">
               <h4 id={`${id}-result`}>Результат</h4>
               <CaseResults aria-labelledby={`${id}-result`}>
@@ -220,7 +220,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           variant="labeled" note={reflectionHeading?.note}>
           <div className="dns-case-block">
             <p>{reflection.summary}</p>
-            <CaseCardList className="vi-reflection-takeaways" aria-labelledby="vi-followup">
+            <CaseCardList aria-labelledby="vi-followup">
               {reflection.takeaways.map(renderFact)}
             </CaseCardList>
           </div>

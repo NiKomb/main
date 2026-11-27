@@ -1315,7 +1315,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-figure figcaption strong { display: block; margin-bottom: var(--space-4); }
 .dns-case-figure figcaption.dns-case-frames strong,
-.dns-decision-copy .dns-copy-emphasis:not(.case-hypotheses *) {
+.dns-decision-copy .dns-copy-emphasis:not(:is(.case-hypotheses, .case-decision-card) *) {
   font: var(--type-small) var(--font-accent);
   text-transform: var(--type-accent-transform);
   overflow-wrap: anywhere;
@@ -1361,9 +1361,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-section p { color: var(--color-muted); }
 .dns-case-summary .dns-copy-emphasis,
 .dns-case-section .dns-copy-emphasis { color: var(--case-accent, var(--color-dns-accent)); }
-.vi-reflection-takeaways .dns-copy-emphasis {
-  color: color-mix(in srgb, var(--case-accent) 88%, var(--color-vi-on-brand));
-}
 .dns-summary-actions {
   display: flex;
   flex-wrap: wrap;

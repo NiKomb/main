@@ -248,7 +248,6 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
 
       <CaseSection id="dns-decisions" title={decisionsTitle}>
         {dnsDecisions.map((decision) => {
-          const [before, emphasis, after] = decision.hypothesisText;
           return (
             <section className="dns-case-group" key={decision.id} aria-labelledby={decision.id}>
               <div className="dns-case-block">
@@ -264,7 +263,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
               </div>
               <CaseDecisionCopy hypothesisNumber={decision.hypothesis} hypothesis={(
                 <blockquote cite={test.journalSource}>
-                  <p>{before}<strong className="dns-copy-emphasis">{emphasis}</strong>{after}</p>
+                  <p>{renderCaseText(decision.hypothesisText.join('**'))}</p>
                 </blockquote>
               )} solution={<p>{renderCaseText(decision.solution)}</p>} />
               <section className="dns-case-block dns-decision-check">
