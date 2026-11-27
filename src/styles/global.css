@@ -1103,20 +1103,25 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .case-nav[data-dns-contents] ul::-webkit-scrollbar { display: none; }
 .case-nav[data-dns-contents] li + li { margin-block-start: var(--space-4); }
 .case-nav[data-dns-contents] li + li[data-section-start] { margin-block-start: var(--space-12); }
-.case-nav[data-dns-contents] button {
-  display: block;
-  width: 100%;
-  min-block-size: var(--space-24);
+.case-nav[data-dns-contents] .case-contents button { width: 100%; }
+.case-contents button {
+  display: flex;
+  align-items: center;
+  min-block-size: calc(var(--space-24) - 1px);
+  padding: 1px 0 0;
+  border: 0;
+  background: none;
   font: var(--type-body) var(--font-body);
   text-align: start;
-  white-space: nowrap;
+  cursor: pointer;
 }
-.case-nav[data-dns-contents] [data-section-item] > button { padding-inline-start: var(--space-6); }
-.case-nav[data-dns-contents] button[aria-current] .case-contents-text {
+.case-contents [data-section-item] > button { padding-inline-start: var(--space-6); }
+.case-contents button[aria-current] .case-contents-text {
   font: var(--type-small) var(--font-accent);
+  line-height: inherit;
   text-transform: var(--type-accent-transform);
 }
-.case-nav[data-dns-contents] button:not([aria-current], :hover, :focus-visible) {
+.case-contents button:not([aria-current], :hover, :focus-visible) {
   color: var(--color-muted-dim);
 }
 .case-contents-divider {
@@ -1128,14 +1133,14 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   text-align: start;
 }
 .case-nav[data-dns-contents] button:focus-visible { outline-offset: -2px; }
-.case-nav[data-dns-contents] .case-contents-label {
+.case-contents-label {
   position: relative;
   max-inline-size: 100%;
   overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.case-nav[data-dns-contents] .case-contents-text { display: block; }
+.case-contents-text { display: block; }
 @media (1200px <= width < 1344px) {
   .dns-case-layout {
     --dns-case-contents-base-gap: var(--space-40);
@@ -1143,17 +1148,17 @@ html:has(.case-dialog[open]) { overflow: hidden; }
     --dns-case-reading-width: calc(var(--case-text-width) - 2 * var(--dns-case-contents-base-gap));
   }
 }
-.case-nav[data-dns-contents] :is(button[aria-current], .case-contents-divider[data-active]) {
+.case-contents :is(button[aria-current], .case-contents-divider[data-active]) {
   color: var(--case-accent, var(--color-text));
 }
 @media (prefers-reduced-motion: no-preference) {
-  .case-nav[data-dns-contents] .case-contents-character {
+  .case-contents-character {
     --contents-character-duration: 18ms;
     --contents-character-delay: calc(var(--contents-character-index) * var(--contents-character-duration));
     position: relative;
     animation: typewriter-character 0s var(--contents-character-delay) backwards;
   }
-  .case-nav[data-dns-contents] .case-contents-character:not(:last-child)::after {
+  .case-contents-character:not(:last-child)::after {
     position: absolute;
     inset-inline-start: 100%;
     inset-block-end: var(--space-2);
@@ -1310,8 +1315,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 }
 .dns-case-figure figcaption strong { display: block; margin-bottom: var(--space-4); }
 .dns-case-figure figcaption.dns-case-frames strong,
-.dns-decision-copy .dns-copy-emphasis,
-.vi-hypotheses .dns-copy-emphasis {
+.dns-decision-copy .dns-copy-emphasis:not(.case-hypotheses *) {
   font: var(--type-small) var(--font-accent);
   text-transform: var(--type-accent-transform);
   overflow-wrap: anywhere;

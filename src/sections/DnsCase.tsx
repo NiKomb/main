@@ -235,7 +235,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
             <p>{renderCaseText(research.prioritization.rationale)}</p>
           </div>
           <div className="dns-decision-copy" data-mascot-row="">
-            <CaseCardList as="ol" aria-label="Гипотезы для прототипа">
+            <CaseCardList as="ol" className="case-hypotheses" aria-label="Гипотезы для прототипа">
               {dnsDecisions.map(({ hypothesis, contentsLabel, hypothesisText }) => renderFact({
                 title: `Гипотеза ${hypothesis} · ${contentsLabel}`,
                 detail: renderCaseText(hypothesisText.join('**')),

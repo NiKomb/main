@@ -36,7 +36,7 @@ export function CaseContents({ items, activeHeading, onJump }: Props) {
 
   let inSection = false;
   return (
-    <ul ref={listRef}>
+    <ul className="case-contents" ref={listRef}>
       {items.map(({ id, label, divider }) => {
         const current = activeHeading === id;
         if (divider !== undefined) inSection = Boolean(divider);
