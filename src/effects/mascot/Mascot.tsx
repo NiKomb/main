@@ -151,11 +151,12 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         const box = cover?.getBoundingClientRect();
         if (!cover || !box?.width || !box.height) return [];
         const surface = readSurface(cover, bounds, box, minDashDistance);
-        const centered = id === 'project-preview';
-        const x = centered ? Math.round((surface.left + surface.right) / 2)
+        const center = Math.round((surface.left + surface.right) / 2);
+        const midpoint: Stop = { surface, edge: 'midpoint', point: { x: center, y: surface.y } };
+        const x = id === 'project-preview' ? center
           : onSurface(Math.round(box.right - bounds.left - spriteWidth / 2 - sectionEdgeInset), surface);
         const finish: Stop = { surface, edge: 'finish', point: { x, y: surface.y } };
-        return [{ id, top: box.top, bottom: box.bottom, finish }];
+        return [{ id, top: box.top, bottom: box.bottom, midpoint, finish }];
       });
       const scrollLimit = Math.max(0, document.documentElement.scrollHeight - innerHeight);
       const position = Math.min(scrollLimit, Math.max(0, scrollY));
@@ -178,8 +179,11 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         return;
       }
 
-      let targetFinish = targetRoute.finish;
-      const stops = routes.map(({ finish }) => finish);
+      const stops = routes.flatMap(({ midpoint, finish }) => midpoint.point.x === finish.point.x ? [finish] : [midpoint, finish]);
+      const { midpoint, finish: coverFinish } = targetRoute;
+      const enteringCover = currentStop && (currentStop.surface.tile !== coverFinish.surface.tile ||
+        (currentStop.edge === 'midpoint' && movement.phase !== 'idle'));
+      let targetFinish = enteringCover && !reducedMotion.matches && midpoint.point.x !== coverFinish.point.x ? midpoint : coverFinish;
       if (avatar && avatarBox?.width) {
         const surface = readSurface(avatar, bounds, avatarBox, minDashDistance);
         stops.unshift({
@@ -187,12 +191,15 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         });
       }
 
-      if (atBottom || currentStop?.surface.tile === grid) {
+      const previewReached = currentStop?.surface.tile === targetRoute.finish.surface.tile && movement.phase === 'idle';
+      const finishAtFloor = atBottom && (targetRoute.id !== 'project-preview' ||
+        (!reducedMotion.matches && (previewReached || currentStop?.surface.tile === grid)));
+      if (finishAtFloor || currentStop?.surface.tile === grid) {
         const viewportRight = document.documentElement.clientWidth;
         const rightLimit = viewportRight - spriteWidth - viewportFinishGap;
         const x = Math.floor(Math.max(0, Math.min(bounds.right + viewportFinishGap, rightLimit)) - bounds.left);
         const center = Math.floor(Math.max(0, (viewportRight - spriteWidth) / 2) - bounds.left);
-        const floorY = atBottom ? innerHeight : innerHeight + scrollLimit - scrollY;
+        const floorY = finishAtFloor ? innerHeight : innerHeight + scrollLimit - scrollY;
         const y = Math.floor(floorY - bounds.top - spriteWidth);
         const surface = {
           tile: grid, left: Math.min(center, x), right: Math.max(center, x), y, canDash: true, dashDistance: minDashDistance,
@@ -200,7 +207,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         const landing: Stop = { surface, edge: 'landing', point: { x: center, y } };
         const finish: Stop = { surface, edge: 'finish', point: { x, y } };
         stops.push(landing, finish);
-        if (atBottom) {
+        if (finishAtFloor) {
           const reachedFloor = currentStop?.surface.tile === grid && (currentStop.edge === 'finish' || movement.phase === 'idle');
           targetFinish = reachedFloor ? finish : landing;
         }

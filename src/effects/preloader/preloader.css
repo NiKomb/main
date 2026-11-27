@@ -41,7 +41,7 @@ html:has(.site-preloader) {
 
 .site-preloader__percent {
   margin: 0;
-  font: var(--type-section-heading) var(--font-accent);
+  font: var(--type-heading) var(--font-accent);
   text-align: right;
   counter-reset: site-preloader var(--site-preloader-progress);
 }

@@ -8,8 +8,8 @@
 
 :root {
   color-scheme: dark;
-  --color-background: #000000;
-  --color-surface: #0f0f0f;
+  --color-background: hsl(0 0% 5% / 1);
+  --color-surface: hsl(0 0% 8% / 1);
   --color-text: #f2f2f2;
   --color-muted: #bbb;
   --color-muted-dim: #888;
@@ -29,12 +29,11 @@
   --font-body: Geist, system-ui, sans-serif;
   --font-accent: "Departure Mono", ui-monospace, monospace;
   --type-accent-transform: uppercase;
-  --type-display: 28px/32px;
-  --type-section-heading: 20px / 24px;
-  --type-subheading: 16px / 20px;
-  --pixel-step: 2px;
+  --type-display: 28px / 32px;
+  --type-heading: 20px / 24px;
   --type-body: 16px / 22px;
   --type-small: 14px / 20px;
+  --pixel-step: 2px;
   --space-2: 2px;
   --space-4: 4px;
   --space-6: 6px;
@@ -52,7 +51,7 @@
   --radius-case-tile: 8px;
   --size-icon-tile: 40px;
   --content-width: 1280px;
-  --home-content-width: 1200px;
+  --home-case-width: 700px;
   --home-tile-gap: 16px;
   --case-text-width: 740px;
   --case-sign-startup-delay: 140ms;

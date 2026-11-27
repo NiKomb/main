@@ -24,7 +24,7 @@ export const projectCoverMetrics = {
 };
 
 export const projectResults: Readonly<Partial<Record<string, string>>> = {
-  'project-dns': `${savedBuilds} сохранили сборку\n${openedComparison} открыли сравнение`,
-  'project-vseinstrumenti': `${successfulCheckouts} успешных прохождений\n${checkoutsWithoutLift} выбрали курьера без нужного подъёма`,
+  'project-dns': `${saved} из ${started} сохранили сборку\n${comparison.opened} из ${comparison.withCatalog} открыли сравнение`,
+  'project-vseinstrumenti': `${viCase.test.success} из ${viCase.test.runs} прошли успешно\n${viCase.test.critical} из ${viCase.test.runs} выбрали курьера без нужного подъёма`,
   'project-preview': '...',
 };

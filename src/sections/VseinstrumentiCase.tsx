@@ -36,9 +36,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
   const reflectionHeading = viContents.find((item) => item.id === 'vi-followup');
   const ratio = (count: number) => `${count} из ${test.runs}`;
 
-  function renderFact({ title, detail, highlight }: CaseFact) {
+  function renderFact({ title, detail, comment, highlight }: CaseFact) {
     return (
-      <CaseCard as="li" className="dns-case-fact" key={title} highlight={highlight}>
+      <CaseCard as="li" className="dns-case-fact" key={title} comment={comment} highlight={highlight}>
         <p className="dns-case-fact-title">{title}</p>
         <p>{renderCaseText(detail)}</p>
       </CaseCard>
@@ -91,9 +91,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             </div>
           ))}>
           <div className="dns-case-block">
-            <CaseCardList aria-label="Наблюдения из отзывов">
+            <CaseResults aria-label="Наблюдения из отзывов">
               {reviews.findings.map(renderFact)}
-            </CaseCardList>
+            </CaseResults>
             <p>{renderCaseText(reviews.conclusion)}</p>
           </div>
         </CaseEvidence>
@@ -104,9 +104,9 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           </div>
           <div className="dns-case-block">
             <h4 id="vi-audit-problems">Где приходилось искать условия</h4>
-            <CaseCardList aria-labelledby="vi-audit-problems">
+            <CaseResults aria-labelledby="vi-audit-problems">
               {audit.problems.map(renderFact)}
-            </CaseCardList>
+            </CaseResults>
             <p>{renderCaseText(audit.conclusion)}</p>
           </div>
         </section>
@@ -116,18 +116,18 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             <p>{competitors.introduction}</p>
           </div>
           <div className="dns-case-block">
-            <CaseCardList aria-label="Наблюдения по конкурентам">
+            <CaseResults aria-label="Наблюдения по конкурентам">
               {competitors.findings.map(renderFact)}
-            </CaseCardList>
+            </CaseResults>
             <p>{renderCaseText(competitors.conclusion)}</p>
           </div>
         </section>
         <section className="dns-case-block" aria-labelledby="vi-hypotheses">
           <ViHeading id="vi-hypotheses" />
           <p>{viCase.prioritization}</p>
-          <CaseCardList as="ol" className="vi-hypotheses" aria-labelledby="vi-hypotheses">
-            {viDecisions.map(({ id, label, hypothesis, highlightHypothesis }) => (
-              <CaseCard as="li" className="dns-case-fact" key={id} highlight={highlightHypothesis}>
+          <CaseCardList as="ol" className="vi-hypotheses" aria-labelledby="vi-hypotheses" data-mascot-row="">
+            {viDecisions.map(({ id, label, hypothesis, highlightHypothesis, hypothesisComment }) => (
+              <CaseCard as="li" className="dns-case-fact" key={id} comment={hypothesisComment} highlight={highlightHypothesis}>
                 <p className="dns-case-fact-title">{label}</p>
                 {renderHypothesis(hypothesis)}
               </CaseCard>
@@ -166,7 +166,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
             <section className="dns-case-block">
               <h4 id={`${id}-result`}>Результат</h4>
               <CaseResults aria-labelledby={`${id}-result`}>
-                <CaseCard as="li" className="dns-case-fact dns-case-metric" comment={result.comment} highlight>
+                <CaseCard as="li" className="dns-case-fact dns-case-metric" highlight>
                   <p className="dns-case-metric-value vi-case-critical">{ratio(result.count)}</p>
                   <div className="dns-case-metric-copy">
                     <p className="dns-case-fact-title">{result.label}</p>
@@ -199,12 +199,12 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
         <section className="dns-case-block" aria-labelledby="vi-test">
           <ViHeading id="vi-test" />
           <p>{test.introduction}</p>
-          <CaseCardList aria-label={`Результаты на ${test.date}`}>
+          <CaseResults aria-label={`Результаты на ${test.date}`}>
             <CaseCard as="li" className="dns-case-fact dns-case-metric">
               <p className="dns-case-metric-value">{ratio(test.success)}</p>
               <p>Оформили все товары с подходящим способом получения</p>
             </CaseCard>
-            <CaseCard as="li" className="dns-case-fact dns-case-metric" highlight>
+            <CaseCard as="li" className="dns-case-fact dns-case-metric" comment="test-lifting" highlight>
               <p className="dns-case-metric-value vi-case-critical">{ratio(test.critical)}</p>
               <p>Подтвердили курьера, хотя нужный подъём был недоступен</p>
             </CaseCard>
@@ -212,7 +212,7 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
               <p className="dns-case-metric-value">{ratio(test.unresolved)}</p>
               <p>Одна единица товара осталась без оформления</p>
             </CaseCard>
-          </CaseCardList>
+          </CaseResults>
           <p>{renderCaseText(test.conclusion)}</p>
           <p>{test.criteria}</p>
           <CaseTestAccounting text={test.accounting} journalHref={viJournalLink.href} />
@@ -221,9 +221,8 @@ export function VseinstrumentiCase({ jumpToHeading, renderScreenshot, renderScen
           variant="labeled" note={reflectionHeading?.note}>
           <div className="dns-case-block">
             <p>{reflection.summary}</p>
-            <h4 id="vi-next-checks">Что проверю дальше</h4>
-            <CaseCardList aria-labelledby="vi-next-checks">
-              {reflection.nextChecks.map(renderFact)}
+            <CaseCardList className="vi-reflection-takeaways" aria-labelledby="vi-followup">
+              {reflection.takeaways.map(renderFact)}
             </CaseCardList>
           </div>
         </CaseSection>

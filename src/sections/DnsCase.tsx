@@ -232,7 +232,7 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
         <section className="dns-case-group" aria-labelledby="dns-prioritization">
           <div className="dns-case-block">
             <DnsHeading id="dns-prioritization" />
-            <p>{research.prioritization.rationale}</p>
+            <p>{renderCaseText(research.prioritization.rationale)}</p>
           </div>
           <div className="dns-decision-copy" data-mascot-row="">
             <CaseCardList as="ol" aria-label="Гипотезы для прототипа">

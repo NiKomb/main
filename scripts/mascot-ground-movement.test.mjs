@@ -111,6 +111,43 @@ test('the Blink canvas covers an avatar to the left of or above the case grid', 
   }
 });
 
+test('a departure at the viewport edge announces the vanish once without revealing the actor', (t) => {
+  const context = {
+    drawImage() {},
+    getImageData: () => ({ data: new Uint8ClampedArray(36 * 36 * 4) }),
+    createImageData: (width, height) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+    putImageData() {},
+  };
+  const canvas = {
+    parentElement: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 390, height: 844 }) },
+    getContext: () => context,
+    style: {},
+    hidden: true,
+  };
+  let frame;
+  globalThis.document = { createElement: () => ({ getContext: () => context }) };
+  globalThis.requestAnimationFrame = (callback) => { frame = callback; return 1; };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => {
+    delete globalThis.document;
+    delete globalThis.requestAnimationFrame;
+    delete globalThis.cancelAnimationFrame;
+  });
+
+  const origin = { x: 318, y: 772 };
+  const moves = [];
+  const blink = playGroundMovement(canvas, { naturalWidth: 288 }, origin, origin.x,
+    (x, opacity) => moves.push([x, opacity]), () => assert.fail('a departure has no arrival'), { kind: 'blink-departure' });
+  assert.ok(blink);
+
+  const start = performance.now();
+  for (let i = 1; i <= 8; i++) frame(start + i * 25);
+  assert.deepEqual(moves, []);
+  for (let i = 9; i <= 40; i++) frame(start + i * 25);
+  assert.deepEqual(moves, [[origin.x, 0]]);
+  blink.cancel();
+});
+
 test('the dash canvas reaches the viewport edges when the route leaves the grid', (t) => {
   const context = {
     drawImage() {},

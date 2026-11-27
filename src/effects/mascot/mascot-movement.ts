@@ -22,7 +22,7 @@ export type Surface = {
   dashDistance: number;
 };
 
-export type Stop = { surface: Surface; edge: 'start' | 'landing' | 'finish' | 'left-finish'; point: Point };
+export type Stop = { surface: Surface; edge: 'start' | 'landing' | 'midpoint' | 'finish' | 'left-finish'; point: Point };
 
 export function readSurface(tile: Element, bounds: DOMRect, box: DOMRect, dashDistance: number,
   isCover = tile.classList.contains('case-cover')): Surface {

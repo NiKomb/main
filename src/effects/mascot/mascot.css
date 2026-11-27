@@ -361,6 +361,8 @@
   inset: 0;
 }
 
+.mascot-case__departure[data-viewport] { position: fixed; }
+
 @media (prefers-reduced-motion: reduce) {
   :is(.mascot-viewport, .mascot-case) .mascot[data-pose] .mascot__sprite { animation: none; }
 }

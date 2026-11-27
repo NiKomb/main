@@ -41,7 +41,7 @@ export function ContactButtons() {
     if (attempt !== copyAttempt.current) return;
     window.clearTimeout(feedbackTimer.current);
     setFeedback(copied ? 'Скопировано' : 'Не скопировано');
-    feedbackTimer.current = window.setTimeout(() => setFeedback(''), 2000);
+    feedbackTimer.current = window.setTimeout(() => setFeedback(''), copied ? 700 : 2000);
   }
 
   return (
@@ -50,16 +50,19 @@ export function ContactButtons() {
         const { id, label } = contact;
         const isTelegram = id === 'telegram';
         const className = `icon-tile ${isTelegram ? 'icon-tile--lit' : 'icon-tile--secondary'}`;
-        const icon = <GridIcon name={id} />;
+        const decoration = <>
+          <GridIcon name={id} />
+          <span className="portfolio-contact-frame" aria-hidden="true" />
+        </>;
         const status = id === 'email' ? feedback : '';
         const text = status || label;
         return (
           <li key={id} data-contact={id}>
             {contact.id === 'email'
               ? <button type="button" className={className} {...iconTilePress} aria-label="Скопировать адрес почты"
-                  aria-description={contact.address} onClick={() => void copyEmail(contact.address)}>{icon}</button>
+                  aria-description={contact.address} onClick={() => void copyEmail(contact.address)}>{decoration}</button>
               : <a className={className} {...iconTilePress} href={contact.href} aria-label={label}
-                  target={isTelegram ? '_blank' : undefined} rel={isTelegram ? 'noopener' : undefined}>{icon}</a>}
+                  target="_blank" rel="noopener">{decoration}</a>}
             <span className="portfolio-contact-label" data-copy-feedback={status ? '' : undefined} aria-hidden="true">
               <span key={text}>{Array.from(text, (character, index) => (
                 <span className="portfolio-contact-character" key={index}
