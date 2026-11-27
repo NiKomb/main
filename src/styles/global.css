@@ -197,8 +197,12 @@ h1, h2, h3, h4, h5, p { margin: 0; }
 }
 .case-body h1, h2 { font: var(--type-heading) var(--font-accent); }
 h3,
-.portfolio-profile-section > h2,
+.dns-case-summary > h2,
 .case-sign-heading h2 {
+  font: var(--type-h3) var(--font-accent);
+}
+.portfolio-profile-section > h2,
+h2.dns-case-divider {
   font: var(--type-body) var(--font-accent);
 }
 h4, h5 { font: var(--type-small) var(--font-accent); }
@@ -1402,7 +1406,6 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-items: center;
   gap: var(--space-12);
   color: var(--color-muted);
-  font: var(--type-body) var(--font-accent);
   text-align: center;
   text-wrap: balance;
 }
@@ -1513,6 +1516,7 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   align-items: baseline;
   gap: var(--space-12);
 }
+:is(h3, .dns-case-summary > h2).dns-case-labeled-heading { align-items: start; }
 .dns-case-labeled-heading > :first-child { min-inline-size: 0; }
 .dns-case-heading-label {
   flex: none;
@@ -1555,13 +1559,13 @@ html:has(.case-dialog[open]) { overflow: hidden; }
 .dns-case-facts > .dns-case-fact { max-inline-size: min(100%, 38ch); align-content: start; }
 .dns-case-fact .dns-case-fact-title {
   color: var(--color-text);
-  font: var(--type-body) var(--font-accent);
+  font: var(--type-h3) var(--font-accent);
   text-transform: var(--type-accent-transform);
 }
 .dns-case-stages .dns-case-metric { font: var(--type-body) var(--font-body); }
 .dns-case-metric > .dns-case-metric-value {
   color: var(--color-text);
-  font: var(--type-body) var(--font-accent);
+  font: var(--type-h3) var(--font-accent);
   font-variant-numeric: tabular-nums;
   text-transform: var(--type-accent-transform);
 }
