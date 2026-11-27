@@ -7,7 +7,7 @@ import { playGroundMovement } from './ground-movement';
 import { createMascotMovement, footOffset, mascotAttackChance, mascotAttackMessage, minDashDistance, onSurface, readSurface, sectionEdgeInset,
   spriteWidth, type Point, type Stop } from './mascot-movement';
 import { MascotSpeech } from './MascotSpeech';
-import { reactToHomeScroll, selectHomeRoute } from './narrow-cover';
+import { selectHomeRoute } from './case-route';
 import { speechPosition, type SpeechPosition } from './speech-position';
 import { useSpeechInterruption } from './use-speech-interruption';
 import './mascot.css';
@@ -48,6 +48,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     const { place, blink, dashAndReturn, travel } = movement;
     const narrow = matchMedia('(width < 1040px)');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const canHover = matchMedia('(any-hover: hover)');
     let frame = 0;
     let currentStop: Stop | undefined;
     let introduction = !resumeRoute;
@@ -55,9 +56,8 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     let resumedAtTop = false;
     let censored = false;
     let scrollPending = false;
-    let previousScroll = Math.max(0, scrollY);
-    let reactedScroll = previousScroll;
-    let lastFrameTime = performance.now();
+    let hoverChanged = false;
+    let hover: { card: Element; entryX: number; landing?: Stop['edge']; afterLanding?: Stop['edge'] } | undefined;
 
     const settle = (point: Point) => {
       movement.settle(point);
@@ -111,6 +111,54 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       return a?.surface.tile === b.surface.tile && a.edge === b.edge;
     }
 
+    function setHover(card?: Element, entryX = 0) {
+      if (card === hover?.card) return;
+      hover?.card.removeAttribute('data-mascot-hover');
+      hover = card ? { card, entryX } : undefined;
+      card?.setAttribute('data-mascot-hover', '');
+      hoverChanged = true;
+      queueUpdate();
+    }
+    const clearHover = () => setHover();
+
+    function trackHover(event: PointerEvent) {
+      if (event.pointerType === 'touch' || !canHover.matches) {
+        clearHover();
+        return;
+      }
+      if (!(event.target instanceof Element)) return;
+
+      const selector = 'a.tile-layout--sign';
+      const card = actor?.contains(event.target)
+        ? document.elementsFromPoint(event.clientX, event.clientY).find((element) => element.matches(selector))
+        : event.target.closest(selector);
+      setHover(card && grid?.contains(card) ? card : undefined, event.clientX);
+    }
+
+    function leaveViewport(event: PointerEvent) {
+      if (!event.relatedTarget) clearHover();
+    }
+
+    function touchStart(event: PointerEvent) {
+      if (event.pointerType === 'touch') clearHover();
+    }
+
+    function hoverDestination(midpoint: Stop, finish: Stop, bounds: DOMRect) {
+      if (!hover) return;
+      const screenX = (stop: Stop) => bounds.left + stop.point.x + spriteWidth / 2;
+      const footY = bounds.top + finish.point.y + footOffset;
+      if (footY < 0 || footY >= innerHeight) return;
+      const visible = [finish, midpoint].filter((stop) => screenX(stop) >= 0 && screenX(stop) < innerWidth);
+      const entryX = hover.entryX;
+      const distance = (stop: Stop) => Math.abs(screenX(stop) - entryX);
+      hover.landing ??= visible.reduce((closest, stop) => distance(stop) < distance(closest) ? stop : closest, visible[0])?.edge;
+      const landing = visible.find(({ edge }) => edge === hover?.landing);
+      if (landing && movement.phase === 'idle' && sameStop(currentStop, landing)) {
+        hover.afterLanding ??= visible.includes(finish) ? finish.edge : landing.edge;
+      }
+      return visible.find(({ edge }) => edge === hover?.afterLanding) ?? landing;
+    }
+
     const activate = (event: MouseEvent) => {
       if (layer.hidden || layer.dataset.visible !== 'true' || movement.phase !== 'idle' || layer.hasAttribute('data-attacking')) return;
       const point = currentStop?.point;
@@ -146,7 +194,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       if (event.animationName === 'mascot-attack') delete layer.dataset.attacking;
     };
 
-    function update(now: number) {
+    function update() {
       if (!layer || !grid) return;
       const bounds = grid.getBoundingClientRect();
       const avatarBox = introduction ? avatar?.getBoundingClientRect() : undefined;
@@ -154,7 +202,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       const visible = bounds.bottom > 0 && top < innerHeight && !document.hidden;
       layer.dataset.visible = String(visible);
 
-      const routes = sections.flatMap(({ id, cover, chevron }) => {
+      const routes = sections.flatMap(({ element, id, cover, chevron }) => {
         const box = cover?.getBoundingClientRect();
         if (!cover || !box?.width || !box.height) return [];
         const surface = readSurface(cover, bounds, box, minDashDistance);
@@ -165,20 +213,18 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
           : box.right - spriteWidth / 2 - sectionEdgeInset;
         const x = id === 'project-preview' ? center : onSurface(Math.round(finishX - bounds.left), surface);
         const finish: Stop = { surface, edge: 'finish', point: { x, y: surface.y } };
-        return [{ id, top: box.top, bottom: box.bottom, midpoint, finish }];
+        return [{ id, tile: cover, group: element, top: box.top, midpoint, finish }];
       });
       const scrollLimit = Math.max(0, document.documentElement.scrollHeight - innerHeight);
       const position = Math.min(scrollLimit, Math.max(0, scrollY));
-      const previousReaction = reactedScroll;
-      reactedScroll = visible && position > 0 && !reducedMotion.matches
-        ? reactToHomeScroll(position, previousScroll, reactedScroll, now - lastFrameTime) : position;
-      previousScroll = position;
-      lastFrameTime = now;
-      const { cover: targetRoute, atBottom } = selectHomeRoute(routes, innerHeight, position, scrollLimit, reactedScroll);
-      if (atBottom) reactedScroll = position;
-      const fromScroll = (scrollPending || previousReaction !== reactedScroll) && !document.hidden;
+      const { cover: scrollRoute, atBottom } = selectHomeRoute(routes, innerHeight, position, scrollLimit, currentStop?.surface.tile);
+      const hoveredRoute = routes.find(({ group }) => group === hover?.card.parentElement);
+      const hoverTarget = hoveredRoute && hoverDestination(hoveredRoute.midpoint, hoveredRoute.finish, bounds);
+      const targetRoute = (hoverTarget && hoveredRoute) ?? scrollRoute;
+      const fromScroll = scrollPending && !document.hidden;
+      const targetChanged = fromScroll || hoverChanged;
       scrollPending = false;
-      if (visible && reactedScroll !== position) queueUpdate();
+      hoverChanged = false;
       if (!targetRoute || !visible) {
         cancelMotion();
         if (avatar && currentStop?.surface.tile === avatar) avatar.dispatchEvent(new Event(mascotTakeoffEvent));
@@ -192,7 +238,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       const { midpoint, finish: coverFinish } = targetRoute;
       const enteringCover = currentStop && (currentStop.surface.tile !== coverFinish.surface.tile ||
         (currentStop.edge === 'midpoint' && movement.phase !== 'idle'));
-      let targetFinish = enteringCover && !reducedMotion.matches && midpoint.point.x !== coverFinish.point.x ? midpoint : coverFinish;
+      let targetFinish = hoverTarget ?? (enteringCover && !reducedMotion.matches && midpoint.point.x !== coverFinish.point.x ? midpoint : coverFinish);
       if (avatar && avatarBox?.width) {
         const surface = readSurface(avatar, bounds, avatarBox, minDashDistance);
         stops.unshift({
@@ -200,9 +246,10 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
         });
       }
 
-      const previewReached = currentStop?.surface.tile === targetRoute.finish.surface.tile && movement.phase === 'idle';
-      const finishAtFloor = atBottom && (targetRoute.id !== 'project-preview' ||
-        (!reducedMotion.matches && (previewReached || currentStop?.surface.tile === grid)));
+      const coverReached = sameStop(currentStop, coverFinish) && movement.phase === 'idle';
+      const coverTopVisible = targetRoute.top >= 0 && targetRoute.top < innerHeight;
+      const finishAtFloor = !hoverTarget && atBottom && (!coverTopVisible ||
+        (!reducedMotion.matches && (coverReached || currentStop?.surface.tile === grid)));
       if (finishAtFloor || currentStop?.surface.tile === grid) {
         const viewportRight = document.documentElement.clientWidth;
         const rightLimit = viewportRight - spriteWidth - viewportFinishGap;
@@ -248,13 +295,14 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
 
       const currentIndex = stops.findIndex((stop) => sameStop(currentStop, stop));
       const current = stops[currentIndex] ?? targetFinish;
-      const backwards = currentIndex > stops.indexOf(targetFinish);
+      const backwards = currentIndex > stops.indexOf(targetFinish) &&
+        (!hoverTarget || current.surface.tile !== targetFinish.surface.tile);
       const footY = bounds.top + current.point.y + footOffset;
-      const holdReturn = currentIndex >= 0 && returnScroll !== undefined && !resumedAtTop &&
+      const holdReturn = !hoverTarget && currentIndex >= 0 && returnScroll !== undefined && !resumedAtTop &&
         (returnScroll === scrollY || (scrollY > returnScroll && backwards && footY >= 0 && footY <= innerHeight));
       returnScroll = holdReturn ? scrollY : undefined;
 
-      const retarget = fromScroll && movement.phase !== 'idle' && !sameStop(current, targetFinish);
+      const retarget = targetChanged && movement.phase !== 'idle' && !sameStop(current, targetFinish);
       const toFloor = targetFinish.surface.tile === grid;
       const enteringFloor = toFloor && current.surface.tile !== grid;
       if ((backwards || retarget || enteringFloor) && !holdReturn && !layer.hidden) {
@@ -317,7 +365,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       } else if (current.surface.tile === targetFinish.surface.tile) {
         movement.moveOnSurface(current.point, targetFinish.point.x, current.surface, finish);
       } else {
-        travel(current, targetFinish, true, finish, fromAvatar,
+        travel(current, targetFinish, true, finish, fromAvatar || !!hoverTarget,
           fromAvatar ? () => avatar.dispatchEvent(new Event(mascotTakeoffEvent)) : undefined);
       }
     }
@@ -348,6 +396,12 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     window.addEventListener('wheel', handleWheel, { passive: true });
     window.addEventListener('keydown', handleScrollKey);
     window.addEventListener('resize', queueUpdate);
+    window.addEventListener('blur', clearHover);
+    document.addEventListener('pointerover', trackHover, { passive: true });
+    document.addEventListener('pointermove', trackHover, { passive: true });
+    document.addEventListener('pointerout', leaveViewport, { passive: true });
+    document.addEventListener('pointerdown', touchStart, { passive: true });
+    canHover.addEventListener('change', clearHover);
     actor.addEventListener('click', activate);
     actor.addEventListener('animationend', endAttack);
     actor.addEventListener('animationcancel', endAttack);
@@ -359,6 +413,7 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
     queueUpdate();
 
     return () => {
+      hover?.card.removeAttribute('data-mascot-hover');
       cancelMotion();
       cancelAnimationFrame(frame);
       resize.disconnect();
@@ -367,6 +422,12 @@ export function Mascot({ resumeRoute, results }: { resumeRoute: boolean; results
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleScrollKey);
       window.removeEventListener('resize', queueUpdate);
+      window.removeEventListener('blur', clearHover);
+      document.removeEventListener('pointerover', trackHover);
+      document.removeEventListener('pointermove', trackHover);
+      document.removeEventListener('pointerout', leaveViewport);
+      document.removeEventListener('pointerdown', touchStart);
+      canHover.removeEventListener('change', clearHover);
       actor.removeEventListener('click', activate);
       actor.removeEventListener('animationend', endAttack);
       actor.removeEventListener('animationcancel', endAttack);

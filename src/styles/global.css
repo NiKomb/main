@@ -88,7 +88,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--color-accent); 
   :is(.icon-tile--secondary, .icon-tile--lit) {
     --icon-tile-accent: var(--contact-accent, var(--case-accent));
     --icon-tile-glow: calc(var(--icon-tile-light, 0) * var(--case-fact-glow-opacity) * var(--icon-tile-visibility));
-    --icon-tile-color: color-mix(in srgb, var(--icon-tile-accent) calc(100% * var(--icon-tile-glow)), var(--color-text));
+    --icon-tile-color: color-mix(in srgb, var(--icon-tile-accent) calc(100% * var(--icon-tile-glow)),
+      var(--icon-tile-rest-color, var(--color-text)));
     color: var(--icon-tile-color);
   }
   :is(.icon-tile--secondary, .icon-tile--lit):where(:not(.dns-comparison-handle)) {
@@ -240,7 +241,10 @@ h4, h5 { font: var(--type-small) var(--font-accent); }
 }
 .portfolio-socials [data-contact="email"] { --contact-accent: var(--color-gmail); }
 .portfolio-socials [data-contact="cv"] { --contact-accent: white; }
-.portfolio-socials .icon-tile { box-shadow: var(--icon-tile-glow-shadow, none); }
+.portfolio-socials .icon-tile {
+  --icon-tile-rest-color: var(--color-muted);
+  box-shadow: var(--icon-tile-glow-shadow, none);
+}
 .portfolio-contact-frame {
   position: absolute;
   z-index: 1;
@@ -313,7 +317,7 @@ h4, h5 { font: var(--type-small) var(--font-accent); }
   container-type: inline-size;
   position: relative;
   display: grid;
-  gap: 24px;
+  gap: var(--space-60);
 }
 .case-tile {
   --sign-light: var(--color-accent);
@@ -362,13 +366,13 @@ a.tile-layout--sign:is(:focus-visible, :active, [data-visible-cover], [data-touc
   --sign-glow: var(--sign-glow-lit);
 }
 @media (any-hover: hover) {
-  a.tile-layout--sign:hover {
+  a.tile-layout--sign:is(:hover, [data-mascot-hover]) {
     --tile-highlight: 100%;
     --sign-glow: var(--sign-glow-lit);
     --sign-startup: var(--case-sign-startup);
     --sign-startup-delay: var(--case-sign-startup-delay);
   }
-  .case-tile:has(> a.tile-layout--sign:hover) { clip-path: none; }
+  .case-tile:has(> a.tile-layout--sign:is(:hover, [data-mascot-hover])) { clip-path: none; }
 }
 a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
   --sign-startup: var(--case-sign-startup);
@@ -377,14 +381,13 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
 .case-tile:has(> a.tile-layout--sign:is([data-visible-cover], [data-touch-pressed], [data-icon-tile-startup])) { clip-path: none; }
 @media (prefers-reduced-motion: no-preference) {
   @media (any-hover: hover) {
-    a.tile-layout--sign:hover {
+    a.tile-layout--sign:is(:hover, [data-mascot-hover]) {
       animation: var(--case-fact-hum) calc(var(--case-sign-startup-delay) + var(--case-sign-startup-duration));
     }
   }
   .tile-layout--sign::after { transition: border-color 400ms, box-shadow 500ms; }
   .case-sign-arrow::after { transition: box-shadow 300ms; }
   .case-sign-arrow svg { transition: color 300ms, filter 300ms; }
-  .case-sign-brand,
   .case-sign-metrics strong { transition: color 400ms var(--sign-startup-delay, 0ms); }
   a.tile-layout--sign::after,
   .tile-layout--sign .case-sign-arrow::after,
@@ -428,13 +431,14 @@ a.tile-layout--sign:is([data-visible-cover], [data-icon-tile-startup]) {
   list-style: none;
 }
 .case-sign-brand,
+.case-sign-metrics strong { font: var(--type-small) var(--font-accent); }
 .case-sign-metrics strong {
-  font: var(--type-small) var(--font-accent);
   color: color-mix(in srgb, var(--case-sign-text-accent, var(--sign-light)) var(--tile-highlight), white);
 }
 .case-sign-brand {
   float: inline-end;
   margin-inline-start: var(--space-16);
+  color: var(--color-muted);
   text-transform: var(--type-accent-transform);
 }
 .icon-tile--lit .icon-tile-label {

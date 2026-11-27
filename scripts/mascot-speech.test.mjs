@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { caseRouteComment } from '../src/effects/mascot/case-comments.ts';
-import { caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowRoute, caseSurfacesInJumpRange,
+import { caseMascotDropZone, caseMascotParking, routeViewportLimits, caseRowRoute, caseSurfacesInJumpRange,
   nextCaseSurfaceToRight, recordCaseScrollStep,
-  rightmostCaseSurface, sameCaseRow, selectCaseSurface } from '../src/effects/mascot/case-route.ts';
+  rightmostCaseSurface, sameCaseRow, selectRouteSurface } from '../src/effects/mascot/case-route.ts';
 import { speechAvoidanceOffset, speechPlacement, speechPosition, speechSides, speechWasInterrupted } from '../src/effects/mascot/speech-position.ts';
 import movement from '../src/effects/mascot/sprite-fusion-movement.ts';
 
@@ -137,9 +137,9 @@ test('a case comment follows the current stop and its closest marked group', () 
 });
 
 test('the case route uses the middle seventy percent of the viewport and leaves room for the contents', () => {
-  assert.deepEqual(caseRouteViewportLimits(900), { top: 135, bottom: 765 });
-  assert.deepEqual(caseRouteViewportLimits(2160), { top: 324, bottom: 1836 });
-  assert.deepEqual(caseRouteViewportLimits(844, 168), { top: 168, bottom: 717.4 });
+  assert.deepEqual(routeViewportLimits(900), { top: 135, bottom: 765 });
+  assert.deepEqual(routeViewportLimits(2160), { top: 324, bottom: 1836 });
+  assert.deepEqual(routeViewportLimits(844, 168), { top: 168, bottom: 717.4 });
 });
 
 test('fast scroll exceeds half the viewport in either direction and discards stale steps or reversals', () => {
@@ -169,7 +169,7 @@ test('vertical transitions can jump a wider horizontal gap than tiles on the sam
 });
 
 test('case movement selects the topmost row in the band or holds its visible target', () => {
-  const limits = caseRouteViewportLimits(900);
+  const limits = routeViewportLimits(900);
   const group = {};
   const screen = { tile: {}, group, kind: 'screen', top: 360, left: 10, right: 280 };
   const adjacent = { tile: {}, group, kind: 'screen', top: 360.5, left: 304, right: 580 };
@@ -178,14 +178,14 @@ test('case movement selects the topmost row in the band or holds its visible tar
   const upperCard = { ...card, top: 135 };
   const aboveBand = { ...upperCard, top: 134 };
   const belowBand = { ...card, top: 766 };
-  assert.equal(selectCaseSurface([card, screen], limits, card), screen);
-  assert.equal(selectCaseSurface([card, screen, upperCard], limits, screen), upperCard);
-  assert.equal(selectCaseSurface([aboveBand, card, belowBand], limits, aboveBand), card);
-  assert.equal(selectCaseSurface([aboveBand, belowBand], limits, aboveBand), aboveBand);
-  assert.equal(selectCaseSurface([aboveBand, belowBand], limits), undefined);
-  assert.equal(selectCaseSurface([screen, adjacent, card], limits, adjacent), adjacent);
+  assert.equal(selectRouteSurface([card, screen], limits, card), screen);
+  assert.equal(selectRouteSurface([card, screen, upperCard], limits, screen), upperCard);
+  assert.equal(selectRouteSurface([aboveBand, card, belowBand], limits, aboveBand), card);
+  assert.equal(selectRouteSurface([aboveBand, belowBand], limits, aboveBand), aboveBand);
+  assert.equal(selectRouteSurface([aboveBand, belowBand], limits), undefined);
+  assert.equal(selectRouteSurface([screen, adjacent, card], limits, adjacent), adjacent);
   const labelled = { ...adjacent, hasOwnComment: true };
-  assert.equal(selectCaseSurface([screen, labelled, card], limits, screen), labelled);
+  assert.equal(selectRouteSurface([screen, labelled, card], limits, screen), labelled);
   assert.equal(sameCaseRow(screen, adjacent), true);
   assert.equal(sameCaseRow(screen, { ...adjacent, top: 390 }), false);
   assert.equal(nextCaseSurfaceToRight(screen, [card, distant, adjacent]), adjacent);
@@ -220,7 +220,7 @@ test('a full row keeps the chosen comment and progresses to the last card on the
   const wrapped = tile(320, 340);
   const tiles = [first, commented, last, wrapped];
 
-  assert.equal(selectCaseSurface(tiles, caseRouteViewportLimits(900), last), commented);
+  assert.equal(selectRouteSurface(tiles, routeViewportLimits(900), last), commented);
   assert.deepEqual(caseRowRoute(commented, tiles, last), {
     current: last, finish: last, comment: commented.tile, stopAtComment: false,
   });

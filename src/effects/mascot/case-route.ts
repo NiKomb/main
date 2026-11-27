@@ -1,11 +1,14 @@
-export type CaseSurface = {
+type RouteCandidate = {
   tile: Element;
   group: Element;
-  kind: 'screen' | 'card';
   top: number;
+  hasOwnComment?: boolean;
+};
+
+export type CaseSurface = RouteCandidate & {
+  kind: 'screen' | 'card';
   left: number;
   right: number;
-  hasOwnComment?: boolean;
 };
 
 export type ParkingSide = 'left' | 'right';
@@ -85,7 +88,7 @@ export function caseMascotParking(side: ParkingSide, column: Pick<DOMRect, 'left
   return { point: { x, y }, step: room >= 4 ? Math.min(8, Math.floor(room)) : 0 };
 }
 
-export function caseRouteViewportLimits(viewportHeight: number, contentsBottom = 0) {
+export function routeViewportLimits(viewportHeight: number, contentsBottom = 0) {
   const edgeInset = viewportHeight * .15;
   return {
     top: Math.max(edgeInset, contentsBottom),
@@ -93,7 +96,7 @@ export function caseRouteViewportLimits(viewportHeight: number, contentsBottom =
   };
 }
 
-export function selectCaseSurface<T extends CaseSurface>(surfaces: readonly T[], limits: { top: number; bottom: number }, current?: T): T | undefined {
+export function selectRouteSurface<T extends RouteCandidate>(surfaces: readonly T[], limits: { top: number; bottom: number }, current?: T): T | undefined {
   let best: T | undefined;
   for (const surface of surfaces) {
     if (surface.top < limits.top || surface.top > limits.bottom) continue;
@@ -106,7 +109,20 @@ export function selectCaseSurface<T extends CaseSurface>(surfaces: readonly T[],
     (!best.hasOwnComment || current.hasOwnComment) ? current : best;
 }
 
-export function sameCaseRow(first: CaseSurface, second: CaseSurface) {
+export function selectHomeRoute<T extends RouteCandidate>(covers: readonly T[], viewportHeight: number,
+  scrollY: number, scrollLimit: number, currentTile?: Element) {
+  const atBottom = scrollLimit > 0 && scrollY > 0 && scrollY >= scrollLimit - 1;
+  if (scrollY <= 0) return { cover: covers[0], atBottom };
+
+  const visible = covers.filter(({ top }) => top >= 0 && top < viewportHeight);
+  if (atBottom) return { cover: visible.at(-1) ?? covers.at(-1), atBottom };
+
+  const current = visible.find(({ tile }) => tile === currentTile);
+  const cover = selectRouteSurface(visible, routeViewportLimits(viewportHeight), current) ?? visible[0];
+  return { cover, atBottom };
+}
+
+export function sameCaseRow(first: RouteCandidate, second: RouteCandidate) {
   return first.group === second.group && Math.abs(first.top - second.top) < 1;
 }
 

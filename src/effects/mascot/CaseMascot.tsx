@@ -9,8 +9,8 @@ import { rocketCaptionHitEvent, shotCaptionVisible } from '../rocket-shot/scroll
 import { mascotPaintEvent, type PaintPoint } from './paint-drop';
 import { MascotSpeech } from './MascotSpeech';
 import { caseRouteComment } from './case-comments';
-import { caseFooterRoute, caseMascotDropZone, caseMascotParking, caseRouteViewportLimits, caseRowFinishButton, caseRowRoute,
-  caseSurfacesInJumpRange, nextCaseSurfaceToRight, recordCaseScrollStep, sameCaseRow, selectCaseSurface, trackCaseGalleryScroll,
+import { caseFooterRoute, caseMascotDropZone, caseMascotParking, caseRowFinishButton, caseRowRoute,
+  caseSurfacesInJumpRange, nextCaseSurfaceToRight, recordCaseScrollStep, routeViewportLimits, sameCaseRow, selectRouteSurface, trackCaseGalleryScroll,
   type CaseScrollStep, type CaseSurface, type ParkingSide } from './case-route';
 import { dampDragReaction, dragPull, type DragSample } from './drag-reaction';
 import { playGroundMovement, type BlinkDeparture } from './ground-movement';
@@ -883,14 +883,14 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
 
       const contents = innerWidth < 1200 ? article.querySelector('.case-nav[data-dns-contents] ul') : null;
       const contentsBottom = contents?.getBoundingClientRect().bottom ?? 0;
-      const limits = caseRouteViewportLimits(innerHeight, contentsBottom);
+      const limits = routeViewportLimits(innerHeight, contentsBottom);
       const target = (destination ?? current)?.surface;
       const onFooterButton = target?.routeEnd && target.tile !== footerActions;
       const footerButtonIsSafe = onFooterButton && target.tile.getBoundingClientRect().top < innerHeight * .95;
       // If the page gets shorter, scrollY can decrease while the viewport stays at the bottom.
       const footerRoute = scrollingUp && !footerButtonIsSafe && scrollRemaining() > 1 ? undefined : readRouteEnd(bounds);
       const surfaces = readSurfaces(bounds, innerHeight).filter(({ top }) => top >= contentsBottom);
-      const footerFact = footerRoute && selectCaseSurface(surfaces.filter(({ tile }) => tile.matches(unlitFact)), limits);
+      const footerFact = footerRoute && selectRouteSurface(surfaces.filter(({ tile }) => tile.matches(unlitFact)), limits);
       const routeEnd = footerFact ? undefined : footerRoute;
       control.inert = !!routeEnd && (current?.surface.tile !== footerActions || movement.phase !== 'idle');
       if (scrollingUp && !routeEnd && current?.surface.routeEnd && current.surface.tile === footerActions && playDeparture(bounds, true)) {
@@ -904,7 +904,7 @@ export function CaseMascot({ actorRef, comments, shotComment, paused }: {
       const previous = surfaces.find(({ tile }) => tile === current?.surface.tile);
       const retained = surfaces.find(({ tile }) => tile === (target?.rowFinishTile ?? target?.tile)) ?? previous;
       const opening = scrollY <= 0 ? surfaces.find(({ tile }) => openingGallery?.contains(tile)) : undefined;
-      const selected = routeEnd ? undefined : footerFact ?? opening ?? selectCaseSurface(surfaces, limits, retained);
+      const selected = routeEnd ? undefined : footerFact ?? opening ?? selectRouteSurface(surfaces, limits, retained);
       const row = selected && caseRowRoute(selected, surfaces, previous);
       const runToCommentFinish = article.dataset.sectionId === 'project-vseinstrumenti' && !!row?.comment;
       metricCheck = selected?.hasOwnComment ? selected.tile.closest('.dns-decision-check') : null;
