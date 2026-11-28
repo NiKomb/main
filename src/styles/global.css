@@ -439,6 +439,7 @@ a.tile-layout--sign .case-sign-heading :is(h2, .case-sign-delayed-word) {
 }
 .case-sign-summary {
   clear: both;
+  margin-block-start: var(--space-2);
   color: var(--color-muted);
 }
 .case-sign-copy {

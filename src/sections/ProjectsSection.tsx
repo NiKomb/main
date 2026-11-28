@@ -30,11 +30,11 @@ const cases: readonly Project[] = [
 const caseCardCopy: Partial<Record<string, { title: ReactNode; summary: string }>> = {
   dns: {
     title: <>Упростил сравнение и возврат к <span className="case-sign-delayed-word">сборке</span></>,
-    summary: 'Сравнение в каталоге и возврат к сборке из обзора детали',
+    summary: 'Можно оценить, за какие комплектующие стоит доплатить',
   },
   vseinstrumenti: {
     title: <>Прояснил доставку и добавил запрос <span className="case-sign-delayed-word">расчёта</span></>,
-    summary: 'Условия подъёма и запрос расчёта при выборе доставки',
+    summary: 'Заранее понятно, нужна ли помощь с разгрузкой и подъёмом',
   },
 };
 const resizeScreensOnZoom = '[data-portrait-preview], [data-preview-crop], :has(> .case-cover-strip)';
