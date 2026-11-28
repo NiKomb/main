@@ -4,7 +4,7 @@ export const parachuteCelSize = 144;
 export const parachuteSpriteOffset = { x: -36, y: -64 };
 
 export function createParachuteTrigger() {
-  let remainingClicks = 7;
+  let remainingClicks = 3;
   let launched = false;
 
   return (readTrack: () => ReturnType<typeof createParachuteTrack> | undefined) => {

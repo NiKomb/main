@@ -3,14 +3,14 @@ import test from 'node:test';
 import { clampParachute, createParachuteGlide, createParachuteTrack, createParachuteTrigger, noteParachuteScrollInput,
   parachuteFrame, parachuteGlideArea, stepParachuteGlide, visibleParachuteEdge } from '../src/effects/mascot/parachute-flight.ts';
 
-test('the seventh click launches once per case opening', () => {
+test('the third click launches once per case opening', () => {
   const track = createParachuteTrack({ x: 100, y: 200 }, 740, 1280, 900, 900);
 
-  for (const seventhClickCanLaunch of [true, false]) {
+  for (const thirdClickCanLaunch of [true, false]) {
     const onClick = createParachuteTrigger();
-    for (let click = 0; click < 6; click++) assert.equal(onClick(() => track), undefined);
+    for (let click = 0; click < 2; click++) assert.equal(onClick(() => track), undefined);
 
-    if (!seventhClickCanLaunch) assert.equal(onClick(() => undefined), undefined);
+    if (!thirdClickCanLaunch) assert.equal(onClick(() => undefined), undefined);
     assert.equal(onClick(() => track), track);
     assert.equal(onClick(() => track), undefined);
   }
