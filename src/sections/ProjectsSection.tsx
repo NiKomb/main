@@ -30,7 +30,7 @@ const cases: readonly Project[] = [
 const caseCardCopy: Partial<Record<string, { title: ReactNode; summary: string }>> = {
   dns: {
     title: <>Упростил сравнение и возврат к <span className="case-sign-delayed-word">сборке</span></>,
-    summary: 'Можно оценить, за какие комплектующие стоит доплатить',
+    summary: 'Обзоры с тестами деталей и сравнение не нужно искать на других сайтах',
   },
   vseinstrumenti: {
     title: <>Прояснил доставку и добавил запрос <span className="case-sign-delayed-word">расчёта</span></>,
