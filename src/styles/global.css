@@ -868,47 +868,34 @@ html:has(.case-dialog[open]) { overflow: hidden; }
   padding: 0;
   border: 0;
   background: transparent;
+  cursor: var(--gallery-arrow-fallback);
 }
 .gallery-previous {
   --gallery-arrow-x: max(26px, 5vw);
-  cursor: w-resize;
+  --gallery-arrow-image: url('./gallery-previous-cursor.svg');
+  --gallery-arrow-fallback: w-resize;
 }
 .gallery-next {
   --gallery-arrow-x: calc(100% - max(26px, 5vw));
-  cursor: e-resize;
+  --gallery-arrow-image: url('./gallery-next-cursor.svg');
+  --gallery-arrow-fallback: e-resize;
 }
-.gallery-arrow-icon {
-  --gallery-arrow-light: calc(var(--case-sign-light-opacity) * 100%);
-  --gallery-arrow-glow: color-mix(in srgb, var(--case-accent) var(--gallery-arrow-light), transparent);
+.gallery-navigation > button::before {
   position: absolute;
   left: var(--gallery-arrow-x);
   top: 50%;
-  z-index: 1;
-  display: grid;
-  place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: #1d1d1d;
-  color: color-mix(in srgb, color-mix(in srgb, var(--case-accent) 35%, white) var(--gallery-arrow-light), var(--color-text));
+  background: var(--gallery-arrow-image) center / contain no-repeat;
   translate: -50% -50%;
   pointer-events: none;
+  content: "";
 }
-.gallery-arrow-icon > svg { filter: drop-shadow(0 0 3px var(--gallery-arrow-glow)); }
-@media (any-hover: hover) {
-  .gallery-navigation > button:not(:focus-visible, [data-icon-tile-startup], [data-gallery-arrow-cursor]:hover) > .gallery-arrow-icon {
-    visibility: hidden;
-  }
-  .gallery-navigation > [data-gallery-arrow-cursor]:hover { cursor: none; }
-  .gallery-navigation > [data-gallery-arrow-cursor]:hover > .gallery-arrow-icon {
-    left: var(--gallery-pointer-x);
-    top: var(--gallery-pointer-y);
-  }
+@media (any-hover: hover) and (any-pointer: fine) and (forced-colors: none) {
+  .gallery-navigation > button { cursor: var(--gallery-arrow-image) 18 18, var(--gallery-arrow-fallback); }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .gallery-navigation > [data-icon-tile-startup] > .gallery-arrow-icon {
-    animation: var(--case-sign-startup) forwards;
-  }
+@media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+  .gallery-navigation > button:not(:focus-visible)::before { visibility: hidden; }
 }
 .gallery-navigation > button:focus-visible { outline-offset: -4px; }
 .gallery-position {

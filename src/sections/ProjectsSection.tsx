@@ -5,7 +5,7 @@ import { ContactButtons } from '../components/ContactButtons';
 import { GalleryStrip } from '../components/GalleryStrip';
 import { GridIcon } from '../components/GridIcon';
 import { connectCoverPlayback } from '../components/cover-playback';
-import { iconTilePress, restartIconTileStartup } from '../components/icon-tile-press';
+import { iconTilePress } from '../components/icon-tile-press';
 import { adjacentSlide, slidesInGallery, swipeDirection } from '../components/media-navigation';
 import { dnsCase, dnsContents, dnsMascotComments } from '../data/dnsCase';
 import { projectCoverMetrics, projectResults } from '../data/projectResults';
@@ -304,26 +304,10 @@ function VideoControls({ video, placement, playbackLabel = 'видео', onToggl
 
 function GalleryArrow({ direction, onMove }: { direction: -1 | 1; onMove: (direction: -1 | 1) => void }) {
   const previous = direction === -1;
-
-  function followPointer({ currentTarget: button, pointerType, clientX, clientY }: PointerEvent<HTMLButtonElement>) {
-    const followsPointer = pointerType === 'mouse' || pointerType === 'pen';
-    button.toggleAttribute('data-gallery-arrow-cursor', followsPointer);
-    if (!followsPointer) return;
-    const bounds = button.getBoundingClientRect();
-    button.style.setProperty('--gallery-pointer-x', `${clientX - bounds.left}px`);
-    button.style.setProperty('--gallery-pointer-y', `${clientY - bounds.top}px`);
-  }
-
   return (
     <button type="button" className={previous ? 'gallery-previous' : 'gallery-next'}
       aria-label={previous ? 'Предыдущий кадр' : 'Следующий кадр'}
-      onPointerEnter={followPointer} onPointerMove={followPointer}
-      onClick={(event) => {
-        restartIconTileStartup(event.currentTarget, 'press');
-        onMove(direction);
-      }}>
-      <span className="gallery-arrow-icon" aria-hidden="true"><GridIcon name={previous ? 'left' : 'right'} /></span>
-    </button>
+      onClick={() => onMove(direction)} />
   );
 }
 

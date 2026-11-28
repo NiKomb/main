@@ -15,7 +15,8 @@ import competitorXcore from './screens/dns-competitor-xcore.webp';
 import compareBefore from './screens/dns-compare-before.webp';
 import compareSelection from './screens/dns-compare-select.webp';
 import compareTable from './screens/dns-compare-table.webp';
-import productCardComparison from './screens/dns-product-card-comparison.png';
+import compareTableExpanded from './screens/dns-compare-table-expanded.webp';
+import productCardComparison from './screens/dns-product-card-comparison.webp';
 import filterPanelComparison from './screens/dns-filter-panel-comparison.png';
 import catalogArticlesBefore from './screens/dns-catalog-articles-before.webp';
 import catalogArticlesAfter from './screens/dns-catalog-articles-after.webp';
@@ -45,7 +46,6 @@ type Decision = {
   comment?: string;
   solution: string;
   detailFrames: readonly CaseFigure[];
-  solutionFigure?: CaseFigure;
   comparison: readonly [CaseFigure, CaseFigure];
 };
 
@@ -272,12 +272,12 @@ export const dnsCase = {
     ] as const,
     detailFrames: [
       {
-        src: productCardComparison, width: 3120, height: 1488, showFull: true, label: 'Карточка товара',
+        src: productCardComparison, width: 2080, height: 992, showFull: true, label: 'Карточка товара',
         previewCrop: {
-          top: 186, height: 815, horizontal: { left: 1184, width: 1450 },
+          top: 124, height: 543, horizontal: { left: 789, width: 967 },
           contextMask: [
-            { left: 696, top: 40, width: 942, height: 319, radius: 26, previewShift: { x: 742, y: 197 } },
-            { left: 2178, top: 808, width: 942, height: 362, radius: 26, previewShift: { x: -740, y: -201 } },
+            { left: 464, top: 27, width: 628, height: 213, radius: 17, previewShift: { x: 495, y: 131 } },
+            { left: 1452, top: 539, width: 628, height: 241, radius: 17, previewShift: { x: -493, y: -134 } },
           ],
         },
         alt: 'Две карточки Ryzen 7 7800X3D. Сверху старая карточка с чекбоксом «Сравнить», снизу новая с иконкой сравнения рядом с избранным',
@@ -377,12 +377,27 @@ export const dnsDecisions: readonly Decision[] = [
         detail: `От открытия каталога. Медиана по ${comparisonResult.started} замерам`,
       },
     ],
-    detailFrames: dnsCase.comparison.detailFrames,
-    solutionFigure: {
-      src: compareTable, width: 1380, height: 1022,
-      alt: 'Таблица сравнения Ryzen 7 7800X3D, 9800X3D и 9700X в режиме «Только различия»',
-      caption: 'Перед выбором детали для сборки здесь можно сверить цены и отличия в характеристиках отмеченных моделей',
-    },
+    detailFrames: [
+      ...dnsCase.comparison.detailFrames,
+      {
+        src: compareTable, width: 2760, height: 2044,
+        previewCrop: {
+          top: 40, height: 760, horizontal: { left: 40, width: 1680 },
+          contextMask: [{ left: 40, top: 40, width: 1680, height: 760, radius: 28 }],
+        },
+        alt: 'Таблица сравнения Ryzen 7 7800X3D, 9800X3D и 9700X в режиме «Только различия»',
+        caption: 'Перед выбором детали для сборки здесь можно сверить цены и отличия в характеристиках отмеченных моделей',
+      },
+      {
+        src: compareTableExpanded, width: 2760, height: 2044,
+        previewCrop: {
+          top: 536, height: 552, horizontal: { left: 40, width: 1680 },
+          contextMask: [{ left: 40, top: 536, width: 1680, height: 552, radius: 28 }],
+        },
+        alt: 'Таблица сравнения процессоров с раскрытой лентой «Добавить». Под выбранными моделями видны другие процессоры с ценами',
+        caption: 'Кнопка «Добавить» раскрывает ленту моделей с ценами. Нажатие на «+» в карточке добавляет модель в сравнение',
+      },
+    ],
     comparison: dnsCase.comparison.frames,
   },
   {

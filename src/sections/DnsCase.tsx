@@ -257,7 +257,6 @@ export function DnsCase({ jumpToHeading, renderScreenshot, scenarioMedia, rocket
                 </div>
               </div>
               <div className="dns-case-block" data-mascot-comment={decision.comment}>
-                {decision.solutionFigure && renderFigure(decision.solutionFigure)}
                 <DnsComparison frames={decision.comparison} headingId={decision.id}
                   highlightSpeech={decision.id === 'dns-return'} renderScreenshot={renderScreenshot} />
               </div>

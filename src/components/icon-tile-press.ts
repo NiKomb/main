@@ -6,14 +6,13 @@ function releaseTouch(event: PointerEvent<HTMLElement>) {
   if (event.pointerType === 'touch' && event.isPrimary) delete event.currentTarget.dataset.touchPressed;
 }
 
-export function restartIconTileStartup(tile: HTMLElement, trigger: 'hover' | 'press') {
+function restartIconTileStartup(tile: HTMLElement, trigger: 'hover' | 'press') {
   const caseTile = tile.matches('.tile-layout--sign');
-  const galleryArrow = tile.matches('.gallery-navigation > button');
-  if (!caseTile && !galleryArrow && !tile.matches('.icon-tile--secondary, .icon-tile--lit')) return;
+  if (!caseTile && !tile.matches('.icon-tile--secondary, .icon-tile--lit')) return;
   if (trigger === 'hover' && !matchMedia(caseTile ? '(any-hover: hover)' : '(hover: hover)').matches) return;
 
   tile.dataset.iconTileStartup = trigger;
-  const animations = tile.getAnimations?.({ subtree: caseTile || galleryArrow }).filter((candidate) =>
+  const animations = tile.getAnimations?.({ subtree: caseTile }).filter((candidate) =>
     'animationName' in candidate && candidate.animationName === 'case-sign-startup') ?? [];
   if (!animations.length) {
     startupRuns.delete(tile);
